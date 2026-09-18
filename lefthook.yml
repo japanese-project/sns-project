@@ -1,0 +1,19 @@
+pre-commit:
+  parallel: true
+  commands:
+    eslint:
+      stage_fixed: true
+      glob: '*.{ts,tsx}'
+      run: yarn lint --fix {staged_files} --quiet # See "yarn lint" as eslint --ext ts,tsx
+
+pre-push:
+  parallel: true
+  commands:
+    audit:
+      run: pnpm audit
+    check:
+      run: pnpm run check
+    format:
+      run: pnpm run format:check
+    lint:
+      run: pnpm run lint

@@ -40,6 +40,16 @@ npm run build
 You can preview the production build with `npm run preview`.
 
 > To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
-# sns-project
-# sns-project
+
+## Git hooks
+
+Install Lefthook and register this repository's Git hooks before contributing:
+
+```sh
+pnpm add -D lefthook
+pnpm exec lefthook install
+```
+
+The configured hooks run local quality checks before commits and pushes.
+
 # sns-project
