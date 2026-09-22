@@ -1,55 +1,40 @@
-# sv
-
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
-
-## Creating a project
-
-If you're seeing this, you've probably already done this step. Congrats!
-
-```sh
-# create a new project
-npx sv create my-app
-```
-
-To recreate this project with the same configuration:
-
-```sh
-# recreate this project
-pnpm dlx sv@0.17.0 create --template minimal --types ts --add prettier eslint vitest="usages:unit,component" playwright tailwindcss="plugins:typography,forms" --install pnpm sns_project
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
-
-## Git hooks
-
-Install Lefthook and register this repository's Git hooks before contributing:
-
-```sh
-pnpm add -D lefthook
-pnpm exec lefthook install
-```
-
-The configured hooks run local quality checks before commits and pushes.
-
 # sns-project
+
+A small social app — posts, likes, comments, follow — built with [SvelteKit](https://svelte.dev/docs/kit) and deployed on [Cloudflare Workers](https://developers.cloudflare.com/workers/).
+
+## Docs
+
+- [Roadmap](./docs/roadmap.md) — MVP must-have phases, access rules, and post-MVP backlog
+- [Tech Stack](./docs/tech-stack.md) — tools we use and planned architecture
+- [Database & ERD](./docs/database.md) — core entities and relationships
+- [Contributing](./docs/contributing.md) — setup, Lefthook workflow, and code style
+
+## MVP
+
+The MVP is the five-phase delivery plan: **Foundation** (auth) → **Posts** (text + visibility) → **Engagement** (likes/comments) → **Social graph** (follow) → **Completeness** (profiles, search, notifications, image upload).
+
+Everything under Phases 1–5 is **MVP must-have**. The separate Post-MVP section contains features that are intentionally deferred.
+
+See [docs/roadmap.md](./docs/roadmap.md) for the feature checklist and authorization rules.
+
+## Setup
+
+```sh
+pnpm install
+pnpm exec lefthook install   # registers git hooks
+pnpm dev                     # or: pnpm dev -- --open
+```
+
+## Scripts
+
+| Command                       | What it does                  |
+| ----------------------------- | ----------------------------- |
+| `pnpm dev`                    | start the dev server          |
+| `pnpm build` / `pnpm preview` | production build / preview it |
+| `pnpm check`                  | type-check                    |
+| `pnpm lint` / `pnpm format`   | eslint / prettier             |
+| `pnpm test`                   | vitest + playwright           |
+
+## Contributing
+
+Branch off `main` as `feature/<name>` or `fix/<name>`, keep each PR scoped to one roadmap item, open a PR into `main` — CI must pass, then squash-merge. See [docs/contributing.md](./docs/contributing.md) for the exact Lefthook checks and naming rules.
