@@ -1,6 +1,10 @@
 # Database & ERD
 
-The MVP uses a relational database for application data. The exact Cloudflare database binding is still planned; the current repository does not yet contain the database schema.
+The MVP uses a relational database for application data: Cloudflare D1 (SQLite) accessed through Drizzle ORM.
+
+The schema is defined in `src/lib/server/db/schema/` (`auth.ts` for Better Auth's core tables, `sns.ts` for application tables) and the initial migration lives in `src/lib/server/db/migrations/`. Run `pnpm run db:generate` after schema changes, then `pnpm run db:migrate:local` (or `:remote`) to apply.
+
+The `notification` table described below is planned for Phase 5 and is not yet part of the schema.
 
 ## Core entities
 
