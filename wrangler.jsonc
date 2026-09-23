@@ -12,4 +12,20 @@
 	"assets": {
 		"directory": ".svelte-kit/cloudflare",
 	},
+
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "sns-project-db",
+			"database_id": "622382fb-2886-4f34-a598-42dd5887f904",
+			"migrations_dir": "src/lib/server/db/migrations",
+		},
+	],
+
+	"kv_namespaces": [
+		{
+			"binding": "AUTH_KV",
+			"id": "1dda420164c3454f8fd58bb1c85cee59",
+		},
+	],
 }
