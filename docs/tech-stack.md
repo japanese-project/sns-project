@@ -6,10 +6,10 @@ What we use and why.
 
 - **SvelteKit + Cloudflare Workers** — app framework and deployment. Already wired up.
 - **pnpm** — package manager. Already wired up.
-- **Better Auth** — authentication with Google OAuth. Planned; `better-auth` is installed, but auth is not yet configured.
-- **Relational database** — application data plus Better Auth user/account/session records. Planned; likely Cloudflare D1 + Drizzle.
-- **Drizzle ORM** — database access and migrations. Planned; `drizzle-kit` is installed, but the ORM/schema is not yet wired.
-- **Cloudflare KV** — **required** Better Auth secondary storage for sessions, verification, rate limits, and other short-lived key-value data. Planned.
+- **Better Auth** — authentication with Google OAuth. Already wired up.
+- **Relational database** — application data plus Better Auth user/account/session records. Cloudflare D1 + Drizzle. Already wired up.
+- **Drizzle ORM** — database access and migrations. Already wired up.
+- **Cloudflare KV** — **required** Better Auth secondary storage for sessions, verification, rate limits, and other short-lived key-value data. Already wired up.
 - **Object storage** — uploaded post images. Planned; likely [Cloudflare R2](https://developers.cloudflare.com/r2/), but the service is not yet decided.
 
 ## Quality and tooling
