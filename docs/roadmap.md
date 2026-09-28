@@ -66,7 +66,7 @@ At minimum, the implementation must cover:
 
 **Watch for:**
 
-- Better Auth normally stores users and sessions in its configured database. If we configure Cloudflare KV as Better Auth `secondaryStorage`, session/verification data can be kept there instead; the exact choice must be explicit in the auth configuration. KV is not the source of truth for posts, likes, comments, follows, or profiles.
+- Cloudflare KV is required as Better Auth's `secondaryStorage`: session/verification/rate-limit data is kept there, not just in the database. This must be wired up explicitly in the auth configuration before Phase 1 is complete. KV is not the source of truth for posts, likes, comments, follows, or profiles.
 - Google OAuth client ID/secret need both a local `.env` and a `wrangler secret put` for the deployed Worker. Add an `.env.example` with variable names before implementation lands.
 - The DB schema is being designed for all 5 phases up front. A later requirements change means a migration, not an undocumented schema edit.
 

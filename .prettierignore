@@ -7,3 +7,6 @@ bun.lockb
 
 # Miscellaneous
 /static/
+
+# Drizzle-generated migration metadata
+/src/lib/server/db/migrations/meta/
