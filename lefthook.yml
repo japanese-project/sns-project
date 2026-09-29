@@ -4,16 +4,16 @@ pre-commit:
     eslint:
       stage_fixed: true
       glob: '*.{ts,tsx}'
-      run: pnpm exec eslint --fix --quiet {staged_files}
+      run: npm exec -- eslint --fix --quiet {staged_files}
 
 pre-push:
   parallel: true
   commands:
     audit:
-      run: pnpm audit
+      run: npm audit
     check:
-      run: pnpm run check
+      run: npm run check
     format:
-      run: pnpm run format:check
+      run: npm run format:check
     lint:
-      run: pnpm run lint
+      run: npm run lint

@@ -41,6 +41,14 @@ export default defineConfig(
 		},
 	},
 	{
+		// Registry-owned shadcn-svelte components keep upstream naming for painless updates.
+		files: ['src/lib/components/ui/**/*.{ts,svelte}'],
+		rules: {
+			'@typescript-eslint/naming-convention': 'off',
+			'svelte/no-navigation-without-resolve': 'off',
+		},
+	},
+	{
 		// Override or add rule settings here, such as:
 		// 'svelte/button-has-type': 'error'
 		rules: {},
