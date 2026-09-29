@@ -1,0 +1,256 @@
+name: Preview Deployment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  PRODUCTION_URL: ${{ vars.PRODUCTION_URL || 'https://sns-project.sreng087.workers.dev' }}
+
+jobs:
+  preview:
+    if: github.event.action != 'closed'
+    name: Deploy PR Preview
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build application
+        run: pnpm run build
+
+      - name: Validate preview database isolation
+        run: |
+          PREVIEW_DB_ID=$(grep -A 8 '"preview":' wrangler.jsonc | grep -o '"database_id": "[^"]*"' | head -n 1 | cut -d'"' -f4)
+          PROD_DB_ID=$(grep -A 5 '"sns-project-db"' wrangler.jsonc | grep -o '"database_id": "[^"]*"' | head -n 1 | cut -d'"' -f4)
+          if [ -z "$PREVIEW_DB_ID" ] || [ -z "$PROD_DB_ID" ]; then
+            echo "ERROR: Failed to extract database IDs from wrangler.jsonc"
+            exit 1
+          fi
+          if [ "$PREVIEW_DB_ID" = "$PROD_DB_ID" ]; then
+            echo "SECURITY VIOLATION: Preview database ID matches production database ID! Halting deployment."
+            exit 1
+          fi
+          echo "Database isolation verified: Preview DB ($PREVIEW_DB_ID) != Production DB ($PROD_DB_ID)"
+
+      - name: Validate database migrations (Expand-Contract safety)
+        run: pnpm run db:validate
+
+      - name: Apply preview D1 migrations
+        run: pnpm run db:migrate:preview
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Deploy preview worker
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          WORKER_NAME="sns-project-preview-pr-${PR_NUMBER}"
+
+          # Deploy preview worker with preview environment bindings
+          DEPLOY_OUTPUT=$(pnpm exec wrangler deploy --env preview --name "$WORKER_NAME")
+          echo "$DEPLOY_OUTPUT"
+
+          # Extract deployed URL
+          PREVIEW_URL=$(echo "$DEPLOY_OUTPUT" | grep -o 'https://[^ ]*\.workers\.dev' | head -n 1)
+          if [ -z "$PREVIEW_URL" ]; then
+            PREVIEW_URL="https://${WORKER_NAME}.sreng087.workers.dev"
+          fi
+          echo "preview_url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
+
+          # Securely set environment secrets on the preview worker
+          echo "$BETTER_AUTH_SECRET" | pnpm exec wrangler secret put BETTER_AUTH_SECRET --name "$WORKER_NAME"
+          echo "$PREVIEW_URL" | pnpm exec wrangler secret put BETTER_AUTH_URL --name "$WORKER_NAME"
+          echo "$PRODUCTION_URL" | pnpm exec wrangler secret put PRODUCTION_URL --name "$WORKER_NAME"
+          echo "$GOOGLE_CLIENT_ID" | pnpm exec wrangler secret put GOOGLE_CLIENT_ID --name "$WORKER_NAME"
+          echo "$GOOGLE_CLIENT_SECRET" | pnpm exec wrangler secret put GOOGLE_CLIENT_SECRET --name "$WORKER_NAME"
+
+      - name: Verify preview deployment health
+        run: |
+          PREVIEW_URL="${{ steps.deploy.outputs.preview_url }}"
+          echo "Verifying preview health at $PREVIEW_URL/api/health..."
+          RESPONSE=$(curl --fail --silent --show-error --retry 5 --retry-delay 3 --retry-all-errors "$PREVIEW_URL/api/health")
+          echo "Health response: $RESPONSE"
+          if ! echo "$RESPONSE" | grep -q '"status":"healthy"'; then
+            echo "Health check failed: expected 'healthy', received: $RESPONSE"
+            exit 1
+          fi
+          echo "Preview deployment verified healthy."
+
+      - name: Comment Preview URL on PR
+        uses: actions/github-script@v7
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
+          PRODUCTION_URL: ${{ env.PRODUCTION_URL }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const marker = '<!-- cloudflare-preview-deployment -->';
+            const previewUrl = process.env.PREVIEW_URL;
+            const productionUrl = process.env.PRODUCTION_URL;
+            const commitSha = context.sha.substring(0, 7);
+
+            const body = [
+              marker,
+              '### ⚡ Cloudflare Worker Deployments',
+              '',
+              '| Environment | Status | URL | Health |',
+              '| :--- | :--- | :--- | :--- |',
+              `| **PR Preview (Branch)** | ✅ Ready | [Visit Preview](${previewUrl}) | [Health Check](${previewUrl}/api/health) |`,
+              `| **Main Branch (Production)** | 🌐 Live | [Visit Production](${productionUrl}) | [Health Check](${productionUrl}/api/health) |`,
+              '',
+              `- **Commit:** \`${commitSha}\``,
+              `- **Preview Worker:** \`sns-project-preview-pr-${context.issue.number}\``,
+              `- **Main Worker:** \`sns-project\``,
+              `- **Preview DB:** \`sns-project-preview-db\``,
+              `_Built from PR #${context.issue.number}_`
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existingComment = comments.find(c => c.body && c.body.includes(marker));
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+  cleanup:
+    if: github.event.action == 'closed'
+    name: Clean Up PR Preview
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Delete preview worker
+        id: cleanup_step
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          WORKER_NAME="sns-project-preview-pr-${PR_NUMBER}"
+          echo "Deleting preview worker: $WORKER_NAME"
+          if pnpm exec wrangler delete --name "$WORKER_NAME" --force; then
+            echo "success=true" >> "$GITHUB_OUTPUT"
+            echo "Preview worker successfully deleted."
+          else
+            echo "success=false" >> "$GITHUB_OUTPUT"
+            echo "::error::Failed to delete preview worker $WORKER_NAME. Manual cleanup required."
+            exit 1
+          fi
+
+      - name: Update PR comment
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          PRODUCTION_URL: ${{ env.PRODUCTION_URL }}
+          CLEANUP_SUCCESS: ${{ steps.cleanup_step.outputs.success || 'false' }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const marker = '<!-- cloudflare-preview-deployment -->';
+            const productionUrl = process.env.PRODUCTION_URL;
+            const cleanupSuccess = process.env.CLEANUP_SUCCESS === 'true';
+
+            const statusText = cleanupSuccess
+              ? '| **PR Preview (Branch)** | 🛑 Deactivated | Worker deleted |'
+              : '| **PR Preview (Branch)** | ⚠️ Cleanup Failed | Worker deletion failed; manual cleanup needed |';
+
+            const body = [
+              marker,
+              '### ⚡ Cloudflare Worker Deployments',
+              '',
+              '| Environment | Status | Note |',
+              '| :--- | :--- | :--- |',
+              statusText,
+              `| **Main Branch (Production)** | 🌐 Live | [Visit Production](${productionUrl}) |`,
+              '',
+              cleanupSuccess
+                ? `_Preview environment for PR #${context.issue.number} has been shut down._`
+                : `_⚠️ Warning: The preview Worker for PR #${context.issue.number} could not be automatically deleted. Please remove it via Cloudflare dashboard or wrangler CLI._`
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existingComment = comments.find(c => c.body && c.body.includes(marker));
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body,
+              });
+            }

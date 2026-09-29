@@ -39,6 +39,9 @@ jobs:
       - name: Check Svelte and TypeScript
         run: pnpm run check
 
+      - name: Validate database migrations (Expand-Contract safety)
+        run: pnpm run db:validate
+
       - name: Check formatting
         run: pnpm run format:check
 

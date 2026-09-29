@@ -19,7 +19,9 @@
 		"test:e2e": "playwright install && playwright test",
 		"db:generate": "drizzle-kit generate",
 		"db:migrate:local": "wrangler d1 migrations apply sns-project-db --local",
+		"db:migrate:preview": "wrangler d1 migrations apply sns-project-preview-db --remote --env preview",
 		"db:migrate:remote": "wrangler d1 migrations apply sns-project-db --remote",
+		"db:validate": "node --experimental-strip-types scripts/validate-migrations.ts",
 		"db:studio": "drizzle-kit studio"
 	},
 	"devDependencies": {

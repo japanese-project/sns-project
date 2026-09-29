@@ -27,6 +27,12 @@ export default defineConfig(
 					selector: ['variable', 'function'],
 					format: ['snake_case'],
 				},
+				{
+					// SvelteKit requires uppercase HTTP method exports (GET, POST, etc.)
+					selector: 'variable',
+					modifiers: ['exported', 'const'],
+					format: ['snake_case', 'UPPER_CASE'],
+				},
 			],
 		},
 	},
