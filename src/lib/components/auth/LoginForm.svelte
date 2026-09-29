@@ -1,6 +1,5 @@
 <script lang="ts">
 	import ArrowRightIcon from '@lucide/svelte/icons/arrow-right'
-	import { resolve } from '$app/paths'
 	import { Button } from '$lib/components/ui/button/index.js'
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js'
 	import { Label } from '$lib/components/ui/label/index.js'
@@ -100,7 +99,7 @@
 				autocomplete="email"
 				bind:value={email}
 				required
-				class="h-[3.15rem] rounded-xl border border-[#dfe3eb] bg-white px-4 text-sm text-[#25314b] outline-none transition placeholder:text-[#9ba2b1] focus:border-primary focus:ring-2 focus:ring-primary/15"
+				class="h-[3.15rem] rounded-xl border border-[#dfe3eb] bg-white px-4 text-sm text-[#25314b] transition outline-none placeholder:text-[#9ba2b1] focus:border-primary focus:ring-2 focus:ring-primary/15"
 			/>
 		</div>
 		<div class="grid gap-2">
@@ -113,11 +112,11 @@
 				autocomplete="current-password"
 				bind:value={password}
 				required
-				class="h-[3.15rem] rounded-xl border border-[#dfe3eb] bg-white px-4 text-sm text-[#25314b] outline-none transition placeholder:text-[#9ba2b1] focus:border-primary focus:ring-2 focus:ring-primary/15"
+				class="h-[3.15rem] rounded-xl border border-[#dfe3eb] bg-white px-4 text-sm text-[#25314b] transition outline-none placeholder:text-[#9ba2b1] focus:border-primary focus:ring-2 focus:ring-primary/15"
 			/>
 		</div>
 
-		<div class="flex items-center justify-between gap-2 text-[0.82rem] max-[375px]:text-[0.72rem]">
+		<div class="flex items-center gap-2 text-[0.82rem] max-[375px]:text-[0.72rem]">
 			<div class="flex items-center gap-2">
 				<Checkbox
 					id="remember_me"
@@ -128,11 +127,6 @@
 					>Remember me</Label
 				>
 			</div>
-			<Button
-				variant="link"
-				href={resolve('/forgot-password')}
-				class="h-auto p-0 font-bold text-[inherit] text-primary">Forgot password?</Button
-			>
 		</div>
 
 		<Button
@@ -152,15 +146,4 @@
 			</p>
 		{/if}
 	</form>
-
-	<div
-		class="mt-6 flex items-center justify-center gap-1 text-sm text-[#7a8395] max-[375px]:mt-4 max-[375px]:text-xs"
-	>
-		<span>New to Loop?</span>
-		<Button
-			variant="link"
-			href={resolve('/register')}
-			class="h-auto p-0 font-bold text-[inherit] text-primary">Create an account</Button
-		>
-	</div>
 </div>
