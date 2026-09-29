@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ArrowRightIcon from '@lucide/svelte/icons/arrow-right'
+	import { sign_in_with_google } from '$lib/auth-client'
 	import { Button } from '$lib/components/ui/button/index.js'
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js'
 	import { Label } from '$lib/components/ui/label/index.js'
@@ -9,6 +10,16 @@
 	let password = $state('')
 	let remember_me = $state(false)
 	let form_notice = $state('')
+	let loading = $state(false)
+
+	async function handle_google_login() {
+		loading = true
+		try {
+			await sign_in_with_google()
+		} catch {
+			loading = false
+		}
+	}
 
 	function handle_submit() {
 		form_notice = 'Your sign-in form is ready to connect to authentication.'
@@ -38,6 +49,8 @@
 		<Button
 			variant="outline"
 			type="button"
+			onclick={handle_google_login}
+			disabled={loading}
 			class="h-[3.15rem] gap-3 rounded-xl border-[#dfe3eb] bg-white text-sm font-bold text-[#25314b] shadow-none hover:-translate-y-px hover:bg-white hover:shadow-sm max-[375px]:h-11 max-[375px]:gap-2 max-[375px]:text-xs"
 		>
 			<svg class="size-[1.15rem]" viewBox="0 0 24 24" aria-hidden="true">
@@ -58,7 +71,7 @@
 					d="M12 5.9c1.5 0 2.8.5 3.9 1.5l2.9-2.8A9.8 9.8 0 0 0 2.9 7.4l3.4 2.7c.8-2.4 3.1-4.2 5.7-4.2"
 				/>
 			</svg>
-			Google
+			{loading ? 'Connecting…' : 'Google'}
 		</Button>
 		<Button
 			variant="outline"
