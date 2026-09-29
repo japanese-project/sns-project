@@ -3,14 +3,14 @@ pre-commit:
   commands:
     eslint:
       stage_fixed: true
-      glob: '*.{ts,tsx}'
+      glob: '*.{js,ts,tsx,svelte}'
       run: npm exec -- eslint --fix --quiet {staged_files}
 
 pre-push:
   parallel: true
   commands:
     audit:
-      run: npm audit
+      run: npm audit --audit-level=high
     check:
       run: npm run check
     format:
