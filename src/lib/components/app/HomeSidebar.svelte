@@ -267,8 +267,6 @@
 	<footer class="px-2 text-[11px] leading-relaxed text-slate-400">
 		<p class="flex flex-wrap gap-x-3 gap-y-1">
 			<a href={resolve('/explore')} class="hover:text-slate-600 hover:underline">Explore</a>
-			<a href={resolve('/login')} class="hover:text-slate-600 hover:underline">About</a>
-			<a href={resolve('/')} class="hover:text-slate-600 hover:underline">Privacy</a>
 			<span>© 2026 Loop</span>
 		</p>
 	</footer>

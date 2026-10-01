@@ -73,6 +73,7 @@ A user's profile represents their public identity on the platform.
 - **Username / Handle (`username`):** URL slug (e.g. `@ada`). Unique, lowercase alphanumeric characters plus underscores (`^[a-z0-9_]{3,30}$`).
   - _Bootstrap Rule:_ Automatically generated on first login from email prefix. If taken, a numerical suffix is appended.
   - _Fallback Rule:_ If a user somehow lacks a handle, routes fall back to `/u/<user_id>` gracefully.
+  - _Change Rule (MVP limitation):_ Users may change their username. The old handle is **not** kept as an alias or redirect, so existing links and bookmarks to `/u/<old>` stop resolving. `/u/<user_id>` always resolves and is the stable permalink. The edit form warns about this. _Post-MVP:_ a username-history table plus a reservation policy would allow old handles to redirect.
 - **Bio (`bio`):** Short user bio (max 160 characters), plaintext. _(Planned for profile edit milestone)_.
 - **Avatar (`image`):** Profile picture URL. When null, UI renders an accessible initials-based avatar chip.
 - **Joined Date (`created_at`):** Displayed formatted as "Joined Month Year" (e.g., "Joined October 2026").
@@ -102,6 +103,15 @@ To allow clean platform growth, content delivery is structured into two distinct
 - **Post Search:** Full-text substring search across visible posts with SQL wildcard escaping (`%` and `_`).
 - **Follow directly:** Users can follow people directly from search result rows with immediate optimistic UI feedback.
 
+### 3. Discovery Behavior & Known Limitations (MVP)
+
+These are deliberate trade-offs for the expected workload (< 10k users / posts). Each is bounded per request.
+
+- **People suggestions by interest:** Matches against **all** users in the database (interests are matched in SQL over the stored JSON list), excluding yourself and people you follow, newest accounts first, up to the requested limit (max 50). There is no "latest N users" window. Matching is case-insensitive for ASCII only. It still scans the user table per request; at larger scale, normalise interests into an indexed `user_interest` table.
+- **Trending topics:** Computed from a **sample**: the 500 most recent public posts that contain a `#` within the selected window (`today` / `week` / `month`). Posts without a hashtag don't use up that budget. Once a window holds more than 500 hashtagged posts, tags whose posts fall outside the newest 500 drop out even if still active, and counts are per sampled post rather than exact totals. At larger scale, use a materialized tag-count table or scheduled job.
+- **Post search:** A case-insensitive substring (`LIKE`) scan over visible posts. Cost per request is bounded by the query-length cap, page size and cursor pagination, but grows linearly with the posts table; at larger scale move to SQLite FTS5 or a search service.
+- **No rate limiting or response caching** is applied to these public endpoints in the app. Add edge rules (e.g. Cloudflare rate limiting) before opening to untrusted traffic.
+
 ---
 
 ## 5. In-App Notifications Specification
@@ -126,6 +136,7 @@ Notifications must take users directly to the referenced content:
 - **Follow:** Links to the follower's profile (`/u/:username`).
 - **Mark-as-Read:** Clicking any notification marks it read immediately (optimistic UI), decrementing the unread badge.
 - **Mark All as Read:** Header action clears all unread indicators at once.
+- **Unread Badge Refresh:** The nav badge refreshes when the shell mounts (only if the last count is older than 60 seconds), every 60 seconds, and immediately when notifications change (mark read). It deliberately does not refresh on every route change; navigating doesn't alter the count.
 
 ---
 

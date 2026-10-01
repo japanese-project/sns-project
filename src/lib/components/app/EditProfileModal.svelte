@@ -203,7 +203,8 @@
 					/>
 				</div>
 				<p class="mt-1 text-[0.68rem] text-slate-400">
-					Lowercase letters, numbers, and underscores.
+					Lowercase letters, numbers, and underscores. Changing it breaks existing links to your
+					profile.
 				</p>
 			</div>
 

@@ -1,3 +1,12 @@
+<script module lang="ts">
+	// Every page renders its own AppShell, so it remounts on each navigation. Keep the last
+	// unread count outside the component: a remount reuses it (no flash back to 0) and only
+	// re-fetches once it is older than the poll interval. Written only in the browser
+	// (onMount / event handlers), so it is never shared between requests during SSR.
+	const unread_poll_ms = 60_000
+	let unread_cache: { user_id: string; count: number; fetched_at: number } | null = null
+</script>
+
 <script lang="ts">
 	import { page } from '$app/state'
 	import { resolve } from '$app/paths'
@@ -44,27 +53,31 @@
 	async function refresh_unread() {
 		if (!user) return
 		try {
-			unread = (await api<{ unread_count: number }>('/api/notifications/unread-count')).unread_count
+			const count = (await api<{ unread_count: number }>('/api/notifications/unread-count'))
+				.unread_count
+			unread = count
+			unread_cache = { user_id: user.id, count, fetched_at: Date.now() }
 		} catch {
 			// Badge refresh is best-effort
 		}
 	}
 
+	// Refresh sources: mount (only if the cached count is stale), a 60s interval, and the
+	// `notifications:changed` event. Route changes need no refresh of their own: navigating
+	// never changes the count, and a page that does (/notifications) fires the event.
 	onMount(() => {
 		if (!user) return
-		void refresh_unread()
-		const timer = setInterval(refresh_unread, 60_000)
+		const fresh =
+			unread_cache?.user_id === user.id && Date.now() - unread_cache.fetched_at < unread_poll_ms
+		if (unread_cache?.user_id === user.id) unread = unread_cache.count
+		if (!fresh) void refresh_unread()
+		const timer = setInterval(refresh_unread, unread_poll_ms)
 		const on_change = () => void refresh_unread()
 		window.addEventListener('notifications:changed', on_change)
 		return () => {
 			clearInterval(timer)
 			window.removeEventListener('notifications:changed', on_change)
 		}
-	})
-
-	$effect(() => {
-		void path
-		if (user) void refresh_unread()
 	})
 
 	const nav_button =

@@ -11,3 +11,5 @@ export const DEFAULT_PAGE_SIZE = 20
 export const MAX_PAGE_SIZE = 50
 export const MAX_SUGGESTION_LIMIT = 50
 export const MAX_TRENDING_LIMIT = 25
+// Most recent public, hashtagged posts (within the chosen window) that trending analyses.
+export const TRENDING_SCAN_LIMIT = 500

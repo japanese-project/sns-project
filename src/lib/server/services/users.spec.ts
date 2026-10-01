@@ -272,6 +272,95 @@ describe('get_users_by_interests', () => {
 		expect(ids).toContain(gamer)
 		expect(ids).not.toContain(coder)
 	})
+
+	/** Inserts a user with an explicit signup time and raw `interests` column value. */
+	async function insert_user(name: string, created_at: Date, interests: string | null) {
+		const id = crypto.randomUUID()
+		await db.insert(user).values({
+			id,
+			name,
+			email: `${name.toLowerCase()}-${id.slice(0, 6)}@example.com`,
+			username: `${name.toLowerCase()}_${id.slice(0, 6)}`,
+			interests,
+			createdAt: created_at,
+			updatedAt: created_at,
+		})
+		return id
+	}
+
+	// Regression: matching used to run over only the 50 newest users, so an older account with
+	// a shared interest was silently excluded once enough newer accounts existed.
+	it('finds matching users no matter how many newer users exist', async () => {
+		const viewer = await make_user(db, 'CapViewer')
+		const veteran = await insert_user('Veteran', new Date('2020-01-01'), '["Gardening"]')
+		const now = Date.now()
+		for (let i = 0; i < 60; i++) {
+			await insert_user(`Newcomer${i}`, new Date(now - i * 1000), '["Cooking"]')
+		}
+		const matched = await get_users_by_interests(db, viewer, ['Gardening'])
+		expect(matched.map((u) => u.id)).toEqual([veteran])
+	})
+
+	it('matches case-insensitively, ignores blank and duplicate query values', async () => {
+		const viewer = await make_user(db, 'CaseViewer')
+		const fan = await insert_user('Fan', new Date(), '["Open Source"]')
+		const matched = await get_users_by_interests(db, viewer, [
+			' open SOURCE ',
+			'',
+			'  ',
+			'OPEN source',
+		])
+		expect(matched.map((u) => u.id)).toEqual([fan])
+	})
+
+	it('matches non-ASCII interests exactly', async () => {
+		const viewer = await make_user(db, 'JpViewer')
+		const fan = await insert_user('JpFan', new Date(), '["日本語","アニメ"]')
+		await insert_user('Other', new Date(), '["料理"]')
+		const matched = await get_users_by_interests(db, viewer, ['アニメ'])
+		expect(matched.map((u) => u.id)).toEqual([fan])
+	})
+
+	it('excludes the viewer and people they already follow', async () => {
+		const viewer = await insert_user('SelfMatch', new Date(), '["Hiking"]')
+		const followed = await insert_user('Followed', new Date(), '["Hiking"]')
+		const stranger = await insert_user('Stranger', new Date(), '["Hiking"]')
+		await make_follow(db, viewer, followed)
+		const matched = await get_users_by_interests(db, viewer, ['Hiking'])
+		expect(matched.map((u) => u.id)).toEqual([stranger])
+	})
+
+	it('returns newest accounts first and honours the limit', async () => {
+		const viewer = await make_user(db, 'OrderViewer')
+		const oldest = await insert_user('Oldest', new Date('2021-01-01'), '["Chess"]')
+		const middle = await insert_user('Middle', new Date('2022-01-01'), '["Chess"]')
+		const newest = await insert_user('Newest', new Date('2023-01-01'), '["Chess"]')
+		expect((await get_users_by_interests(db, viewer, ['Chess'])).map((u) => u.id)).toEqual([
+			newest,
+			middle,
+			oldest,
+		])
+		expect((await get_users_by_interests(db, viewer, ['Chess'], 2)).map((u) => u.id)).toEqual([
+			newest,
+			middle,
+		])
+	})
+
+	it('ignores users whose stored interests are null or malformed instead of failing', async () => {
+		const viewer = await make_user(db, 'RobustViewer')
+		await insert_user('NoInterests', new Date(), null)
+		await insert_user('Garbage', new Date(), 'not json at all')
+		const good = await insert_user('Good', new Date(), '["Yoga"]')
+		const matched = await get_users_by_interests(db, viewer, ['Yoga'])
+		expect(matched.map((u) => u.id)).toEqual([good])
+	})
+
+	it('falls back to suggested users when no usable interests are given', async () => {
+		const viewer = await make_user(db, 'FallbackViewer')
+		const other = await make_user(db, 'FallbackOther')
+		const matched = await get_users_by_interests(db, viewer, ['', '   '])
+		expect(matched.map((u) => u.id)).toEqual([other])
+	})
 })
 
 describe('ensure_username', () => {

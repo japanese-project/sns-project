@@ -1,5 +1,5 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { MAX_POST_LENGTH } from '$lib/limits'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { MAX_POST_LENGTH, TRENDING_SCAN_LIMIT } from '$lib/limits'
 import type { Db } from '../db'
 import { follow, post } from '../db/schema'
 import {
@@ -10,6 +10,7 @@ import {
 	list_feed,
 	update_post,
 } from './posts'
+import { new_id } from './cursor'
 import { create_test_db, make_follow, make_user } from './test-db'
 
 let db: Db
@@ -286,5 +287,66 @@ describe('get_trending_topics', () => {
 		const month_tags = month.map((t) => t.tag)
 		expect(month_tags).toContain('fresh')
 		expect(month_tags).toContain('retro')
+	})
+
+	describe('scan window', () => {
+		const one_day = 24 * 60 * 60 * 1000
+
+		// These tests assert on exact results, so start from no posts (the rest of this file
+		// shares one database).
+		beforeEach(async () => {
+			await db.delete(post)
+		})
+
+		async function insert_posts(rows: { content: string; created_at: Date }[]) {
+			// D1 allows at most 100 bound parameters per statement, so insert in small chunks.
+			for (let i = 0; i < rows.length; i += 10) {
+				await db.insert(post).values(
+					rows.slice(i, i + 10).map((row) => ({
+						id: new_id(),
+						userId: alice,
+						content: row.content,
+						visibility: 'public' as const,
+						createdAt: row.created_at,
+						updatedAt: row.created_at,
+					})),
+				)
+			}
+		}
+
+		it('is not crowded out by newer posts that contain no hashtag', async () => {
+			const now = Date.now()
+			await insert_posts([
+				{ content: 'older but tagged #keepme', created_at: new Date(now - 2 * one_day) },
+			])
+			await insert_posts(
+				Array.from({ length: TRENDING_SCAN_LIMIT + 20 }, (_, i) => ({
+					content: `plain chatter ${i}`,
+					created_at: new Date(now - i * 1000),
+				})),
+			)
+			const tags = (await get_trending_topics(db, 10, 'week')).map((t) => t.tag)
+			expect(tags).toContain('keepme')
+		})
+
+		// Pins the documented limitation: only the newest TRENDING_SCAN_LIMIT hashtagged posts in
+		// the window are analysed, so counts are per sampled post and older tags can drop out.
+		it('only analyses the newest TRENDING_SCAN_LIMIT hashtagged posts in the window', async () => {
+			const now = Date.now()
+			await insert_posts(
+				Array.from({ length: 3 }, (_, i) => ({
+					content: `still active this week #oldtag ${i}`,
+					created_at: new Date(now - 3 * one_day - i * 1000),
+				})),
+			)
+			await insert_posts(
+				Array.from({ length: TRENDING_SCAN_LIMIT }, (_, i) => ({
+					content: `busy #newtag ${i}`,
+					created_at: new Date(now - i * 1000),
+				})),
+			)
+			const topics = await get_trending_topics(db, 10, 'week')
+			expect(topics).toEqual([{ tag: 'newtag', count: TRENDING_SCAN_LIMIT }])
+		})
 	})
 })

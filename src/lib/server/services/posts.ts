@@ -2,7 +2,7 @@ import { and, desc, eq, gte, lt, or, sql, type SQL } from 'drizzle-orm'
 import { error } from '@sveltejs/kit'
 import type { Db } from '../db'
 import { comment, follow, like, post, user } from '../db/schema'
-import { MAX_POST_LENGTH, MAX_TRENDING_LIMIT } from '$lib/limits'
+import { MAX_POST_LENGTH, MAX_TRENDING_LIMIT, TRENDING_SCAN_LIMIT } from '$lib/limits'
 import type { Page, PostView, TrendingPeriod } from '$lib/types'
 import { validate_text } from '../validation'
 import { clamp_limit, decode_cursor, encode_cursor, like_pattern, new_id } from './cursor'
@@ -253,10 +253,13 @@ export function parse_trending_period(raw: string | null | undefined): TrendingP
  *   - `week`   – posts from the last 7 days (default)
  *   - `month`  – posts from the last 30 days
  *
- * Design note: this scans up to 500 recent public posts in-database within
- * the chosen window and aggregates hashtags application-side. This is
- * intentional for the expected workload (< 10k posts); at larger scale a
- * materialized tag-count table or scheduled worker would be appropriate.
+ * Known limitation (intentional): trending is computed from a sample, not from every post. It
+ * analyses the TRENDING_SCAN_LIMIT (500) most recent public posts that contain a `#` within the
+ * chosen window and aggregates hashtags application-side. Posts without a hashtag don't count
+ * against that budget, but once more than 500 hashtagged posts exist in a window, tags whose
+ * posts are older than the newest 500 drop out even if still active in that window, and counts
+ * are "per sampled post", not exact totals. That is acceptable for the expected workload
+ * (< 10k posts); beyond that, use a materialized tag-count table or a scheduled worker.
  */
 export async function get_trending_topics(
 	db: Db,
@@ -270,9 +273,17 @@ export async function get_trending_topics(
 	const rows = await db
 		.select({ content: post.content })
 		.from(post)
-		.where(and(sql`${post.visibility} = 'public'`, gte(post.createdAt, since)))
+		.where(
+			and(
+				sql`${post.visibility} = 'public'`,
+				gte(post.createdAt, since),
+				// Cheap superset of the hashtag regex below, so the scan budget is spent on posts
+				// that can actually contribute a tag.
+				sql`${post.content} like '%#%'`,
+			),
+		)
 		.orderBy(desc(post.createdAt))
-		.limit(500)
+		.limit(TRENDING_SCAN_LIMIT)
 
 	const counts = new Map<string, number>()
 	const regex = /(#[a-zA-Z0-9_\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]+)/g

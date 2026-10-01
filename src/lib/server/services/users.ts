@@ -2,7 +2,13 @@ import { and, desc, eq, isNull, ne, or, sql } from 'drizzle-orm'
 import { error } from '@sveltejs/kit'
 import type { Db } from '../db'
 import { follow, user } from '../db/schema'
-import { MAX_BIO_LENGTH, MAX_NAME_LENGTH, MAX_SUGGESTION_LIMIT } from '$lib/limits'
+import {
+	MAX_BIO_LENGTH,
+	MAX_INTEREST_LENGTH,
+	MAX_INTERESTS_COUNT,
+	MAX_NAME_LENGTH,
+	MAX_SUGGESTION_LIMIT,
+} from '$lib/limits'
 import type { UserListItem, UserSummary } from '$lib/types'
 import { is_unique_constraint_error, validate_interests } from '../validation'
 import { clamp_limit } from './cursor'
@@ -132,6 +138,9 @@ export async function update_user_profile(
 				'Username must be 3–30 characters and contain only lowercase letters, numbers, and underscores',
 			)
 		}
+		// Known limitation (intentional): the old username is not kept as an alias or redirect, so
+		// /u/<old> stops resolving once it changes. /u/<user id> always resolves and is the
+		// stable permalink. (Aliases would need a username-history table and a reservation policy.)
 		// Pre-check for a friendlier error message (non-atomic, see below for constraint catch).
 		const existing = await db
 			.select({ id: user.id })
@@ -273,11 +282,18 @@ export async function get_suggested_users(
 
 /**
  * Returns up to `limit` users (not self, not already followed) who share at least one interest
- * from the provided list. Falls back to recent users if no interests given.
+ * with `interests`, newest accounts first. Falls back to recent users if no usable interests
+ * are given.
  *
- * Design note: interest matching is done application-side over a capped set of recent users.
- * This is intentional for the current expected workload (< 10k users). At larger scale,
- * consider a dedicated interests index or a search service.
+ * Matching happens in the database (SQLite JSON1: `json_each` over the stored JSON array), so
+ * every user is considered. There is no "latest N users" cap: a matching user is never missed
+ * just because they signed up a while ago. Matching is case-insensitive for ASCII (SQLite's
+ * `lower()`); non-ASCII scripts such as Japanese have no case and match exactly.
+ *
+ * Design note: this still scans the user table (parsing each row's interests JSON) per request,
+ * with the result bounded by `limit`. That is intentional for the expected workload (< 10k
+ * users). At larger scale, normalise interests into a `user_interest(user_id, interest)` table
+ * with an index on `interest` and join against it instead.
  */
 export async function get_users_by_interests(
 	db: Db,
@@ -286,7 +302,20 @@ export async function get_users_by_interests(
 	limit = 5,
 ): Promise<UserListItem[]> {
 	limit = clamp_limit(limit, 5, MAX_SUGGESTION_LIMIT)
-	if (interests.length === 0) return get_suggested_users(db, viewer_id, limit)
+	const wanted = [
+		...new Set(
+			interests
+				.map((interest) => interest.trim().toLowerCase())
+				.filter((interest) => interest.length > 0 && interest.length <= MAX_INTEREST_LENGTH),
+		),
+	].slice(0, MAX_INTERESTS_COUNT)
+	if (wanted.length === 0) return get_suggested_users(db, viewer_id, limit)
+
+	// json_valid() guards json_each(), which throws on malformed JSON.
+	const shares_interest = sql<number>`case when json_valid(${user.interests}) then exists(select 1 from json_each(${user.interests}) as interest where lower(interest.value) in (${sql.join(
+		wanted.map((interest) => sql`${interest}`),
+		sql`, `,
+	)})) else 0 end`
 
 	const rows = await db
 		.select({
@@ -295,7 +324,6 @@ export async function get_users_by_interests(
 			username: user.username,
 			image: user.image,
 			bio: user.bio,
-			interests: user.interests,
 			is_following: viewer_id
 				? sql<number>`exists(select 1 from ${follow} where ${follow.followerId} = ${viewer_id} and ${follow.followingId} = ${user.id})`
 				: sql<number>`0`,
@@ -307,28 +335,16 @@ export async function get_users_by_interests(
 		.where(
 			viewer_id
 				? and(
+						shares_interest,
 						ne(user.id, viewer_id),
 						sql`not exists(select 1 from ${follow} where ${follow.followerId} = ${viewer_id} and ${follow.followingId} = ${user.id})`,
 					)
-				: undefined,
+				: shares_interest,
 		)
-		.orderBy(desc(user.createdAt))
-		.limit(50) // over-fetch then filter in JS for shared interests
+		.orderBy(desc(user.createdAt), desc(user.id))
+		.limit(limit)
 
-	// Filter to users who share at least one interest
-	const lower_interests = interests.map((i) => i.toLowerCase())
-	const with_shared = rows.filter((row) => {
-		if (!row.interests) return false
-		try {
-			const their: string[] = JSON.parse(row.interests)
-			return their.some((t) => lower_interests.includes(t.toLowerCase()))
-		} catch {
-			return false
-		}
-	})
-
-	const result = with_shared.slice(0, limit)
-	return result.map((row) => ({
+	return rows.map((row) => ({
 		...to_user_summary(row),
 		is_following: Boolean(row.is_following),
 		is_followed_by: Boolean(row.is_followed_by),
