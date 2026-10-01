@@ -47,12 +47,35 @@
 		}
 	}
 
+	let last_endpoint = $state('')
+
+	$effect(() => {
+		if (endpoint !== last_endpoint) {
+			last_endpoint = endpoint
+			next_cursor = null
+			posts = []
+			void load(true)
+		}
+	})
+
 	onMount(() => {
 		void load(true)
-		if (!accepts_new_posts) return
-		return composer.on_created((created) => {
-			posts = [created, ...posts.filter((p) => p.id !== created.id)]
-		})
+		const on_refresh = () => {
+			next_cursor = null
+			void load(true)
+		}
+		window.addEventListener('feed:refresh', on_refresh)
+
+		const cleanup_composer = accepts_new_posts
+			? composer.on_created((created) => {
+					posts = [created, ...posts.filter((p) => p.id !== created.id)]
+				})
+			: undefined
+
+		return () => {
+			window.removeEventListener('feed:refresh', on_refresh)
+			cleanup_composer?.()
+		}
 	})
 </script>
 

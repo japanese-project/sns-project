@@ -1,33 +1,25 @@
 <script lang="ts">
-	import ArrowRightIcon from '@lucide/svelte/icons/arrow-right'
 	import { sign_in_with_google } from '$lib/auth-client'
 	import { Button } from '$lib/components/ui/button/index.js'
-	import { Checkbox } from '$lib/components/ui/checkbox/index.js'
-	import { Label } from '$lib/components/ui/label/index.js'
-	import { Separator } from '$lib/components/ui/separator/index.js'
 
-	let email = $state('')
-	let password = $state('')
-	let remember_me = $state(false)
-	let form_notice = $state('')
 	let loading = $state(false)
+	let error_message = $state<string | null>(null)
 
 	async function handle_google_login() {
 		loading = true
+		error_message = null
 		try {
 			await sign_in_with_google()
-		} catch {
+		} catch (e) {
 			loading = false
+			error_message =
+				e instanceof Error ? e.message : 'Unable to connect to Google. Please try again.'
 		}
-	}
-
-	function handle_submit() {
-		form_notice = 'Your sign-in form is ready to connect to authentication.'
 	}
 </script>
 
 <div class="w-full max-w-[29rem] max-[375px]:max-w-[18rem]">
-	<div class="mb-7 max-[375px]:mb-5">
+	<div class="mb-8 max-[375px]:mb-5">
 		<p
 			class="mb-2 text-xs font-extrabold tracking-[0.12em] text-primary uppercase max-[375px]:text-[0.68rem]"
 		>
@@ -45,15 +37,15 @@
 		</p>
 	</div>
 
-	<div class="grid grid-cols-2 gap-3 max-[375px]:gap-2" aria-label="Social sign in options">
+	<div class="grid gap-4">
 		<Button
 			variant="outline"
 			type="button"
 			onclick={handle_google_login}
 			disabled={loading}
-			class="h-[3.15rem] gap-3 rounded-xl border-[#dfe3eb] bg-white text-sm font-bold text-[#25314b] shadow-none hover:-translate-y-px hover:bg-white hover:shadow-sm max-[375px]:h-11 max-[375px]:gap-2 max-[375px]:text-xs"
+			class="h-[3.45rem] w-full gap-3 rounded-2xl border-[#dfe3eb] bg-white text-base font-bold text-[#25314b] shadow-sm transition hover:-translate-y-px hover:border-slate-400 hover:bg-slate-50 hover:shadow max-[375px]:h-12 max-[375px]:text-sm"
 		>
-			<svg class="size-[1.15rem]" viewBox="0 0 24 24" aria-hidden="true">
+			<svg class="size-5 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
 				<path
 					fill="#4285f4"
 					d="M21.6 12.2c0-.7-.1-1.4-.2-2.1H12v4h5.4a4.6 4.6 0 0 1-2 3v2.6h3.3c1.9-1.8 2.9-4.4 2.9-7.5"
@@ -71,92 +63,26 @@
 					d="M12 5.9c1.5 0 2.8.5 3.9 1.5l2.9-2.8A9.8 9.8 0 0 0 2.9 7.4l3.4 2.7c.8-2.4 3.1-4.2 5.7-4.2"
 				/>
 			</svg>
-			{loading ? 'Connecting…' : 'Google'}
-		</Button>
-		<Button
-			variant="outline"
-			type="button"
-			class="h-[3.15rem] gap-3 rounded-xl border-[#dfe3eb] bg-white text-sm font-bold text-[#25314b] shadow-none hover:-translate-y-px hover:bg-white hover:shadow-sm max-[375px]:h-11 max-[375px]:gap-2 max-[375px]:text-xs"
-		>
-			<svg class="size-[1.15rem]" viewBox="0 0 24 24" aria-hidden="true">
-				<path
-					d="M17.1 12.5c0-2.7 2.2-4 2.3-4.1a5 5 0 0 0-3.9-2.1c-1.7-.2-3.2 1-4.1 1-.9 0-2.2-1-3.7-1A5.4 5.4 0 0 0 3.2 9c-1.9 3.3-.5 8.2 1.3 10.9.9 1.3 2 2.8 3.4 2.7 1.4-.1 1.9-.9 3.6-.9s2.2.9 3.6.9c1.5 0 2.5-1.3 3.4-2.6a12 12 0 0 0 1.5-3.2 4.7 4.7 0 0 1-2.9-4.3M14.4 4.6a4.8 4.8 0 0 0 1.1-3.4 4.9 4.9 0 0 0-3.2 1.7 4.5 4.5 0 0 0-1.1 3.3 4.1 4.1 0 0 0 3.2-1.6"
-				/>
-			</svg>
-			Apple
-		</Button>
-	</div>
-
-	<div
-		class="my-6 flex items-center gap-3 text-xs whitespace-nowrap text-[#9ba2b1] max-[375px]:my-4 max-[375px]:gap-2 max-[375px]:text-[0.68rem]"
-	>
-		<Separator class="min-w-0 flex-1 shrink" />
-		<span>or continue with email</span>
-		<Separator class="min-w-0 flex-1 shrink" />
-	</div>
-
-	<form
-		class="grid gap-[1.15rem] max-[375px]:gap-3"
-		onsubmit={(event) => {
-			event.preventDefault()
-			handle_submit()
-		}}
-	>
-		<div class="grid gap-2">
-			<Label for="email" class="text-sm font-bold text-[#25314b]">Email address</Label>
-			<input
-				id="email"
-				name="email"
-				type="email"
-				placeholder="you@example.com"
-				autocomplete="email"
-				bind:value={email}
-				required
-				class="h-[3.15rem] rounded-xl border border-[#dfe3eb] bg-white px-4 text-sm text-[#25314b] transition outline-none placeholder:text-[#9ba2b1] focus:border-primary focus:ring-2 focus:ring-primary/15"
-			/>
-		</div>
-		<div class="grid gap-2">
-			<Label for="password" class="text-sm font-bold text-[#25314b]">Password</Label>
-			<input
-				id="password"
-				name="password"
-				type="password"
-				placeholder="Enter your password"
-				autocomplete="current-password"
-				bind:value={password}
-				required
-				class="h-[3.15rem] rounded-xl border border-[#dfe3eb] bg-white px-4 text-sm text-[#25314b] transition outline-none placeholder:text-[#9ba2b1] focus:border-primary focus:ring-2 focus:ring-primary/15"
-			/>
-		</div>
-
-		<div class="flex items-center gap-2 text-[0.82rem] max-[375px]:text-[0.72rem]">
-			<div class="flex items-center gap-2">
-				<Checkbox
-					id="remember_me"
-					bind:checked={remember_me}
-					class="data-checked:border-primary data-checked:bg-primary"
-				/>
-				<Label for="remember_me" class="cursor-pointer font-normal text-[#59647a]"
-					>Remember me</Label
-				>
-			</div>
-		</div>
-
-		<Button
-			class="h-[3.45rem] rounded-[0.9rem] text-[0.92rem] font-extrabold shadow-[0_12px_25px_rgba(255,104,71,0.26)] hover:-translate-y-px hover:bg-[#f45a37] max-[375px]:h-12"
-			type="submit"
-		>
-			Sign in
-			<ArrowRightIcon data-icon="inline-end" class="size-4" />
+			{loading ? 'Connecting to Google…' : 'Continue with Google'}
 		</Button>
 
-		{#if form_notice}
+		{#if error_message}
 			<p
-				class="-mt-1 rounded-lg bg-primary/10 px-3 py-3 text-center text-xs leading-5 text-[#a43c25]"
-				role="status"
+				class="rounded-xl bg-rose-50 px-4 py-3 text-center text-xs font-medium text-rose-700"
+				role="alert"
 			>
-				{form_notice}
+				{error_message}
 			</p>
 		{/if}
-	</form>
+
+		<div
+			class="mt-4 rounded-2xl border border-slate-100 bg-slate-50/80 p-4 text-xs leading-5 text-slate-500"
+		>
+			<p class="font-semibold text-slate-700">Passwordless authentication</p>
+			<p class="mt-1">
+				Loop uses Google OAuth for instant, secure sign-in. Your account and profile are
+				automatically created on your first login.
+			</p>
+		</div>
+	</div>
 </div>

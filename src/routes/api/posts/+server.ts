@@ -5,9 +5,12 @@ import type { RequestHandler } from './$types'
 
 export const GET: RequestHandler = async ({ locals, url }) => {
 	const limit = url.searchParams.get('limit')
+	const feed_param = url.searchParams.get('feed')
+	const feed = feed_param === 'following' ? 'following' : 'global'
 	const page = await list_feed(locals.db, locals.user?.id ?? null, {
 		cursor: url.searchParams.get('cursor'),
 		limit: limit ? Number(limit) : undefined,
+		feed,
 	})
 	return json(page)
 }

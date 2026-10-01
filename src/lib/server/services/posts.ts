@@ -129,8 +129,13 @@ export async function create_post(
 export function list_feed(
 	db: Db,
 	viewer_id: string | null,
-	opts: { cursor?: string | null; limit?: number } = {},
+	opts: { cursor?: string | null; limit?: number; feed?: 'global' | 'following' } = {},
 ) {
+	if (opts.feed === 'following') {
+		if (!viewer_id) return Promise.resolve({ items: [], next_cursor: null })
+		const following_filter = sql<boolean>`(${post.userId} = ${viewer_id} or exists (select 1 from ${follow} where ${follow.followerId} = ${viewer_id} and ${follow.followingId} = ${post.userId}))`
+		return paginate(db, viewer_id, [following_filter], opts)
+	}
 	return paginate(db, viewer_id, [], opts)
 }
 

@@ -6,13 +6,15 @@
 	let {
 		handle,
 		following: server_following,
+		follows_you = false,
 		signed_in = true,
 		label_following = 'Following',
-		label_follow = 'Follow',
+		label_follow,
 		on_change,
 	}: {
 		handle: string
 		following: boolean
+		follows_you?: boolean
 		signed_in?: boolean
 		label_following?: string
 		label_follow?: string
@@ -23,6 +25,8 @@
 	let following = $derived(override ?? server_following)
 	let pending = $state(false)
 	let error_message = $state<string | null>(null)
+
+	let follow_label = $derived(label_follow ?? (follows_you ? 'Follow Back' : 'Follow'))
 
 	async function toggle() {
 		if (!signed_in) {
@@ -58,9 +62,11 @@
 		aria-pressed={following}
 		class="rounded-full px-4 py-1.5 text-xs font-semibold transition disabled:opacity-60 {following
 			? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-			: 'bg-black text-white hover:bg-slate-800'}"
+			: follows_you
+				? 'bg-indigo-600 text-white shadow-sm hover:bg-indigo-700'
+				: 'bg-black text-white hover:bg-slate-800'}"
 	>
-		{following ? label_following : label_follow}
+		{following ? label_following : follow_label}
 	</button>
 	{#if error_message}
 		<span class="mt-1 text-xs text-rose-600" role="alert">{error_message}</span>

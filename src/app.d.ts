@@ -9,7 +9,14 @@ declare global {
 		// interface Error {}
 		interface Locals {
 			db: Db
-			user: (User & { username?: string | null }) | null
+			user:
+				| (User & {
+						username?: string | null
+						bio?: string | null
+						interests?: string | null
+						onboarded?: boolean | null
+				  })
+				| null
 			session: Session | null
 		}
 		// interface PageData {}

@@ -29,8 +29,12 @@ export async function search_users(
 			name: user.name,
 			username: user.username,
 			image: user.image,
+			bio: user.bio,
 			is_following: viewer_id
 				? sql<number>`exists(select 1 from ${follow} where ${follow.followerId} = ${viewer_id} and ${follow.followingId} = ${user.id})`
+				: sql<number>`0`,
+			is_followed_by: viewer_id
+				? sql<number>`exists(select 1 from ${follow} where ${follow.followerId} = ${user.id} and ${follow.followingId} = ${viewer_id})`
 				: sql<number>`0`,
 		})
 		.from(user)
@@ -44,6 +48,7 @@ export async function search_users(
 	return rows.map((row) => ({
 		...to_user_summary(row),
 		is_following: Boolean(row.is_following),
+		is_followed_by: Boolean(row.is_followed_by),
 		is_self: viewer_id === row.id,
 	}))
 }

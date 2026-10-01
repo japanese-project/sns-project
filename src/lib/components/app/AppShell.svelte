@@ -13,13 +13,20 @@
 	import { composer } from '$lib/composer-state.svelte'
 	import Avatar from './Avatar.svelte'
 	import Composer from './Composer.svelte'
+	import OnboardingModal from './OnboardingModal.svelte'
 
 	let {
 		user,
 		title,
 		children,
 	}: {
-		user?: { id: string; name: string; image?: string | null; username?: string | null } | null
+		user?: {
+			id: string
+			name: string
+			image?: string | null
+			username?: string | null
+			onboarded?: boolean | null
+		} | null
 		title: string
 		children: Snippet
 	} = $props()
@@ -27,6 +34,7 @@
 	let unread = $state(0)
 	let me_handle = $derived(user ? (user.username ?? user.id) : null)
 	let path = $derived(page.url.pathname)
+	let onboarding_dismissed = $state(false)
 
 	async function refresh_unread() {
 		if (!user) return
@@ -74,6 +82,11 @@
 	>
 		<a
 			href={resolve('/')}
+			onclick={() => {
+				if (path === '/') {
+					window.dispatchEvent(new CustomEvent('feed:refresh'))
+				}
+			}}
 			aria-label="Home"
 			aria-current={path === '/' ? 'page' : undefined}
 			class="{nav_button} {path === '/' ? active : idle}"
@@ -153,11 +166,15 @@
 		</div>
 	</header>
 
-	<main class="mx-auto w-full max-w-2xl px-4 pt-4 pb-28 md:pb-16">
+	<main class="mx-auto w-full max-w-5xl px-4 pt-4 pb-28 md:pb-16">
 		{@render children()}
 	</main>
 
 	{#if user && composer.open}
 		<Composer {user} />
+	{/if}
+
+	{#if user && user.onboarded === false && !onboarding_dismissed}
+		<OnboardingModal {user} on_done={() => (onboarding_dismissed = true)} />
 	{/if}
 </div>

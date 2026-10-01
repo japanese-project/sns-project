@@ -40,16 +40,35 @@ export async function build_profile(
 		name: string
 		username: string | null
 		image: string | null
+		bio?: string | null
+		interests?: string | null
 		createdAt: Date
 	},
 ): Promise<ProfileView> {
+	const [count_data, is_fol, is_fol_by] = await Promise.all([
+		counts(db, target.id),
+		viewer_id && viewer_id !== target.id ? is_following(db, viewer_id, target.id) : false,
+		viewer_id && viewer_id !== target.id ? is_following(db, target.id, viewer_id) : false,
+	])
+
+	let interests_list: string[] = []
+	if (target.interests) {
+		try {
+			interests_list = JSON.parse(target.interests)
+		} catch {
+			interests_list = []
+		}
+	}
+
 	return {
 		user: to_user_summary(target),
+		bio: target.bio ?? null,
+		interests: interests_list,
 		joined_at: target.createdAt.toISOString(),
-		...(await counts(db, target.id)),
+		...count_data,
 		is_self: viewer_id === target.id,
-		is_following:
-			viewer_id && viewer_id !== target.id ? await is_following(db, viewer_id, target.id) : false,
+		is_following: is_fol,
+		is_followed_by: is_fol_by,
 	}
 }
 
@@ -101,9 +120,13 @@ async function list_related(
 			name: user.name,
 			username: user.username,
 			image: user.image,
+			bio: user.bio,
 			followed_at: follow.createdAt,
 			is_following: viewer_id
 				? sql<number>`exists(select 1 from ${follow} f2 where f2.follower_id = ${viewer_id} and f2.following_id = ${user.id})`
+				: sql<number>`0`,
+			is_followed_by: viewer_id
+				? sql<number>`exists(select 1 from ${follow} f3 where f3.follower_id = ${user.id} and f3.following_id = ${viewer_id})`
 				: sql<number>`0`,
 		})
 		.from(follow)
@@ -129,6 +152,7 @@ async function list_related(
 		items: page.map((row) => ({
 			...to_user_summary(row),
 			is_following: Boolean(row.is_following),
+			is_followed_by: Boolean(row.is_followed_by),
 			is_self: viewer_id === row.id,
 		})),
 		next_cursor: has_more && last ? encode_cursor(last.followed_at, last.id) : null,

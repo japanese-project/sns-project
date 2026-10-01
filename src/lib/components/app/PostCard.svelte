@@ -1,5 +1,6 @@
 <script lang="ts">
 	import HeartIcon from '@lucide/svelte/icons/heart'
+	import GlobeIcon from '@lucide/svelte/icons/globe'
 	import LockIcon from '@lucide/svelte/icons/lock'
 	import MessageCircleIcon from '@lucide/svelte/icons/message-circle'
 	import PencilIcon from '@lucide/svelte/icons/pencil'
@@ -29,11 +30,13 @@
 
 	// Optimistic like state: an override applied immediately and cleared (rolled back) if the
 	// request fails. Without an override the values come straight from the post prop.
+	let post_override = $state<PostView | null>(null)
+	let active_post = $derived(post_override ?? post)
 	let like_override = $state<{ liked: boolean; like_count: number } | null>(null)
 	let comment_override = $state<number | null>(null)
-	let liked = $derived(like_override?.liked ?? post.liked_by_me)
-	let like_count = $derived(like_override?.like_count ?? post.like_count)
-	let comment_count = $derived(comment_override ?? post.comment_count)
+	let liked = $derived(like_override?.liked ?? active_post.liked_by_me)
+	let like_count = $derived(like_override?.like_count ?? active_post.like_count)
+	let comment_count = $derived(comment_override ?? active_post.comment_count)
 	let like_pending = $state(false)
 	let comments_override = $state<boolean | null>(null)
 	let show_comments = $derived(comments_override ?? initial_open_comments)
@@ -85,6 +88,7 @@
 				method: 'PATCH',
 				body: { content: draft, visibility: draft_visibility },
 			})
+			post_override = updated
 			editing = false
 			on_updated?.(updated)
 		} catch (e) {
@@ -128,11 +132,13 @@
 				{#if post.author.username}<span>@{post.author.username}</span><span aria-hidden="true"
 						>•</span
 					>{/if}
-				<time datetime={post.created_at} title={new Date(post.created_at).toLocaleString()}
-					>{relative_time(post.created_at)}</time
+				<time
+					datetime={active_post.created_at}
+					title={new Date(active_post.created_at).toLocaleString()}
+					>{relative_time(active_post.created_at)}</time
 				>
-				{#if post.updated_at !== post.created_at}<span>(edited)</span>{/if}
-				{#if post.visibility === 'followers-only'}
+				{#if active_post.updated_at !== active_post.created_at}<span>(edited)</span>{/if}
+				{#if active_post.visibility === 'followers-only'}
 					<span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5"
 						><LockIcon class="size-3" /> Followers</span
 					>
@@ -145,8 +151,8 @@
 					type="button"
 					aria-label="Edit post"
 					onclick={() => {
-						draft = post.content
-						draft_visibility = post.visibility
+						draft = active_post.content
+						draft_visibility = active_post.visibility
 						editing = true
 					}}
 					class="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
@@ -164,42 +170,81 @@
 	</header>
 
 	{#if editing}
-		<form onsubmit={save_edit} class="mt-4 space-y-3">
+		<form
+			onsubmit={save_edit}
+			class="mt-4 space-y-3 rounded-2xl border border-indigo-200 bg-indigo-50/30 p-4 shadow-inner"
+		>
+			<div class="flex items-center justify-between">
+				<span
+					class="flex items-center gap-1.5 text-xs font-bold tracking-wider text-slate-700 uppercase"
+				>
+					<PencilIcon class="size-3.5 text-indigo-600" />
+					Edit post
+				</span>
+				<div
+					class="flex items-center gap-1 rounded-full bg-white p-0.5 text-xs ring-1 ring-slate-200"
+				>
+					<button
+						type="button"
+						onclick={() => (draft_visibility = 'public')}
+						class="flex items-center gap-1 rounded-full px-2.5 py-1 font-semibold transition {draft_visibility ===
+						'public'
+							? 'bg-black text-white'
+							: 'text-slate-600 hover:text-slate-900'}"
+					>
+						<GlobeIcon class="size-3" /> Public
+					</button>
+					<button
+						type="button"
+						onclick={() => (draft_visibility = 'followers-only')}
+						class="flex items-center gap-1 rounded-full px-2.5 py-1 font-semibold transition {draft_visibility ===
+						'followers-only'
+							? 'bg-black text-white'
+							: 'text-slate-600 hover:text-slate-900'}"
+					>
+						<LockIcon class="size-3" /> Followers
+					</button>
+				</div>
+			</div>
+
 			<textarea
 				bind:value={draft}
-				rows="4"
+				rows="3"
 				aria-label="Edit post text"
-				class="w-full resize-none rounded-2xl border-slate-200 bg-white text-slate-900"></textarea>
-			<div class="flex items-center justify-between gap-3 text-sm">
-				<select
-					bind:value={draft_visibility}
-					aria-label="Visibility"
-					class="rounded-full border-slate-200 py-1.5 text-xs"
-				>
-					<option value="public">Public</option>
-					<option value="followers-only">Followers only</option>
-				</select>
+				class="w-full resize-none rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-black focus:ring-2 focus:ring-black/10"
+			></textarea>
+
+			<div class="flex items-center justify-between text-xs">
 				<span
-					class="tabular-nums {draft.length > MAX_POST_LENGTH ? 'text-rose-600' : 'text-slate-400'}"
-					>{MAX_POST_LENGTH - draft.length}</span
+					class="tabular-nums {draft.length > MAX_POST_LENGTH
+						? 'font-bold text-rose-600'
+						: draft.length > MAX_POST_LENGTH - 50
+							? 'text-amber-600'
+							: 'text-slate-400'}"
 				>
+					{MAX_POST_LENGTH - draft.length} characters left
+				</span>
 				<div class="flex gap-2">
 					<button
 						type="button"
 						onclick={() => (editing = false)}
-						class="rounded-full px-4 py-1.5 text-slate-600 hover:bg-slate-100">Cancel</button
+						class="rounded-full px-3.5 py-1.5 font-semibold text-slate-600 hover:bg-white"
+						>Cancel</button
 					>
 					<button
 						type="submit"
 						disabled={saving || draft.trim().length === 0 || draft.length > MAX_POST_LENGTH}
-						class="rounded-full bg-black px-4 py-1.5 text-white disabled:bg-slate-400"
-						>{saving ? 'Saving…' : 'Save'}</button
+						class="rounded-full bg-black px-4 py-1.5 font-semibold text-white shadow-sm hover:bg-slate-800 disabled:opacity-50"
 					>
+						{saving ? 'Saving…' : 'Save changes'}
+					</button>
 				</div>
 			</div>
 		</form>
 	{:else}
-		<p class="mt-4 text-lg leading-relaxed whitespace-pre-wrap text-slate-900">{post.content}</p>
+		<p class="mt-4 text-lg leading-relaxed whitespace-pre-wrap text-slate-900">
+			{active_post.content}
+		</p>
 	{/if}
 
 	{#if confirming_delete}

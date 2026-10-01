@@ -185,3 +185,36 @@ describe('edit and delete', () => {
 		expect(await status_of(delete_post(db, alice, 'nope'))).toBe(404)
 	})
 })
+
+describe('feed separation (following vs global)', () => {
+	it('feed=following shows posts by followed users and own posts, but not strangers', async () => {
+		const u1 = await make_user(db, 'FeedUserOne')
+		const u2 = await make_user(db, 'FeedUserTwo')
+		const stranger = await make_user(db, 'FeedStranger')
+
+		const p1 = await create_post(db, u1, { content: 'from u1' })
+		const p2 = await create_post(db, u2, { content: 'from u2' })
+		const p_stranger = await create_post(db, stranger, { content: 'from stranger' })
+
+		// Before u1 follows u2: u1's following feed only has u1's post
+		const u1_feed_init = await list_feed(db, u1, { feed: 'following' })
+		expect(u1_feed_init.items.map((p) => p.id)).toEqual([p1.id])
+
+		// After u1 follows u2: u1's following feed has p2 and p1, but NOT p_stranger
+		await make_follow(db, u1, u2)
+		const u1_feed_after = await list_feed(db, u1, { feed: 'following' })
+		const ids = u1_feed_after.items.map((p) => p.id)
+		expect(ids).toContain(p1.id)
+		expect(ids).toContain(p2.id)
+		expect(ids).not.toContain(p_stranger.id)
+
+		// Anonymous following feed is empty
+		const anon_feed = await list_feed(db, null, { feed: 'following' })
+		expect(anon_feed.items).toHaveLength(0)
+
+		// Global feed includes all public posts
+		const global_feed = await list_feed(db, u1, { feed: 'global' })
+		const global_ids = global_feed.items.map((p) => p.id)
+		expect(global_ids).toContain(p_stranger.id)
+	})
+})

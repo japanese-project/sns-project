@@ -1,11 +1,51 @@
+import { list_feed } from '$lib/server/services/posts'
 import { parse_query, search_all } from '$lib/server/services/search'
+import { get_suggested_users } from '$lib/server/services/users'
 import type { PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	const viewer_id = locals.user?.id ?? null
 	const raw = url.searchParams.get('q')
-	if (raw === null || raw.trim() === '')
-		return { user: locals.user ?? null, query: '', results: null, error: null }
+
+	if (raw === null || raw.trim() === '') {
+		const [suggested_users, discovery_feed] = await Promise.all([
+			get_suggested_users(locals.db, viewer_id, 6),
+			list_feed(locals.db, viewer_id, { limit: 8 }),
+		])
+
+		let user_interests: string[] = []
+		if (locals.user?.interests) {
+			try {
+				user_interests = JSON.parse(locals.user.interests)
+			} catch {
+				user_interests = []
+			}
+		}
+
+		const default_topics = [
+			'Technology',
+			'Design',
+			'Photography',
+			'Art',
+			'Music',
+			'Gaming',
+			'OpenSource',
+			'Writing',
+		]
+		const topics = user_interests.length > 0 ? user_interests : default_topics
+
+		return {
+			user: locals.user ?? null,
+			query: '',
+			results: null,
+			discovery: {
+				suggested_users,
+				posts: discovery_feed.items,
+				topics,
+			},
+			error: null,
+		}
+	}
 
 	try {
 		const query = parse_query(raw)
@@ -13,11 +53,18 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			user: locals.user ?? null,
 			query,
 			results: await search_all(locals.db, viewer_id, query),
+			discovery: null,
 			error: null,
 		}
 	} catch (e) {
 		const message = e instanceof Error ? e.message : 'Search failed'
 		const body = (e as { body?: { message?: string } }).body
-		return { user: locals.user ?? null, query: raw, results: null, error: body?.message ?? message }
+		return {
+			user: locals.user ?? null,
+			query: raw,
+			results: null,
+			discovery: null,
+			error: body?.message ?? message,
+		}
 	}
 }

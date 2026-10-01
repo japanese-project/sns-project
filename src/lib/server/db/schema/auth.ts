@@ -17,6 +17,9 @@ export const user = sqliteTable(
 		// can be added without a backfill; it is assigned on sign-up and lazily for
 		// accounts created before it existed (see services/users.ts).
 		username: text('username'),
+		bio: text('bio'),
+		interests: text('interests'),
+		onboarded: integer('onboarded', { mode: 'boolean' }).notNull().default(false),
 		createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 		updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 	},

@@ -18,6 +18,7 @@
 	let load_error = $state<string | null>(null)
 	let text = $state('')
 	let reply_to = $state<CommentView | null>(null)
+	let reply_target_name = $state<string | null>(null)
 	let submitting = $state(false)
 	let submit_error = $state<string | null>(null)
 
@@ -58,6 +59,7 @@
 			}
 			text = ''
 			reply_to = null
+			reply_target_name = null
 			on_count(total(comments))
 		} catch (e) {
 			// Nothing was added optimistically, so a failure leaves the list and the draft untouched.
@@ -68,9 +70,10 @@
 	}
 </script>
 
-{#snippet row(comment: CommentView, nested: boolean)}
-	<li class="flex gap-3 {nested ? 'mt-3' : ''}">
-		<Avatar user={comment.author} size={nested ? 28 : 32} />
+{#snippet row(comment: CommentView, root_parent: CommentView | null)}
+	{@const is_nested = root_parent !== null}
+	<li class="flex gap-3 {is_nested ? 'mt-3' : ''}">
+		<Avatar user={comment.author} size={is_nested ? 28 : 32} />
 		<div class="min-w-0 flex-1">
 			<p class="text-sm">
 				<a
@@ -79,18 +82,28 @@
 				>
 				<span class="ml-1 text-xs text-slate-400">{relative_time(comment.created_at)}</span>
 			</p>
-			<p class="text-sm whitespace-pre-wrap text-slate-700">{comment.content}</p>
+			<p class="text-sm whitespace-pre-wrap text-slate-700">
+				{#if is_nested && comment.author.username}
+					<span class="font-medium text-indigo-600">@{comment.author.username} </span>
+				{/if}
+				{comment.content}
+			</p>
 			{#if signed_in}
 				<button
 					type="button"
-					onclick={() => (reply_to = comment)}
-					class="mt-0.5 text-xs font-medium text-slate-500 hover:text-slate-900">Reply</button
+					onclick={() => {
+						reply_to = root_parent ?? comment
+						reply_target_name = comment.author.name
+					}}
+					class="mt-0.5 text-xs font-medium text-slate-500 hover:text-slate-900"
 				>
+					{is_nested ? `Reply to ${comment.author.name}` : 'Reply'}
+				</button>
 			{/if}
-			{#if !nested && comment.replies.length > 0}
+			{#if !is_nested && comment.replies.length > 0}
 				<ul class="mt-2 border-l border-slate-200 pl-3">
 					{#each comment.replies as reply (reply.id)}
-						{@render row(reply, true)}
+						{@render row(reply, comment)}
 					{/each}
 				</ul>
 			{/if}
@@ -110,7 +123,7 @@
 	{:else}
 		<ul class="space-y-4">
 			{#each comments as comment (comment.id)}
-				{@render row(comment, false)}
+				{@render row(comment, null)}
 			{/each}
 		</ul>
 	{/if}
@@ -119,14 +132,22 @@
 		<form onsubmit={submit} class="mt-4 space-y-2">
 			{#if reply_to}
 				<p
-					class="flex items-center justify-between rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600"
+					class="flex items-center justify-between rounded-full border border-indigo-100 bg-indigo-50/80 px-3.5 py-1 text-xs text-indigo-700"
 				>
-					Replying to {reply_to.author.name}
+					<span>
+						Replying to <span class="font-bold">{reply_target_name ?? reply_to.author.name}</span>
+						{#if reply_target_name && reply_target_name !== reply_to.author.name}
+							<span class="text-[11px] text-slate-400"> (in thread)</span>
+						{/if}
+					</span>
 					<button
 						type="button"
-						onclick={() => (reply_to = null)}
+						onclick={() => {
+							reply_to = null
+							reply_target_name = null
+						}}
 						aria-label="Cancel reply"
-						class="font-medium">✕</button
+						class="font-bold hover:text-indigo-900">✕</button
 					>
 				</p>
 			{/if}

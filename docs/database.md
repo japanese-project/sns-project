@@ -40,6 +40,9 @@ erDiagram
         string email UK
         string image
         string username UK
+        string bio
+        string interests
+        boolean onboarded
         datetime created_at
     }
 

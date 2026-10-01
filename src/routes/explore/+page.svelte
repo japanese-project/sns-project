@@ -1,5 +1,8 @@
 <script lang="ts">
+	import CompassIcon from '@lucide/svelte/icons/compass'
 	import SearchIcon from '@lucide/svelte/icons/search'
+	import SparklesIcon from '@lucide/svelte/icons/sparkles'
+	import TrendingUpIcon from '@lucide/svelte/icons/trending-up'
 	import { goto } from '$app/navigation'
 	import { resolve } from '$app/paths'
 	import AppShell from '$lib/components/app/AppShell.svelte'
@@ -26,11 +29,17 @@
 
 	let posts = $derived([...(data.results?.posts ?? []), ...extra_posts])
 
+	function search_for(q: string) {
+		const trimmed = q.trim()
+		const path = resolve('/explore')
+		const destination = trimmed ? `${path}?q=${encodeURIComponent(trimmed)}` : path
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
+		void goto(destination as `/${string}`)
+	}
+
 	function submit(event: SubmitEvent) {
 		event.preventDefault()
-		const q = input.trim()
-		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		void goto(q ? `${resolve('/explore')}?q=${encodeURIComponent(q)}` : resolve('/explore'))
+		search_for(input)
 	}
 
 	async function load_more() {
@@ -70,11 +79,72 @@
 	<div class="mt-8 space-y-8">
 		{#if data.error}
 			<p class="rounded-3xl bg-rose-50 p-4 text-sm text-rose-700" role="alert">{data.error}</p>
-		{:else if !data.results}
-			<p class="py-12 text-center text-slate-500">
-				Type a name, @username, or some words from a post.
-			</p>
-		{:else}
+		{:else if !data.results && data.discovery}
+			<!-- Discovery Mode: Interests / Topics -->
+			<section aria-labelledby="topics-heading">
+				<div class="mb-3 flex items-center gap-2 px-2 text-slate-700">
+					<TrendingUpIcon class="size-4 text-indigo-600" />
+					<h2
+						id="topics-heading"
+						class="text-xs font-semibold tracking-widest text-slate-500 uppercase"
+					>
+						Explore Topics
+					</h2>
+				</div>
+				<div class="flex flex-wrap gap-2">
+					{#each data.discovery.topics as topic (topic)}
+						<button
+							type="button"
+							onclick={() => search_for(topic)}
+							class="rounded-full border border-slate-200 bg-white/80 px-4 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+						>
+							#{topic}
+						</button>
+					{/each}
+				</div>
+			</section>
+
+			<!-- Discovery Mode: Suggested People -->
+			{#if data.discovery.suggested_users.length > 0}
+				<section aria-labelledby="suggested-heading">
+					<div class="mb-3 flex items-center gap-2 px-2 text-slate-700">
+						<SparklesIcon class="size-4 text-amber-500" />
+						<h2
+							id="suggested-heading"
+							class="text-xs font-semibold tracking-widest text-slate-500 uppercase"
+						>
+							People to Discover
+						</h2>
+					</div>
+					<ul class="space-y-2.5">
+						{#each data.discovery.suggested_users as person (person.id)}
+							<UserRow {person} signed_in={data.user !== null} />
+						{/each}
+					</ul>
+				</section>
+			{/if}
+
+			<!-- Discovery Mode: Recent / Popular Posts -->
+			{#if data.discovery.posts.length > 0}
+				<section aria-labelledby="recent-heading">
+					<div class="mb-3 flex items-center gap-2 px-2 text-slate-700">
+						<CompassIcon class="size-4 text-indigo-600" />
+						<h2
+							id="recent-heading"
+							class="text-xs font-semibold tracking-widest text-slate-500 uppercase"
+						>
+							Recent Discussions
+						</h2>
+					</div>
+					<div class="space-y-6">
+						{#each data.discovery.posts as post (post.id)}
+							<PostCard {post} signed_in={data.user !== null} />
+						{/each}
+					</div>
+				</section>
+			{/if}
+		{:else if data.results}
+			<!-- Search Results Mode -->
 			<section aria-labelledby="people-heading">
 				<h2
 					id="people-heading"

@@ -15,6 +15,13 @@
       "when": 1790825265479,
       "tag": "0001_chief_captain_stacy",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790831057989,
+      "tag": "0002_flaky_captain_flint",
+      "breakpoints": true
     }
   ]
 }

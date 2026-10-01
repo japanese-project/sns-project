@@ -2,35 +2,69 @@
 	import { resolve } from '$app/paths'
 	import AppShell from '$lib/components/app/AppShell.svelte'
 	import Avatar from '$lib/components/app/Avatar.svelte'
+	import EditProfileModal from '$lib/components/app/EditProfileModal.svelte'
 	import FollowButton from '$lib/components/app/FollowButton.svelte'
 	import PostList from '$lib/components/app/PostList.svelte'
+	import type { ProfileView } from '$lib/types'
 
 	let { data } = $props()
 
+	let profile_override = $state<ProfileView | null>(null)
+	let profile = $derived(profile_override ?? data.profile)
 	let follow_state = $state<{ following: boolean; follower_count: number } | null>(null)
-	let profile = $derived(data.profile)
 	let following = $derived(follow_state?.following ?? profile.is_following)
 	let follower_count = $derived(follow_state?.follower_count ?? profile.follower_count)
 	let joined = $derived(
 		new Date(profile.joined_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
 	)
+	let show_edit_modal = $state(false)
 </script>
 
 <AppShell user={data.user} title={profile.is_self ? 'Profile' : profile.user.name}>
 	<section class="rounded-[2.5rem] bg-white/80 p-8 text-center shadow-sm ring-1 ring-slate-200/70">
 		<div class="flex justify-center"><Avatar user={profile.user} size={96} /></div>
 		<h2 class="mt-4 text-2xl font-bold text-slate-900">{profile.user.name}</h2>
-		{#if profile.user.username}<p class="text-slate-500">@{profile.user.username}</p>{/if}
+		<div class="flex items-center justify-center gap-2">
+			{#if profile.user.username}<p class="text-slate-500">@{profile.user.username}</p>{/if}
+			{#if !profile.is_self && profile.is_followed_by}
+				<span class="rounded bg-slate-100 px-2 py-0.5 text-[0.68rem] font-semibold text-slate-600">
+					Follows you
+				</span>
+			{/if}
+		</div>
 		<p class="mt-1 text-sm text-slate-400">Joined {joined}</p>
+
+		{#if profile.bio}
+			<p class="mx-auto mt-3 max-w-md text-sm whitespace-pre-wrap text-slate-700">{profile.bio}</p>
+		{/if}
+
+		{#if profile.interests && profile.interests.length > 0}
+			<div class="mt-3 flex flex-wrap justify-center gap-1.5">
+				{#each profile.interests as interest (interest)}
+					<span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+						#{interest}
+					</span>
+				{/each}
+			</div>
+		{/if}
 
 		<div class="mt-5 flex justify-center">
 			{#if !profile.is_self}
 				<FollowButton
 					handle={profile.user.handle}
 					{following}
+					follows_you={Boolean(profile.is_followed_by)}
 					signed_in={data.user !== null}
 					on_change={(s) => (follow_state = s)}
 				/>
+			{:else}
+				<button
+					type="button"
+					onclick={() => (show_edit_modal = true)}
+					class="rounded-full bg-black px-6 py-2 text-xs font-bold text-white shadow-sm hover:bg-slate-800"
+				>
+					Edit Profile
+				</button>
 			{/if}
 		</div>
 
@@ -51,6 +85,20 @@
 			</a>
 		</dl>
 	</section>
+
+	{#if show_edit_modal}
+		<EditProfileModal
+			user={profile.user}
+			on_close={() => (show_edit_modal = false)}
+			on_saved={(updated) => {
+				profile_override = {
+					...profile,
+					user: { ...profile.user, ...updated },
+					bio: updated.bio ?? null,
+				}
+			}}
+		/>
+	{/if}
 
 	<h3 class="mt-10 mb-4 px-2 text-xs font-semibold tracking-widest text-slate-400 uppercase">
 		Posts

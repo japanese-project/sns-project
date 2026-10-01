@@ -3,5 +3,7 @@
 export const MAX_POST_LENGTH = 500
 export const MAX_COMMENT_LENGTH = 500
 export const MAX_SEARCH_LENGTH = 100
+export const MAX_BIO_LENGTH = 160
+export const MAX_NAME_LENGTH = 50
 export const DEFAULT_PAGE_SIZE = 20
 export const MAX_PAGE_SIZE = 50

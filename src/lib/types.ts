@@ -8,10 +8,12 @@ export interface UserSummary {
 	/** Value used in /u/:handle URLs: the username, or the id for users without one yet. */
 	handle: string
 	image: string | null
+	bio?: string | null
 }
 
 export interface UserListItem extends UserSummary {
 	is_following: boolean
+	is_followed_by?: boolean
 	is_self: boolean
 }
 
@@ -52,10 +54,13 @@ export interface NotificationView {
 
 export interface ProfileView {
 	user: UserSummary
+	bio: string | null
+	interests: string[]
 	joined_at: string
 	follower_count: number
 	following_count: number
 	is_following: boolean
+	is_followed_by: boolean
 	is_self: boolean
 }
 
