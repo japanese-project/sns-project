@@ -2,7 +2,6 @@
 	import { goto } from '$app/navigation'
 	import { resolve } from '$app/paths'
 	import GlobeIcon from '@lucide/svelte/icons/globe'
-	import SparklesIcon from '@lucide/svelte/icons/sparkles'
 	import UsersIcon from '@lucide/svelte/icons/users'
 	import AppShell from '$lib/components/app/AppShell.svelte'
 	import HomeSidebar from '$lib/components/app/HomeSidebar.svelte'
@@ -35,14 +34,12 @@
 
 <AppShell user={data.user} title="Home">
 	<div class="mx-auto flex w-full max-w-5xl items-start justify-center gap-8">
-		<!-- Main Stream -->
+		<!-- Primary Feed Stream -->
 		<div class="w-full max-w-2xl min-w-0 flex-1">
-			<!-- Integrated Feed Header & Tab Switcher -->
-			<div
-				class="mb-6 overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 shadow-xs"
-			>
+			<!-- Clean, Minimal Segmented Feed Switcher -->
+			<div class="mb-5 flex justify-center">
 				<div
-					class="flex border-b border-slate-200/80 text-sm font-semibold"
+					class="inline-flex items-center rounded-full bg-slate-200/70 p-1 text-xs font-semibold backdrop-blur-xs"
 					role="tablist"
 					aria-label="Feed selection"
 				>
@@ -51,18 +48,13 @@
 						role="tab"
 						aria-selected={active_tab === 'following'}
 						onclick={() => set_tab('following')}
-						class="relative flex flex-1 items-center justify-center gap-2 py-3.5 transition {active_tab ===
+						class="flex items-center gap-1.5 rounded-full px-4 py-1.5 transition {active_tab ===
 						'following'
-							? 'font-bold text-slate-900'
-							: 'text-slate-500 hover:text-slate-800'}"
+							? 'bg-white font-bold text-slate-900 shadow-xs'
+							: 'text-slate-600 hover:text-slate-900'}"
 					>
-						<UsersIcon
-							class="size-4 {active_tab === 'following' ? 'text-black' : 'text-slate-400'}"
-						/>
-						Following
-						{#if active_tab === 'following'}
-							<span class="absolute inset-x-6 bottom-0 h-0.5 rounded-full bg-black"></span>
-						{/if}
+						<UsersIcon class="size-3.5" />
+						<span>Following</span>
 					</button>
 
 					<button
@@ -70,49 +62,26 @@
 						role="tab"
 						aria-selected={active_tab === 'global'}
 						onclick={() => set_tab('global')}
-						class="relative flex flex-1 items-center justify-center gap-2 py-3.5 transition {active_tab ===
+						class="flex items-center gap-1.5 rounded-full px-4 py-1.5 transition {active_tab ===
 						'global'
-							? 'font-bold text-slate-900'
-							: 'text-slate-500 hover:text-slate-800'}"
+							? 'bg-white font-bold text-slate-900 shadow-xs'
+							: 'text-slate-600 hover:text-slate-900'}"
 					>
-						<GlobeIcon class="size-4 {active_tab === 'global' ? 'text-black' : 'text-slate-400'}" />
-						Global
-						{#if active_tab === 'global'}
-							<span class="absolute inset-x-6 bottom-0 h-0.5 rounded-full bg-black"></span>
-						{/if}
+						<GlobeIcon class="size-3.5" />
+						<span>Global</span>
 					</button>
-				</div>
-
-				<!-- Subtle Feed Context Bar -->
-				<div
-					class="flex items-center justify-between bg-slate-50/70 px-4 py-2 text-xs text-slate-500"
-				>
-					{#if active_tab === 'following'}
-						<span>Posts from accounts you follow</span>
-						{#if !signed_in}
-							<a href={resolve('/login')} class="font-semibold text-slate-800 hover:underline">
-								Sign in
-							</a>
-						{/if}
-					{:else}
-						<span>Recent public posts across the network</span>
-						<a
-							href={resolve('/explore')}
-							class="flex items-center gap-1 font-semibold text-slate-800 hover:underline"
-						>
-							<SparklesIcon class="size-3" /> Explore more
-						</a>
-					{/if}
 				</div>
 			</div>
 
-			<!-- Posts stream -->
+			<!-- Posts stream starting immediately below navigation -->
 			<PostList {endpoint} {signed_in} accepts_new_posts={signed_in} {empty_message} />
 		</div>
 
-		<!-- Right-side Discovery Sidebar (Visible on xl screens and above) -->
-		<aside class="sticky top-20 hidden w-72 shrink-0 lg:w-80 xl:block">
-			<HomeSidebar suggested_users={data.suggested_users} {signed_in} />
-		</aside>
+		<!-- Right-side Discovery Sidebar (Visible on xl screens only, secondary and quiet) -->
+		{#if data.suggested_users && data.suggested_users.length > 0}
+			<aside class="sticky top-20 hidden w-64 shrink-0 xl:block">
+				<HomeSidebar suggested_users={data.suggested_users} {signed_in} />
+			</aside>
+		{/if}
 	</div>
 </AppShell>
