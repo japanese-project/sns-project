@@ -2,6 +2,14 @@
 
 A small social app — posts, likes, comments, follow — built with [SvelteKit](https://svelte.dev/docs/kit) and deployed on [Cloudflare Workers](https://developers.cloudflare.com/workers/).
 
+## Quick links
+
+- **Live app:** <https://sns-project.sreng087.workers.dev> — production, deployed from `main` (Google sign-in required)
+- **Health check:** <https://sns-project.sreng087.workers.dev/api/health>
+- **What it does:** [Roadmap & product spec](./docs/roadmap.md)
+- **Review a change:** [open pull requests](https://github.com/japanese-project/sns-project/pulls) — the bot posts each PR's preview URL in its comments
+- **Tracked work:** [issues](https://github.com/japanese-project/sns-project/issues)
+
 ## Docs
 
 - [Roadmap](./docs/roadmap.md) — MVP must-have phases, access rules, and post-MVP backlog
