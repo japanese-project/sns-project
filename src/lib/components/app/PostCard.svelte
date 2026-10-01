@@ -4,6 +4,7 @@
 	import MessageCircleIcon from '@lucide/svelte/icons/message-circle'
 	import PencilIcon from '@lucide/svelte/icons/pencil'
 	import TrashIcon from '@lucide/svelte/icons/trash'
+	import { goto } from '$app/navigation'
 	import { resolve } from '$app/paths'
 	import { api } from '$lib/api'
 	import { MAX_POST_LENGTH } from '$lib/limits'
@@ -15,9 +16,11 @@
 	let {
 		post,
 		signed_in,
+		initial_open_comments = false,
 		on_deleted,
 		on_updated,
 	}: {
+		initial_open_comments?: boolean
 		post: PostView
 		signed_in: boolean
 		on_deleted?: (id: string) => void
@@ -32,7 +35,8 @@
 	let like_count = $derived(like_override?.like_count ?? post.like_count)
 	let comment_count = $derived(comment_override ?? post.comment_count)
 	let like_pending = $state(false)
-	let show_comments = $state(false)
+	let comments_override = $state<boolean | null>(null)
+	let show_comments = $derived(comments_override ?? initial_open_comments)
 	let error_message = $state<string | null>(null)
 
 	let editing = $state(false)
@@ -43,7 +47,11 @@
 	let deleting = $state(false)
 
 	async function toggle_like() {
-		if (!signed_in || like_pending) return
+		if (!signed_in) {
+			void goto(resolve('/login'))
+			return
+		}
+		if (like_pending) return
 		const previous = { liked, like_count }
 		like_pending = true
 		error_message = null
@@ -234,7 +242,7 @@
 		</button>
 		<button
 			type="button"
-			onclick={() => (show_comments = !show_comments)}
+			onclick={() => (comments_override = !show_comments)}
 			aria-expanded={show_comments}
 			class="flex items-center gap-1.5 hover:text-slate-900"
 		>

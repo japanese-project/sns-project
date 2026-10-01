@@ -4,6 +4,7 @@
 	import BellIcon from '@lucide/svelte/icons/bell'
 	import CompassIcon from '@lucide/svelte/icons/compass'
 	import HouseIcon from '@lucide/svelte/icons/house'
+	import LogInIcon from '@lucide/svelte/icons/log-in'
 	import LogOutIcon from '@lucide/svelte/icons/log-out'
 	import PencilIcon from '@lucide/svelte/icons/pencil'
 	import { onMount, type Snippet } from 'svelte'
@@ -18,16 +19,17 @@
 		title,
 		children,
 	}: {
-		user: { id: string; name: string; image?: string | null; username?: string | null }
+		user?: { id: string; name: string; image?: string | null; username?: string | null } | null
 		title: string
 		children: Snippet
 	} = $props()
 
 	let unread = $state(0)
-	let me_handle = $derived(user.username ?? user.id)
+	let me_handle = $derived(user ? (user.username ?? user.id) : null)
 	let path = $derived(page.url.pathname)
 
 	async function refresh_unread() {
+		if (!user) return
 		try {
 			unread = (await api<{ unread_count: number }>('/api/notifications/unread-count')).unread_count
 		} catch {
@@ -36,6 +38,7 @@
 	}
 
 	onMount(() => {
+		if (!user) return
 		void refresh_unread()
 		const timer = setInterval(refresh_unread, 60_000)
 		const on_change = () => void refresh_unread()
@@ -49,7 +52,7 @@
 	// Re-check the badge after navigation (e.g. leaving the notifications page).
 	$effect(() => {
 		void path
-		void refresh_unread()
+		if (user) void refresh_unread()
 	})
 
 	const nav_button = 'relative flex size-12 items-center justify-center rounded-full transition'
@@ -85,38 +88,46 @@
 		>
 			<CompassIcon class="size-5" />
 		</a>
-		<a
-			href={resolve('/notifications')}
-			aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
-			aria-current={path.startsWith('/notifications') ? 'page' : undefined}
-			class="{nav_button} {path.startsWith('/notifications') ? active : idle}"
-		>
-			<BellIcon class="size-5" />
-			{#if unread > 0}
-				<span
-					class="absolute top-2 right-2 flex min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] leading-4 font-semibold text-white"
-					data-testid="unread-badge">{unread > 99 ? '99+' : unread}</span
-				>
-			{/if}
-		</a>
-		<a
-			href={resolve('/u/[handle]', { handle: me_handle })}
-			aria-label="My profile"
-			aria-current={path.startsWith('/u/') && path.split('/')[2] === me_handle ? 'page' : undefined}
-			class="{nav_button} {path.split('/')[2] === me_handle && path.startsWith('/u/')
-				? active
-				: idle}"
-		>
-			<Avatar {user} size={32} />
-		</a>
-		<button
-			type="button"
-			aria-label="Sign out"
-			onclick={handle_sign_out}
-			class="{nav_button} {idle} hidden md:flex"
-		>
-			<LogOutIcon class="size-5" />
-		</button>
+		{#if user && me_handle}
+			<a
+				href={resolve('/notifications')}
+				aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
+				aria-current={path.startsWith('/notifications') ? 'page' : undefined}
+				class="{nav_button} {path.startsWith('/notifications') ? active : idle}"
+			>
+				<BellIcon class="size-5" />
+				{#if unread > 0}
+					<span
+						class="absolute top-2 right-2 flex min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] leading-4 font-semibold text-white"
+						data-testid="unread-badge">{unread > 99 ? '99+' : unread}</span
+					>
+				{/if}
+			</a>
+			<a
+				href={resolve('/u/[handle]', { handle: me_handle })}
+				aria-label="My profile"
+				aria-current={path.startsWith('/u/') && path.split('/')[2] === me_handle
+					? 'page'
+					: undefined}
+				class="{nav_button} {path.split('/')[2] === me_handle && path.startsWith('/u/')
+					? active
+					: idle}"
+			>
+				<Avatar {user} size={32} />
+			</a>
+			<button
+				type="button"
+				aria-label="Sign out"
+				onclick={handle_sign_out}
+				class="{nav_button} {idle} hidden md:flex"
+			>
+				<LogOutIcon class="size-5" />
+			</button>
+		{:else}
+			<a href={resolve('/login')} aria-label="Sign in" class="{nav_button} {idle}">
+				<LogInIcon class="size-5" />
+			</a>
+		{/if}
 	</nav>
 
 	<header class="sticky top-0 z-20 flex justify-center px-4 pt-6 pb-2">
@@ -124,14 +135,21 @@
 			class="flex items-center gap-4 rounded-full bg-white/80 px-6 py-3 shadow-md ring-1 shadow-slate-900/5 ring-slate-200 backdrop-blur"
 		>
 			<h1 class="text-sm font-semibold text-slate-800">{title}</h1>
-			<span class="h-4 w-px bg-slate-200"></span>
-			<button
-				type="button"
-				onclick={() => composer.show()}
-				class="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900"
-			>
-				<PencilIcon class="size-4" /> Share a thought…
-			</button>
+			{#if user}
+				<span class="h-4 w-px bg-slate-200"></span>
+				<button
+					type="button"
+					onclick={() => composer.show()}
+					class="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900"
+				>
+					<PencilIcon class="size-4" /> Share a thought…
+				</button>
+			{:else}
+				<span class="h-4 w-px bg-slate-200"></span>
+				<a href={resolve('/login')} class="text-sm font-medium text-slate-600 hover:text-slate-900">
+					Sign in
+				</a>
+			{/if}
 		</div>
 	</header>
 
@@ -139,7 +157,7 @@
 		{@render children()}
 	</main>
 
-	{#if composer.open}
+	{#if user && composer.open}
 		<Composer {user} />
 	{/if}
 </div>

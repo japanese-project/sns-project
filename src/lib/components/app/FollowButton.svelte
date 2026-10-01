@@ -1,15 +1,19 @@
 <script lang="ts">
+	import { goto } from '$app/navigation'
+	import { resolve } from '$app/paths'
 	import { api } from '$lib/api'
 
 	let {
 		handle,
 		following: server_following,
+		signed_in = true,
 		label_following = 'Following',
 		label_follow = 'Follow',
 		on_change,
 	}: {
 		handle: string
 		following: boolean
+		signed_in?: boolean
 		label_following?: string
 		label_follow?: string
 		on_change?: (state: { following: boolean; follower_count: number }) => void
@@ -21,6 +25,10 @@
 	let error_message = $state<string | null>(null)
 
 	async function toggle() {
+		if (!signed_in) {
+			void goto(resolve('/login'))
+			return
+		}
 		if (pending) return
 		const previous = following
 		pending = true
@@ -48,12 +56,13 @@
 		onclick={toggle}
 		disabled={pending}
 		aria-pressed={following}
-		class="rounded-full px-5 py-2 text-sm font-medium transition disabled:opacity-60 {following
-			? 'bg-white text-slate-800 ring-1 ring-slate-300 hover:bg-slate-50'
+		class="rounded-full px-4 py-1.5 text-xs font-semibold transition disabled:opacity-60 {following
+			? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
 			: 'bg-black text-white hover:bg-slate-800'}"
 	>
 		{following ? label_following : label_follow}
 	</button>
-	{#if error_message}<span class="mt-1 text-xs text-rose-600" role="alert">{error_message}</span
-		>{/if}
+	{#if error_message}
+		<span class="mt-1 text-xs text-rose-600" role="alert">{error_message}</span>
+	{/if}
 </span>

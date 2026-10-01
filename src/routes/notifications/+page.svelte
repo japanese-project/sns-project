@@ -130,7 +130,9 @@
 					<a
 						href={note.type === 'follow'
 							? resolve('/u/[handle]', { handle: note.actor.handle })
-							: resolve('/')}
+							: note.post_id
+								? resolve('/posts/[id]', { id: note.post_id })
+								: resolve('/')}
 						onclick={() => mark_one(note)}
 						class="flex gap-4 rounded-3xl p-4 hover:bg-slate-50"
 						data-unread={!note.read}

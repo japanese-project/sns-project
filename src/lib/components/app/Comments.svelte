@@ -147,5 +147,10 @@
 			</div>
 			{#if submit_error}<p class="text-xs text-rose-600" role="alert">{submit_error}</p>{/if}
 		</form>
+	{:else}
+		<p class="mt-4 text-center text-xs text-slate-500">
+			<a href={resolve('/login')} class="font-medium text-slate-800 underline">Sign in</a> to join the
+			conversation.
+		</p>
 	{/if}
 </section>
