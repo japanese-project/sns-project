@@ -18,6 +18,7 @@
 	let {
 		user,
 		title,
+		header_content,
 		children,
 	}: {
 		user?: {
@@ -28,6 +29,7 @@
 			onboarded?: boolean | null
 		} | null
 		title: string
+		header_content?: Snippet
 		children: Snippet
 	} = $props()
 
@@ -225,9 +227,13 @@
 		<!-- Centered Floating Header Pill -->
 		<header class="sticky top-0 z-20 flex justify-center px-4 pt-4 pb-2">
 			<div
-				class="flex items-center gap-3.5 rounded-full border border-slate-200/80 bg-white/90 px-6 py-2.5 shadow-sm shadow-slate-900/5 backdrop-blur-md"
+				class="flex items-center gap-3 rounded-full border border-slate-200/80 bg-white/90 p-1.5 shadow-sm shadow-slate-900/5 backdrop-blur-md sm:gap-3.5 sm:px-5 sm:py-2"
 			>
-				<h1 class="text-sm font-bold tracking-tight text-slate-900">{title}</h1>
+				{#if header_content}
+					{@render header_content()}
+				{:else}
+					<h1 class="px-2 text-sm font-bold tracking-tight text-slate-900">{title}</h1>
+				{/if}
 
 				<span class="h-4 w-px bg-slate-200"></span>
 
@@ -235,15 +241,16 @@
 					<button
 						type="button"
 						onclick={() => composer.show()}
-						class="flex items-center gap-2 text-xs font-semibold text-slate-500 transition hover:text-slate-900"
+						class="flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 sm:px-2.5"
 					>
 						<PencilIcon class="size-3.5" />
-						<span>Share a thought…</span>
+						<span class="hidden sm:inline">Share a thought…</span>
+						<span class="sm:hidden">Post</span>
 					</button>
 				{:else}
 					<a
 						href={resolve('/login')}
-						class="text-xs font-semibold text-slate-700 transition hover:text-slate-900"
+						class="rounded-full px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
 					>
 						Sign in
 					</a>

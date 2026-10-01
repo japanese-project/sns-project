@@ -33,53 +33,51 @@
 </script>
 
 <AppShell user={data.user} title="Home">
+	{#snippet header_content()}
+		<!-- Integrated Following / Global Switcher in Top Pill -->
+		<div
+			class="inline-flex items-center rounded-full bg-slate-100 p-0.5 text-xs font-semibold"
+			role="tablist"
+			aria-label="Feed selection"
+		>
+			<button
+				type="button"
+				role="tab"
+				aria-selected={active_tab === 'following'}
+				onclick={() => set_tab('following')}
+				class="flex items-center gap-1 rounded-full px-3 py-1 transition {active_tab === 'following'
+					? 'bg-black font-bold text-white shadow-xs'
+					: 'text-slate-600 hover:text-slate-900'}"
+			>
+				<UsersIcon class="size-3" />
+				<span>Following</span>
+			</button>
+
+			<button
+				type="button"
+				role="tab"
+				aria-selected={active_tab === 'global'}
+				onclick={() => set_tab('global')}
+				class="flex items-center gap-1 rounded-full px-3 py-1 transition {active_tab === 'global'
+					? 'bg-black font-bold text-white shadow-xs'
+					: 'text-slate-600 hover:text-slate-900'}"
+			>
+				<GlobeIcon class="size-3" />
+				<span>Global</span>
+			</button>
+		</div>
+	{/snippet}
+
 	<div class="mx-auto flex w-full max-w-5xl items-start justify-center gap-8">
 		<!-- Primary Feed Stream -->
 		<div class="w-full max-w-2xl min-w-0 flex-1">
-			<!-- Clean, Minimal Segmented Feed Switcher -->
-			<div class="mb-5 flex justify-center">
-				<div
-					class="inline-flex items-center rounded-full bg-slate-200/70 p-1 text-xs font-semibold backdrop-blur-xs"
-					role="tablist"
-					aria-label="Feed selection"
-				>
-					<button
-						type="button"
-						role="tab"
-						aria-selected={active_tab === 'following'}
-						onclick={() => set_tab('following')}
-						class="flex items-center gap-1.5 rounded-full px-4 py-1.5 transition {active_tab ===
-						'following'
-							? 'bg-white font-bold text-slate-900 shadow-xs'
-							: 'text-slate-600 hover:text-slate-900'}"
-					>
-						<UsersIcon class="size-3.5" />
-						<span>Following</span>
-					</button>
-
-					<button
-						type="button"
-						role="tab"
-						aria-selected={active_tab === 'global'}
-						onclick={() => set_tab('global')}
-						class="flex items-center gap-1.5 rounded-full px-4 py-1.5 transition {active_tab ===
-						'global'
-							? 'bg-white font-bold text-slate-900 shadow-xs'
-							: 'text-slate-600 hover:text-slate-900'}"
-					>
-						<GlobeIcon class="size-3.5" />
-						<span>Global</span>
-					</button>
-				</div>
-			</div>
-
-			<!-- Posts stream starting immediately below navigation -->
+			<!-- Posts stream starts immediately below header -->
 			<PostList {endpoint} {signed_in} accepts_new_posts={signed_in} {empty_message} />
 		</div>
 
-		<!-- Right-side Discovery Sidebar (Visible on xl screens only, secondary and quiet) -->
+		<!-- Right-side Discovery Sidebar (X-like UX: search, topics, who to follow) -->
 		{#if data.suggested_users && data.suggested_users.length > 0}
-			<aside class="sticky top-20 hidden w-64 shrink-0 xl:block">
+			<aside class="sticky top-20 hidden w-72 shrink-0 xl:block">
 				<HomeSidebar suggested_users={data.suggested_users} {signed_in} />
 			</aside>
 		{/if}
