@@ -2,10 +2,8 @@ import { and, desc, eq, lt, or, sql, type SQL } from 'drizzle-orm'
 import { error } from '@sveltejs/kit'
 import type { Db } from '../db'
 import { comment, follow, like, post, user } from '../db/schema'
-import { MAX_POST_LENGTH } from '$lib/limits'
 import type { Page, PostView } from '$lib/types'
-import { validate_text } from '../validation'
-import { clamp_limit, decode_cursor, encode_cursor, like_pattern, new_id } from './cursor'
+import { clamp_limit, decode_cursor, encode_cursor, like_pattern } from './cursor'
 import { to_user_summary } from './users'
 
 export type Visibility = 'public' | 'followers-only'
@@ -19,7 +17,7 @@ export function parse_visibility(raw: unknown): Visibility {
 /**
  * The single source of truth for who may read a post:
  *   public OR author = viewer OR viewer follows author
- * Every read path (feed, profile, search, single post, likes, comments) goes through this.
+ * Every read path (profile, search, single post, likes, comments) goes through this.
  */
 export function visible_to(viewer_id: string | null): SQL {
 	if (!viewer_id) return sql`${post.visibility} = 'public'`
@@ -106,34 +104,6 @@ async function paginate(
 	}
 }
 
-export async function create_post(
-	db: Db,
-	user_id: string,
-	input: { content?: unknown; visibility?: unknown },
-): Promise<PostView> {
-	const content = validate_text(input.content, MAX_POST_LENGTH, 'Post')
-	const visibility = parse_visibility(input.visibility)
-	const id = new_id()
-	const now = new Date()
-	await db.insert(post).values({
-		id,
-		userId: user_id,
-		content,
-		visibility,
-		createdAt: now,
-		updatedAt: now,
-	})
-	return await get_post_or_404(db, user_id, id)
-}
-
-export function list_feed(
-	db: Db,
-	viewer_id: string | null,
-	opts: { cursor?: string | null; limit?: number } = {},
-) {
-	return paginate(db, viewer_id, [], opts)
-}
-
 export function list_posts_by_user(
 	db: Db,
 	viewer_id: string | null,
@@ -188,20 +158,6 @@ async function require_owned_post(db: Db, user_id: string, post_id: string) {
 		error(403, 'Only the author can modify this post')
 	}
 	return row
-}
-
-export async function update_post(
-	db: Db,
-	user_id: string,
-	post_id: string,
-	input: { content?: unknown; visibility?: unknown },
-): Promise<PostView> {
-	await require_owned_post(db, user_id, post_id)
-	const content = validate_text(input.content, MAX_POST_LENGTH, 'Post')
-	const changes: Partial<typeof post.$inferInsert> = { content, updatedAt: new Date() }
-	if (input.visibility !== undefined) changes.visibility = parse_visibility(input.visibility)
-	await db.update(post).set(changes).where(eq(post.id, post_id))
-	return await get_post_or_404(db, user_id, post_id)
 }
 
 /** Likes, comments and notifications are removed by ON DELETE CASCADE, not app code. */

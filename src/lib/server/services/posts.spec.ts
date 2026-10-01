@@ -1,9 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { MAX_POST_LENGTH } from '$lib/limits'
 import type { Db } from '../db'
-import { follow, post } from '../db/schema'
-import { create_post, delete_post, get_visible_post, list_feed, update_post } from './posts'
-import { create_test_db, make_follow, make_user } from './test-db'
+import { comment, like, notification } from '../db/schema'
+import { delete_post, get_visible_post } from './posts'
+import { create_test_db, make_follow, make_post, make_user } from './test-db'
 
 let db: Db
 let dispose: () => Promise<void>
@@ -28,160 +27,81 @@ async function status_of(promise: Promise<unknown>) {
 	}
 }
 
-describe('create_post validation', () => {
-	it('rejects empty and whitespace-only text', async () => {
-		expect(await status_of(create_post(db, alice, { content: '' }))).toBe(400)
-		expect(await status_of(create_post(db, alice, { content: '   \n ' }))).toBe(400)
-		expect(await status_of(create_post(db, alice, { content: undefined }))).toBe(400)
-	})
+describe('post visibility authorization', () => {
+	it('followers-only posts are visible to author and followers, but not strangers or anon', async () => {
+		const secret = await make_post(db, alice, {
+			content: 'followers only!',
+			visibility: 'followers-only',
+		})
+		const pub = await make_post(db, alice, {
+			content: 'everyone',
+			visibility: 'public',
+		})
 
-	it('rejects text over the maximum length but accepts exactly the maximum', async () => {
-		expect(
-			await status_of(create_post(db, alice, { content: 'x'.repeat(MAX_POST_LENGTH + 1) })),
-		).toBe(400)
-		const ok = await create_post(db, alice, { content: 'x'.repeat(MAX_POST_LENGTH) })
-		expect(ok.content).toHaveLength(MAX_POST_LENGTH)
-	})
+		// Anonymous
+		expect(await get_visible_post(db, null, pub.id)).not.toBeNull()
+		expect(await get_visible_post(db, null, secret.id)).toBeNull()
 
-	it('rejects an invalid visibility value', async () => {
-		expect(await status_of(create_post(db, alice, { content: 'hi', visibility: 'private' }))).toBe(
-			400,
-		)
-	})
+		// Author sees both
+		expect(await get_visible_post(db, alice, secret.id)).not.toBeNull()
 
-	it('defaults to public and persists followers-only', async () => {
-		expect((await create_post(db, alice, { content: 'default' })).visibility).toBe('public')
-		const f = await create_post(db, alice, { content: 'secret', visibility: 'followers-only' })
-		expect(f.visibility).toBe('followers-only')
-		expect((await get_visible_post(db, alice, f.id))?.visibility).toBe('followers-only')
-	})
+		// Carol (not following) only sees public
+		expect(await get_visible_post(db, carol, secret.id)).toBeNull()
 
-	it('trims and stores the author', async () => {
-		const p = await create_post(db, bob, { content: '  hello  ' })
-		expect(p.content).toBe('hello')
-		expect(p.author.id).toBe(bob)
-		expect(p.is_owner).toBe(true)
-	})
-})
-
-describe('visibility', () => {
-	let secret_id: string
-	let public_id: string
-	beforeAll(async () => {
-		secret_id = (
-			await create_post(db, alice, { content: 'followers only!', visibility: 'followers-only' })
-		).id
-		public_id = (await create_post(db, alice, { content: 'everyone', visibility: 'public' })).id
-	})
-
-	it('anonymous users see public posts only', async () => {
-		expect(await get_visible_post(db, null, public_id)).not.toBeNull()
-		expect(await get_visible_post(db, null, secret_id)).toBeNull()
-		const feed = await list_feed(db, null, { limit: 50 })
-		expect(feed.items.some((p) => p.id === secret_id)).toBe(false)
-		expect(feed.items.some((p) => p.id === public_id)).toBe(true)
-	})
-
-	it('the author sees their own followers-only post', async () => {
-		expect(await get_visible_post(db, alice, secret_id)).not.toBeNull()
-		expect((await list_feed(db, alice, { limit: 50 })).items.some((p) => p.id === secret_id)).toBe(
-			true,
-		)
-	})
-
-	it('a non-follower cannot see it, a follower can', async () => {
-		expect(await get_visible_post(db, carol, secret_id)).toBeNull()
-		expect((await list_feed(db, carol, { limit: 50 })).items.some((p) => p.id === secret_id)).toBe(
-			false,
-		)
+		// Carol follows Alice -> now sees secret
 		await make_follow(db, carol, alice)
-		expect(await get_visible_post(db, carol, secret_id)).not.toBeNull()
-		expect((await list_feed(db, carol, { limit: 50 })).items.some((p) => p.id === secret_id)).toBe(
-			true,
-		)
-		await db.delete(follow)
-	})
-
-	it('following the wrong direction grants nothing', async () => {
-		await make_follow(db, alice, carol) // alice follows carol, not the reverse
-		expect(await get_visible_post(db, carol, secret_id)).toBeNull()
-		await db.delete(follow)
+		expect(await get_visible_post(db, carol, secret.id)).not.toBeNull()
 	})
 })
 
-describe('pagination', () => {
-	it('is newest-first, never duplicates or skips, and survives new posts', async () => {
-		const author = await make_user(db, 'Pager')
-		const ids: string[] = []
-		// Several posts share the same second to exercise the id tie-breaker.
-		for (let i = 0; i < 12; i++) {
-			const id = crypto.randomUUID()
-			await db.insert(post).values({
-				id,
-				userId: author,
-				content: `p${i}`,
-				visibility: 'public',
-				createdAt: new Date(1_800_000_000_000 + Math.floor(i / 3) * 1000),
-				updatedAt: new Date(),
-			})
-			ids.push(id)
-		}
-		const mine = (items: { id: string; author: { id: string } }[]) =>
-			items.filter((p) => p.author.id === author).map((p) => p.id)
-
-		const first = await list_feed(db, null, { limit: 5 })
-		expect(first.next_cursor).not.toBeNull()
-
-		// A brand-new post arrives between page loads: it must not shift the cursor.
-		await create_post(db, author, { content: 'late arrival' })
-
-		const collected = [...first.items]
-		let cursor = first.next_cursor
-		while (cursor) {
-			const next = await list_feed(db, null, { limit: 5, cursor })
-			collected.push(...next.items)
-			cursor = next.next_cursor
-		}
-		const seen = mine(collected).filter((id) => ids.includes(id))
-		expect(new Set(seen).size).toBe(seen.length)
-		expect(seen.sort()).toEqual([...ids].sort())
-
-		const times = collected.map((p) => p.created_at)
-		expect([...times].sort().reverse()).toEqual(times)
-	})
-
-	it('rejects a malformed cursor', async () => {
-		expect(await status_of(list_feed(db, null, { cursor: '!!!not-a-cursor' }))).toBe(400)
-	})
-})
-
-describe('edit and delete', () => {
-	it('only the owner can edit or delete', async () => {
-		const p = await create_post(db, alice, { content: 'mine' })
-		expect(await status_of(update_post(db, bob, p.id, { content: 'hijack' }))).toBe(403)
+describe('post deletion and cascade', () => {
+	it('non-owner cannot delete and receives 403 (or 404 if hidden)', async () => {
+		const p = await make_post(db, alice, 'alice post')
 		expect(await status_of(delete_post(db, bob, p.id))).toBe(403)
-		const edited = await update_post(db, alice, p.id, { content: 'edited' })
-		expect(edited.content).toBe('edited')
+
+		const hidden = await make_post(db, alice, {
+			content: 'hidden',
+			visibility: 'followers-only',
+		})
+		// Bob doesn't follow Alice, so the post appears non-existent (404, not 403)
+		expect(await status_of(delete_post(db, bob, hidden.id))).toBe(404)
+	})
+
+	it('owner can delete, which cascades to likes, comments and notifications', async () => {
+		const p = await make_post(db, alice, 'to be deleted')
+		const now = new Date()
+
+		await db.insert(like).values({ postId: p.id, userId: bob, createdAt: now })
+		await db.insert(comment).values({
+			id: 'c1',
+			postId: p.id,
+			userId: bob,
+			content: 'hi',
+			createdAt: now,
+			updatedAt: now,
+		})
+		await db.insert(notification).values({
+			id: 'n1',
+			recipientId: alice,
+			actorId: bob,
+			type: 'like',
+			postId: p.id,
+			createdAt: now,
+		})
+
 		await delete_post(db, alice, p.id)
+
+		// Post is gone
 		expect(await get_visible_post(db, alice, p.id)).toBeNull()
-	})
 
-	it('validates edited content with the creation rules', async () => {
-		const p = await create_post(db, alice, { content: 'valid' })
-		expect(await status_of(update_post(db, alice, p.id, { content: '  ' }))).toBe(400)
-		expect(
-			await status_of(update_post(db, alice, p.id, { content: 'x'.repeat(MAX_POST_LENGTH + 1) })),
-		).toBe(400)
-	})
+		// Cascades at DB level
+		const remaining_likes = await db.select().from(like).all()
+		expect(remaining_likes.filter((l) => l.postId === p.id)).toHaveLength(0)
 
-	it('hides other users’ followers-only posts even from edit attempts', async () => {
-		const p = await create_post(db, alice, { content: 'hidden', visibility: 'followers-only' })
-		expect(await status_of(update_post(db, carol, p.id, { content: 'x' }))).toBe(404)
-		expect(await status_of(delete_post(db, carol, p.id))).toBe(404)
-	})
+		const remaining_comments = await db.select().from(comment).all()
+		expect(remaining_comments.filter((c) => c.postId === p.id)).toHaveLength(0)
 
-	it('returns 404 for missing posts', async () => {
-		expect(await status_of(update_post(db, alice, 'nope', { content: 'x' }))).toBe(404)
-		expect(await status_of(delete_post(db, alice, 'nope'))).toBe(404)
+		const remaining_notes = await db.select().from(notification).all()
+		expect(remaining_notes.filter((n) => n.postId === p.id)).toHaveLength(0)
 	})
 })

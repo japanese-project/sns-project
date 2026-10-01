@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte'
 	import { api } from '$lib/api'
-	import { composer } from '$lib/composer-state.svelte'
 	import type { Page, PostView } from '$lib/types'
 	import PostCard from './PostCard.svelte'
 
@@ -9,12 +8,10 @@
 		endpoint,
 		signed_in,
 		empty_message = 'Nothing here yet.',
-		accepts_new_posts = false,
 	}: {
 		endpoint: string
 		signed_in: boolean
 		empty_message?: string
-		accepts_new_posts?: boolean
 	} = $props()
 
 	let posts = $state<PostView[]>([])
@@ -34,7 +31,6 @@
 		error_message = null
 		try {
 			const page = await api<Page<PostView>>(url(initial ? null : next_cursor))
-			// De-duplicate in case a post created locally also arrives from the server.
 			const known = new Set(initial ? [] : posts.map((p) => p.id))
 			const fresh = page.items.filter((p) => !known.has(p.id))
 			posts = initial ? fresh : [...posts, ...fresh]
@@ -49,10 +45,6 @@
 
 	onMount(() => {
 		void load(true)
-		if (!accepts_new_posts) return
-		return composer.on_created((created) => {
-			posts = [created, ...posts.filter((p) => p.id !== created.id)]
-		})
 	})
 </script>
 
@@ -75,14 +67,6 @@
 	{:else if posts.length === 0}
 		<div class="rounded-[2rem] bg-white/80 p-10 text-center ring-1 ring-slate-200">
 			<p class="text-slate-500">{empty_message}</p>
-			{#if signed_in && accepts_new_posts}
-				<button
-					type="button"
-					onclick={() => composer.show()}
-					class="mt-4 rounded-full bg-black px-4 py-2 text-sm text-white"
-					>Write the first post</button
-				>
-			{/if}
 		</div>
 	{:else}
 		{#each posts as post (post.id)}
@@ -90,7 +74,6 @@
 				{post}
 				{signed_in}
 				on_deleted={(id) => (posts = posts.filter((p) => p.id !== id))}
-				on_updated={(updated) => (posts = posts.map((p) => (p.id === updated.id ? updated : p)))}
 			/>
 		{/each}
 

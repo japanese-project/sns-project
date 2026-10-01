@@ -4,7 +4,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { getPlatformProxy } from 'wrangler'
 import { create_db, type Db } from '../db'
-import { user, follow } from '../db/schema'
+import { follow, post, user } from '../db/schema'
+import { new_id } from './cursor'
 
 export async function create_test_db(): Promise<{ db: Db; dispose: () => Promise<void> }> {
 	const proxy = await getPlatformProxy<{ DB: D1Database }>({ persist: false })
@@ -46,4 +47,24 @@ export async function make_user(db: Db, name: string) {
 
 export async function make_follow(db: Db, follower_id: string, following_id: string) {
 	await db.insert(follow).values({ followerId: follower_id, followingId: following_id })
+}
+
+export async function make_post(
+	db: Db,
+	user_id: string,
+	input: string | { content: string; visibility?: 'public' | 'followers-only' },
+) {
+	const content = typeof input === 'string' ? input : input.content
+	const visibility = typeof input === 'string' ? 'public' : (input.visibility ?? 'public')
+	const id = new_id()
+	const now = new Date()
+	await db.insert(post).values({
+		id,
+		userId: user_id,
+		content,
+		visibility,
+		createdAt: now,
+		updatedAt: now,
+	})
+	return { id, content, visibility }
 }
