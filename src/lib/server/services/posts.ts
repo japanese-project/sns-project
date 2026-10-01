@@ -148,6 +148,14 @@ export function list_posts_by_user(
 	return paginate(db, viewer_id, [eq(post.userId, author_id)], opts)
 }
 
+/**
+ * Design note: search is a case-insensitive `LIKE '%query%'` over post content, ANDed with the
+ * viewer's visibility filter. A leading-wildcard LIKE can't use an index, so each request scans
+ * the posts table; the cost per request is bounded by the query-length cap (parse_query), the
+ * clamped page size and keyset pagination, but still grows linearly with table size. That is
+ * intentional for the expected workload (< 10k posts). At larger scale move to SQLite FTS5
+ * (available on D1) or an external search service.
+ */
 export function search_posts(
 	db: Db,
 	viewer_id: string | null,
@@ -255,7 +263,7 @@ export async function get_trending_topics(
 	limit = 8,
 	period: TrendingPeriod = 'week',
 ): Promise<{ tag: string; count: number }[]> {
-	limit = Math.min(Math.max(Math.floor(limit), 1), MAX_TRENDING_LIMIT)
+	limit = clamp_limit(limit, 8, MAX_TRENDING_LIMIT)
 
 	const since = period_start(period)
 

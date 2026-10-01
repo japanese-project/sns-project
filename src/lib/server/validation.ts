@@ -10,30 +10,27 @@ export function validate_text(raw: unknown, max: number, label: string): string 
 	return text
 }
 
+// Control (Cc), invisible formatting such as zero-width / bidi overrides (Cf), and line or
+// paragraph separators (Zl, Zp). None belong in a short, human-readable interest label.
+const disallowed_interest_chars = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/u
+
 /**
- * Validates an interests array: filters to strings, trims each value, rejects
- * empty or overly long entries, and caps the total count.
+ * Validates an interests array: it must be an array of strings; each value is trimmed and
+ * must be non-empty, at most MAX_INTEREST_LENGTH characters and free of control/invisible
+ * characters. The total count is capped at MAX_INTERESTS_COUNT (extra values are dropped).
  */
-export function validate_interests(raw: unknown[]): string[] {
+export function validate_interests(raw: unknown): string[] {
+	if (!Array.isArray(raw)) error(400, 'Interests must be an array of strings')
 	const result: string[] = []
 	for (const item of raw) {
-		if (typeof item !== 'string') continue
+		if (typeof item !== 'string') error(400, 'Each interest must be a string')
 		const trimmed = item.trim()
 		if (trimmed.length === 0) continue
 		if (trimmed.length > MAX_INTEREST_LENGTH) {
 			error(400, `Each interest must be at most ${MAX_INTEREST_LENGTH} characters`)
 		}
-		// Reject control characters and other non-printable content
-		let has_control_chars = false
-		for (let i = 0; i < trimmed.length; i++) {
-			const code = trimmed.charCodeAt(i)
-			if (code < 32 || code === 127) {
-				has_control_chars = true
-				break
-			}
-		}
-		if (has_control_chars) {
-			error(400, 'Interest values must not contain control characters')
+		if (disallowed_interest_chars.test(trimmed)) {
+			error(400, 'Interest values must not contain control or invisible characters')
 		}
 		result.push(trimmed)
 		if (result.length >= MAX_INTERESTS_COUNT) break
@@ -42,13 +39,21 @@ export function validate_interests(raw: unknown[]): string[] {
 }
 
 /**
- * Returns true if the error is a UNIQUE constraint violation (SQLite / D1).
- * Works with both native D1 errors and drizzle-wrapped errors.
+ * Returns true if the error is a SQLite / D1 UNIQUE constraint violation.
+ *
+ * Drizzle wraps driver errors in a DrizzleQueryError whose own message is only
+ * "Failed query: <sql>"; the real "UNIQUE constraint failed: ..." text lives on `.cause`.
+ * So the whole cause chain has to be inspected, not just `err.message`.
  */
 export function is_unique_constraint_error(err: unknown): boolean {
-	if (!(err instanceof Error)) return false
-	const msg = err.message.toLowerCase()
-	return msg.includes('unique') || msg.includes('duplicate')
+	for (let current = err, depth = 0; current instanceof Error && depth < 5; depth++) {
+		const msg = current.message.toLowerCase()
+		if (msg.includes('unique constraint failed') || msg.includes('sqlite_constraint_unique')) {
+			return true
+		}
+		current = current.cause
+	}
+	return false
 }
 
 export function require_user_id(locals: App.Locals): string {

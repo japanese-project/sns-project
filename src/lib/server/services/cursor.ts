@@ -31,9 +31,18 @@ export function decode_cursor(raw: string | null | undefined): Cursor | null {
 	}
 }
 
-export function clamp_limit(limit: number | undefined): number {
-	if (limit === undefined || !Number.isFinite(limit)) return DEFAULT_PAGE_SIZE
-	return Math.min(Math.max(Math.floor(limit), 1), MAX_PAGE_SIZE)
+/**
+ * Clamps a caller-supplied `limit` to [1, max]. Non-finite input (undefined, NaN from
+ * `Number('abc')`, Infinity) falls back to `fallback`: NaN must never reach `.limit()`,
+ * because drizzle silently drops the LIMIT clause for it and the query becomes unbounded.
+ */
+export function clamp_limit(
+	limit: number | undefined,
+	fallback = DEFAULT_PAGE_SIZE,
+	max = MAX_PAGE_SIZE,
+): number {
+	if (limit === undefined || !Number.isFinite(limit)) return fallback
+	return Math.min(Math.max(Math.floor(limit), 1), max)
 }
 
 /** Escapes LIKE wildcards so user input is matched literally (use with `ESCAPE '\'`). */

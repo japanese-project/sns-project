@@ -68,8 +68,10 @@ export const handle: Handle = async ({ event, resolve }) => {
 					event.locals.user.username = db_user.username
 				}
 			}
-		} catch {
-			// Best-effort enrichment for user fields
+		} catch (err) {
+			// Best-effort enrichment: a failure shouldn't take the whole page down, but it must
+			// not be silent either (e.g. ensure_username propagates unexpected DB errors).
+			console.error('Failed to enrich session user from the database', err)
 		}
 	}
 

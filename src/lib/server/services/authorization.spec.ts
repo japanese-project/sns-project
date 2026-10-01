@@ -1,8 +1,10 @@
 /**
- * Authorization coverage tests (PR review concern #4).
+ * Service-level authorization tests.
  *
- * These tests verify authorization behavior through the service layer — the same
- * code path used by all API routes — covering:
+ * These call the service functions directly, so they pin down the authorization rules
+ * themselves. They do NOT exercise the route handlers (401 wiring, handle resolution, which
+ * status an error becomes); that is covered by src/routes/api/authorization.spec.ts.
+ * Rules covered here:
  *   - Anonymous access to public vs. followers-only posts
  *   - Non-owner post/comment modification
  *   - Notification isolation between users

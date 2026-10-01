@@ -1,4 +1,5 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { eq } from 'drizzle-orm'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Db } from '../db'
 import { follow, user } from '../db/schema'
 import {
@@ -9,7 +10,8 @@ import {
 	update_user_profile,
 } from './users'
 import { create_test_db, make_follow, make_user } from './test-db'
-import { MAX_INTEREST_LENGTH } from '$lib/limits'
+import { MAX_INTEREST_LENGTH, MAX_SUGGESTION_LIMIT } from '$lib/limits'
+import { is_unique_constraint_error } from '../validation'
 
 let db: Db
 let dispose: () => Promise<void>
@@ -105,6 +107,88 @@ describe('update_user_profile', () => {
 	})
 })
 
+describe('update_user_profile: username races', () => {
+	async function username_of(id: string) {
+		const row = await db.select({ username: user.username }).from(user).where(eq(user.id, id)).get()
+		return row?.username
+	}
+
+	it('recognises the error a real unique-index violation produces', async () => {
+		await make_user(db, 'Holder') // username "holder"
+		const other = await make_user(db, 'Other')
+		let caught: unknown
+		try {
+			await db.update(user).set({ username: 'holder' }).where(eq(user.id, other))
+		} catch (err) {
+			caught = err
+		}
+		expect(caught).toBeInstanceOf(Error)
+		expect(is_unique_constraint_error(caught)).toBe(true)
+	})
+
+	it('returns 400 (not 500) when the unique index catches a race the pre-check missed', async () => {
+		await make_user(db, 'Taken') // username "taken"
+		const racer = await make_user(db, 'Racer')
+
+		// Simulate two requests that both passed the availability check: make only the pre-check
+		// (the 2nd select inside update_user_profile) claim the username is free.
+		const real_select = db.select.bind(db) as (...args: unknown[]) => unknown
+		let select_calls = 0
+		const spy = vi.spyOn(db, 'select').mockImplementation(((...args: unknown[]) => {
+			select_calls++
+			if (select_calls === 2) {
+				return { from: () => ({ where: () => ({ get: async () => undefined }) }) }
+			}
+			return real_select(...args)
+		}) as unknown as typeof db.select)
+		let status: number
+		try {
+			status = await status_of(update_user_profile(db, racer, { username: 'taken' }))
+		} finally {
+			spy.mockRestore()
+		}
+
+		expect(select_calls).toBe(2) // the pre-check really was bypassed, so the constraint did the work
+		expect(status).toBe(400)
+		expect(await username_of(racer)).toBe('racer') // the loser's row is untouched
+	})
+
+	it('lets exactly one of two concurrent claims win; the other gets 400', async () => {
+		const ann = await make_user(db, 'Ann')
+		const ben = await make_user(db, 'Ben')
+		const statuses = await Promise.all(
+			[ann, ben].map((id) => status_of(update_user_profile(db, id, { username: 'shared_name' }))),
+		)
+		expect([...statuses].sort()).toEqual([200, 400])
+	})
+})
+
+describe('update_user_profile: interest validation', () => {
+	it('rejects interests that are not an array', async () => {
+		const id = await make_user(db, 'NotArray')
+		expect(await status_of(update_user_profile(db, id, { interests: 'music' }))).toBe(400)
+		expect(await status_of(update_user_profile(db, id, { interests: { a: 1 } }))).toBe(400)
+	})
+
+	it('rejects non-string interest entries and invisible characters', async () => {
+		const id = await make_user(db, 'BadEntries')
+		expect(await status_of(update_user_profile(db, id, { interests: ['ok', 42] }))).toBe(400)
+		expect(await status_of(update_user_profile(db, id, { interests: ['zero​width'] }))).toBe(400)
+	})
+
+	it('leaves stored interests unchanged when validation fails', async () => {
+		const id = await make_user(db, 'KeepsInterests')
+		await update_user_profile(db, id, { interests: ['Music'] })
+		expect(await status_of(update_user_profile(db, id, { interests: ['x'.repeat(999)] }))).toBe(400)
+		const row = await db
+			.select({ interests: user.interests })
+			.from(user)
+			.where(eq(user.id, id))
+			.get()
+		expect(row?.interests).toBe(JSON.stringify(['Music']))
+	})
+})
+
 describe('complete_onboarding', () => {
 	it('saves interests, bio, and marks onboarded', async () => {
 		const id = await make_user(db, 'Newbie')
@@ -120,6 +204,21 @@ describe('complete_onboarding', () => {
 		const id = await make_user(db, 'Skipper')
 		const result = await complete_onboarding(db, id, { skip: true })
 		expect(result.onboarded).toBe(true)
+	})
+
+	it('does not apply profile changes when the interests are invalid', async () => {
+		const id = await make_user(db, 'AtomicOnboard')
+		const status = await status_of(
+			complete_onboarding(db, id, { name: 'New Name', interests: ['bad\x00value'] }),
+		)
+		expect(status).toBe(400)
+		const row = await db
+			.select({ name: user.name, onboarded: user.onboarded })
+			.from(user)
+			.where(eq(user.id, id))
+			.get()
+		expect(row?.name).toBe('AtomicOnboard')
+		expect(Boolean(row?.onboarded)).toBe(false)
 	})
 
 	it('validates interest values during onboarding', async () => {
@@ -196,5 +295,53 @@ describe('ensure_username', () => {
 		const id = await make_user(db, 'HasUsername')
 		const result = await ensure_username(db, id, 'ignored@example.com')
 		expect(result).toBe('hasusername')
+	})
+})
+
+describe('ensure_username: conflicts and errors', () => {
+	async function make_user_without_username(email: string) {
+		const id = crypto.randomUUID()
+		const now = new Date()
+		await db
+			.insert(user)
+			.values({ id, name: 'NoName', email, username: null, createdAt: now, updatedAt: now })
+		return id
+	}
+
+	it('retries with a numeric suffix when the email-derived username is already taken', async () => {
+		await make_user(db, 'Taken') // username "taken" collides with taken@example.com
+		const id = await make_user_without_username('taken@example.com')
+		const result = await ensure_username(db, id, 'taken@example.com')
+		expect(result).toMatch(/^taken\d{4}$/)
+		const row = await db.select({ username: user.username }).from(user).where(eq(user.id, id)).get()
+		expect(row?.username).toBe(result)
+	})
+
+	it('propagates unexpected database errors instead of falling back to the user id', async () => {
+		const id = await make_user_without_username('locked@example.com')
+		const spy = vi.spyOn(db, 'update').mockImplementation(() => {
+			throw new Error('D1_ERROR: database is locked')
+		})
+		try {
+			await expect(ensure_username(db, id, 'locked@example.com')).rejects.toThrow(
+				'database is locked',
+			)
+		} finally {
+			spy.mockRestore()
+		}
+	})
+})
+
+describe('discovery limits', () => {
+	it('never returns more than the cap, even for a non-numeric or oversized limit', async () => {
+		for (let i = 0; i < MAX_SUGGESTION_LIMIT + 20; i++) await make_user(db, `Crowd${i}`)
+		// Number('abc') is NaN; drizzle drops LIMIT for NaN, which used to return every user.
+		expect(await get_suggested_users(db, null, Number('abc'))).toHaveLength(5)
+		expect(await get_suggested_users(db, null, 9999)).toHaveLength(MAX_SUGGESTION_LIMIT)
+		expect(await get_suggested_users(db, null, -3)).toHaveLength(1)
+		expect(await get_suggested_users(db, null, 0)).toHaveLength(1)
+		expect((await get_users_by_interests(db, null, [], Number('abc'))).length).toBeLessThanOrEqual(
+			5,
+		)
 	})
 })

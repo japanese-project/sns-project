@@ -5,6 +5,7 @@ import { follow, user } from '../db/schema'
 import { MAX_BIO_LENGTH, MAX_NAME_LENGTH, MAX_SUGGESTION_LIMIT } from '$lib/limits'
 import type { UserListItem, UserSummary } from '$lib/types'
 import { is_unique_constraint_error, validate_interests } from '../validation'
+import { clamp_limit } from './cursor'
 
 export function to_user_summary(row: {
 	id: string
@@ -153,9 +154,8 @@ export async function update_user_profile(
 	}
 
 	let next_interests = current.interests
-	if (Array.isArray(input.interests)) {
-		const valid = validate_interests(input.interests as unknown[])
-		next_interests = JSON.stringify(valid)
+	if (input.interests !== undefined && input.interests !== null) {
+		next_interests = JSON.stringify(validate_interests(input.interests))
 	}
 
 	const now = new Date()
@@ -208,17 +208,17 @@ export async function complete_onboarding(
 			.where(eq(user.id, user_id))
 		return { onboarded: true }
 	}
+	// Validate before writing anything so a bad interest can't leave a half-applied onboarding.
+	const interests_json =
+		input.interests !== undefined && input.interests !== null
+			? JSON.stringify(validate_interests(input.interests))
+			: null
 	if (input.name !== undefined || input.username !== undefined || input.bio !== undefined) {
 		await update_user_profile(db, user_id, {
 			name: input.name,
 			username: input.username,
 			bio: input.bio,
 		})
-	}
-	let interests_json: string | null = null
-	if (Array.isArray(input.interests)) {
-		const valid = validate_interests(input.interests as unknown[])
-		interests_json = JSON.stringify(valid)
 	}
 	await db
 		.update(user)
@@ -236,7 +236,7 @@ export async function get_suggested_users(
 	viewer_id: string | null,
 	limit = 5,
 ): Promise<UserListItem[]> {
-	limit = Math.min(Math.max(Math.floor(limit), 1), MAX_SUGGESTION_LIMIT)
+	limit = clamp_limit(limit, 5, MAX_SUGGESTION_LIMIT)
 	const rows = await db
 		.select({
 			id: user.id,
@@ -285,7 +285,7 @@ export async function get_users_by_interests(
 	interests: string[],
 	limit = 5,
 ): Promise<UserListItem[]> {
-	limit = Math.min(Math.max(Math.floor(limit), 1), MAX_SUGGESTION_LIMIT)
+	limit = clamp_limit(limit, 5, MAX_SUGGESTION_LIMIT)
 	if (interests.length === 0) return get_suggested_users(db, viewer_id, limit)
 
 	const rows = await db
