@@ -2,8 +2,9 @@ import { and, desc, eq, isNull, ne, or, sql } from 'drizzle-orm'
 import { error } from '@sveltejs/kit'
 import type { Db } from '../db'
 import { follow, user } from '../db/schema'
-import { MAX_BIO_LENGTH, MAX_NAME_LENGTH } from '$lib/limits'
+import { MAX_BIO_LENGTH, MAX_NAME_LENGTH, MAX_SUGGESTION_LIMIT } from '$lib/limits'
 import type { UserListItem, UserSummary } from '$lib/types'
+import { is_unique_constraint_error, validate_interests } from '../validation'
 
 export function to_user_summary(row: {
 	id: string
@@ -36,6 +37,9 @@ export function username_from_email(email: string): string {
 /**
  * Returns the user's username, assigning one (derived from their email, made unique with a
  * numeric suffix) if they don't have one yet. Safe to call repeatedly.
+ *
+ * Only UNIQUE constraint violations are retried (another user claimed the same username).
+ * Any other database error is propagated immediately so it isn't silently hidden.
  */
 export async function ensure_username(db: Db, user_id: string, email: string): Promise<string> {
 	const existing = await db
@@ -62,8 +66,10 @@ export async function ensure_username(db: Db, user_id: string, email: string): P
 				.where(eq(user.id, user_id))
 				.get()
 			if (current?.username) return current.username
-		} catch {
-			// UNIQUE violation: try again with a suffix.
+		} catch (err) {
+			// Only retry on UNIQUE constraint violations (someone else claimed this username).
+			// Propagate any other database error immediately.
+			if (!is_unique_constraint_error(err)) throw err
 		}
 	}
 	return user_id
@@ -125,6 +131,7 @@ export async function update_user_profile(
 				'Username must be 3–30 characters and contain only lowercase letters, numbers, and underscores',
 			)
 		}
+		// Pre-check for a friendlier error message (non-atomic, see below for constraint catch).
 		const existing = await db
 			.select({ id: user.id })
 			.from(user)
@@ -147,21 +154,30 @@ export async function update_user_profile(
 
 	let next_interests = current.interests
 	if (Array.isArray(input.interests)) {
-		const valid = (input.interests as unknown[]).filter((i) => typeof i === 'string').slice(0, 10)
+		const valid = validate_interests(input.interests as unknown[])
 		next_interests = JSON.stringify(valid)
 	}
 
 	const now = new Date()
-	await db
-		.update(user)
-		.set({
-			name: next_name,
-			username: next_username,
-			bio: next_bio,
-			interests: next_interests,
-			updatedAt: now,
-		})
-		.where(eq(user.id, user_id))
+	try {
+		await db
+			.update(user)
+			.set({
+				name: next_name,
+				username: next_username,
+				bio: next_bio,
+				interests: next_interests,
+				updatedAt: now,
+			})
+			.where(eq(user.id, user_id))
+	} catch (err) {
+		// Handle the race condition where two requests both pass the availability
+		// check but the DB unique constraint catches the second one.
+		if (is_unique_constraint_error(err)) {
+			error(400, 'Username is already taken')
+		}
+		throw err
+	}
 
 	return {
 		id: user_id,
@@ -201,7 +217,7 @@ export async function complete_onboarding(
 	}
 	let interests_json: string | null = null
 	if (Array.isArray(input.interests)) {
-		const valid = input.interests.filter((i) => typeof i === 'string').slice(0, 10)
+		const valid = validate_interests(input.interests as unknown[])
 		interests_json = JSON.stringify(valid)
 	}
 	await db
@@ -220,6 +236,7 @@ export async function get_suggested_users(
 	viewer_id: string | null,
 	limit = 5,
 ): Promise<UserListItem[]> {
+	limit = Math.min(Math.max(Math.floor(limit), 1), MAX_SUGGESTION_LIMIT)
 	const rows = await db
 		.select({
 			id: user.id,
@@ -257,6 +274,10 @@ export async function get_suggested_users(
 /**
  * Returns up to `limit` users (not self, not already followed) who share at least one interest
  * from the provided list. Falls back to recent users if no interests given.
+ *
+ * Design note: interest matching is done application-side over a capped set of recent users.
+ * This is intentional for the current expected workload (< 10k users). At larger scale,
+ * consider a dedicated interests index or a search service.
  */
 export async function get_users_by_interests(
 	db: Db,
@@ -264,6 +285,7 @@ export async function get_users_by_interests(
 	interests: string[],
 	limit = 5,
 ): Promise<UserListItem[]> {
+	limit = Math.min(Math.max(Math.floor(limit), 1), MAX_SUGGESTION_LIMIT)
 	if (interests.length === 0) return get_suggested_users(db, viewer_id, limit)
 
 	const rows = await db

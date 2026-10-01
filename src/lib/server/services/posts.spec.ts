@@ -244,7 +244,7 @@ describe('get_trending_topics', () => {
 			visibility: 'followers-only',
 		})
 
-		const topics = await get_trending_topics(db, 5)
+		const topics = await get_trending_topics(db, 5, 'month')
 		const tags = topics.map((t) => t.tag)
 		expect(tags).toContain('svelte')
 		expect(tags).toContain('typescript')
@@ -253,5 +253,38 @@ describe('get_trending_topics', () => {
 
 		const svelte_topic = topics.find((t) => t.tag === 'svelte')
 		expect(svelte_topic?.count).toBe(2)
+	})
+
+	it('filters by period (today / week / month)', async () => {
+		// Create a post with a timestamp from 10 days ago
+		const old_date = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000)
+		await db.insert(post).values({
+			id: `trend-old-${crypto.randomUUID()}`,
+			userId: alice,
+			content: 'Old topic #retro',
+			visibility: 'public',
+			createdAt: old_date,
+			updatedAt: old_date,
+		})
+		// Create a post from right now
+		await create_post(db, alice, { content: 'Fresh topic #fresh' })
+
+		// 'today' should only include #fresh
+		const today = await get_trending_topics(db, 10, 'today')
+		const today_tags = today.map((t) => t.tag)
+		expect(today_tags).toContain('fresh')
+		expect(today_tags).not.toContain('retro')
+
+		// 'week' should only include #fresh (retro is 10 days old)
+		const week = await get_trending_topics(db, 10, 'week')
+		const week_tags = week.map((t) => t.tag)
+		expect(week_tags).toContain('fresh')
+		expect(week_tags).not.toContain('retro')
+
+		// 'month' should include both
+		const month = await get_trending_topics(db, 10, 'month')
+		const month_tags = month.map((t) => t.tag)
+		expect(month_tags).toContain('fresh')
+		expect(month_tags).toContain('retro')
 	})
 })

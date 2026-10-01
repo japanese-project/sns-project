@@ -257,10 +257,7 @@
 	</nav>
 
 	<!-- Content Layout: two-column flex so sidebar starts at the same top as the header -->
-	<div
-		class="flex min-h-screen w-full items-start px-4 md:pl-20 lg:pl-24"
-		style="padding-right: 2.5cm;"
-	>
+	<div class="flex min-h-screen w-full items-start px-3 sm:px-4 md:pr-6 md:pl-20 lg:pr-8 lg:pl-24">
 		<!-- Left column: header + main content, centered with max width -->
 		<div class="relative min-w-0 flex-1">
 			<div class="mx-auto w-full max-w-4xl">

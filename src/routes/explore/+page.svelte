@@ -12,7 +12,7 @@
 	import { MAX_SEARCH_LENGTH } from '$lib/limits'
 	import SearchSuggestions from '$lib/components/app/SearchSuggestions.svelte'
 	import { search_history } from '$lib/search-history.svelte'
-	import type { Page, PostView } from '$lib/types'
+	import type { Page, PostView, TrendingPeriod } from '$lib/types'
 
 	let { data } = $props()
 
@@ -31,6 +31,19 @@
 	})
 
 	let posts = $derived([...(data.results?.posts ?? []), ...extra_posts])
+
+	const period_labels: Record<TrendingPeriod, string> = {
+		today: 'Today',
+		week: 'This Week',
+		month: 'This Month',
+	}
+
+	function set_period(period: TrendingPeriod) {
+		const path = resolve('/explore')
+		is_focused = false
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
+		void goto(`${path}?period=${period}` as `/${string}`)
+	}
 
 	function search_for(q: string) {
 		const trimmed = q.trim()
@@ -106,33 +119,63 @@
 			{:else if !data.results && data.discovery}
 				<!-- Discovery Mode: Interests / Topics -->
 				<section aria-labelledby="topics-heading">
-					<div class="mb-3 flex items-center gap-2 px-1 text-slate-700">
-						<TrendingUpIcon class="size-4 text-indigo-600" />
-						<h2
-							id="topics-heading"
-							class="text-xs font-bold tracking-wider text-slate-500 uppercase"
-						>
-							Explore Topics
-						</h2>
-					</div>
-					<div class="flex flex-wrap gap-x-5 gap-y-2">
-						{#each data.discovery.topics as item (typeof item === 'string' ? item : item.tag)}
-							{@const tag_name = typeof item === 'string' ? item : item.tag}
-							{@const post_count = typeof item === 'string' ? null : item.count}
-							<button
-								type="button"
-								onclick={() => search_for(`#${tag_name}`)}
-								class="group flex items-baseline gap-1.5 text-sm font-semibold text-indigo-600 transition hover:text-indigo-800 hover:underline"
+					<div class="mb-3 flex flex-wrap items-center justify-between gap-2 px-1 text-slate-700">
+						<div class="flex items-center gap-2">
+							<TrendingUpIcon class="size-4 text-indigo-600" />
+							<h2
+								id="topics-heading"
+								class="text-xs font-bold tracking-wider text-slate-500 uppercase"
 							>
-								<span>#{tag_name}</span>
-								{#if post_count && post_count > 1}
-									<span class="text-[11px] font-normal text-slate-400 group-hover:text-slate-500">
-										{post_count}
-									</span>
-								{/if}
-							</button>
-						{/each}
+								Explore Topics
+							</h2>
+						</div>
+
+						<!-- Time Window Tabs: Today / Week / Month -->
+						<div
+							class="inline-flex items-center rounded-full bg-slate-100 p-0.5 text-xs font-medium"
+							role="tablist"
+							aria-label="Trending time window"
+						>
+							{#each ['today', 'week', 'month'] as const as p (p)}
+								<button
+									type="button"
+									role="tab"
+									aria-selected={data.period === p}
+									onclick={() => set_period(p)}
+									class="rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition {data.period ===
+									p
+										? 'bg-white text-slate-900 shadow-xs'
+										: 'text-slate-500 hover:text-slate-900'}"
+								>
+									{period_labels[p]}
+								</button>
+							{/each}
+						</div>
 					</div>
+					{#if data.discovery.topics.length === 0}
+						<p class="px-1 text-xs text-slate-400">
+							No trending topics found for {period_labels[data.period ?? 'week'].toLowerCase()}.
+						</p>
+					{:else}
+						<div class="flex flex-wrap gap-x-5 gap-y-2">
+							{#each data.discovery.topics as item (typeof item === 'string' ? item : item.tag)}
+								{@const tag_name = typeof item === 'string' ? item : item.tag}
+								{@const post_count = typeof item === 'string' ? null : item.count}
+								<button
+									type="button"
+									onclick={() => search_for(`#${tag_name}`)}
+									class="group flex items-baseline gap-1.5 text-sm font-semibold text-indigo-600 transition hover:text-indigo-800 hover:underline"
+								>
+									<span>#{tag_name}</span>
+									{#if post_count && post_count > 1}
+										<span class="text-[11px] font-normal text-slate-400 group-hover:text-slate-500">
+											{post_count}
+										</span>
+									{/if}
+								</button>
+							{/each}
+						</div>
+					{/if}
 				</section>
 
 				<!-- Discovery Mode: Suggested People -->

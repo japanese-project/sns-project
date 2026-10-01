@@ -7,8 +7,8 @@
 	import FlameIcon from '@lucide/svelte/icons/flame'
 	import SearchIcon from '@lucide/svelte/icons/search'
 	import SparklesIcon from '@lucide/svelte/icons/sparkles'
-	import TrendingUpIcon from '@lucide/svelte/icons/trending-up'
-	import type { UserListItem } from '$lib/types'
+	import type { TrendingPeriod, UserListItem } from '$lib/types'
+	import { api } from '$lib/api'
 	import Avatar from './Avatar.svelte'
 	import FollowButton from './FollowButton.svelte'
 	import SearchSuggestions from './SearchSuggestions.svelte'
@@ -26,6 +26,27 @@
 
 	let search_input = $state('')
 	let is_focused = $state(false)
+	let active_period = $state<TrendingPeriod>('week')
+	let topics_override = $state<Array<{ tag: string; count: number }> | null>(null)
+	let loading_topics = $state(false)
+
+	let displayed_topics = $derived(topics_override ?? trending_topics)
+
+	async function select_period(p: TrendingPeriod) {
+		if (p === active_period) return
+		active_period = p
+		loading_topics = true
+		try {
+			const res = await api<{ topics: Array<{ tag: string; count: number }> }>(
+				`/api/trending?period=${p}&limit=5`,
+			)
+			topics_override = res.topics
+		} catch {
+			// keep previous topics if failed
+		} finally {
+			loading_topics = false
+		}
+	}
 
 	function handle_search(event: SubmitEvent) {
 		event.preventDefault()
@@ -71,53 +92,104 @@
 		{/if}
 	</div>
 
-	{#if trending_topics.length > 0}
+	{#if displayed_topics.length > 0 || topics_override !== null}
 		<!-- Trending Now Section -->
 		<section
 			class="rounded-3xl border border-slate-200/80 bg-white/90 p-4 shadow-xs backdrop-blur-xs"
 			aria-labelledby="trending-heading"
 		>
-			<div class="flex items-center justify-between pb-3">
+			<div class="flex flex-wrap items-center justify-between gap-1.5 pb-2.5">
 				<div class="flex items-center gap-1.5">
 					<FlameIcon class="size-4 text-orange-500" />
 					<h2 id="trending-heading" class="text-sm font-bold tracking-tight text-slate-900">
 						Trending Now
 					</h2>
 				</div>
-				<TrendingUpIcon class="size-4 text-slate-400" />
+				<!-- Period Pills: Today / Week / Month -->
+				<div
+					class="inline-flex items-center rounded-full bg-slate-100 p-0.5 text-[10px] font-semibold"
+					role="tablist"
+					aria-label="Trending time frame"
+				>
+					<button
+						type="button"
+						role="tab"
+						aria-selected={active_period === 'today'}
+						onclick={() => select_period('today')}
+						class="rounded-full px-2 py-0.5 transition {active_period === 'today'
+							? 'bg-white text-slate-900 shadow-xs'
+							: 'text-slate-500 hover:text-slate-900'}"
+					>
+						Today
+					</button>
+					<button
+						type="button"
+						role="tab"
+						aria-selected={active_period === 'week'}
+						onclick={() => select_period('week')}
+						class="rounded-full px-2 py-0.5 transition {active_period === 'week'
+							? 'bg-white text-slate-900 shadow-xs'
+							: 'text-slate-500 hover:text-slate-900'}"
+					>
+						Week
+					</button>
+					<button
+						type="button"
+						role="tab"
+						aria-selected={active_period === 'month'}
+						onclick={() => select_period('month')}
+						class="rounded-full px-2 py-0.5 transition {active_period === 'month'
+							? 'bg-white text-slate-900 shadow-xs'
+							: 'text-slate-500 hover:text-slate-900'}"
+					>
+						Month
+					</button>
+				</div>
 			</div>
 
-			<div class="divide-y divide-slate-100">
-				{#each trending_topics as topic (typeof topic === 'string' ? topic : topic.tag)}
-					{@const tag_name = typeof topic === 'string' ? topic : topic.tag}
-					{@const post_count = typeof topic === 'string' ? null : topic.count}
-					<a
-						href={`${resolve('/explore')}?q=${encodeURIComponent('#' + tag_name)}`}
-						class="group -mx-2 flex items-center justify-between rounded-2xl p-2.5 transition hover:bg-slate-50"
-					>
-						<div class="min-w-0 flex-1">
-							<p
-								class="truncate text-xs font-bold text-slate-900 transition group-hover:text-indigo-600"
-							>
-								#{tag_name}
-							</p>
-							{#if post_count}
-								<p class="mt-0.5 text-[11px] text-slate-400">
-									{post_count}
-									{post_count === 1 ? 'post' : 'posts'}
+			<div
+				class="divide-y divide-slate-100 transition-opacity {loading_topics ? 'opacity-50' : ''}"
+			>
+				{#if displayed_topics.length === 0}
+					<p class="py-3 text-center text-xs text-slate-400">
+						No topics trending {active_period === 'today'
+							? 'today'
+							: active_period === 'week'
+								? 'this week'
+								: 'this month'}.
+					</p>
+				{:else}
+					{#each displayed_topics as topic (typeof topic === 'string' ? topic : topic.tag)}
+						{@const tag_name = typeof topic === 'string' ? topic : topic.tag}
+						{@const post_count = typeof topic === 'string' ? null : topic.count}
+						<a
+							href={`${resolve('/explore')}?q=${encodeURIComponent('#' + tag_name)}`}
+							class="group -mx-2 flex items-center justify-between rounded-2xl p-2.5 transition hover:bg-slate-50"
+						>
+							<div class="min-w-0 flex-1">
+								<p
+									class="truncate text-xs font-bold text-slate-900 transition group-hover:text-indigo-600"
+								>
+									#{tag_name}
 								</p>
-							{/if}
-						</div>
-						<ArrowUpRightIcon
-							class="size-3.5 text-slate-300 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-slate-600"
-						/>
-					</a>
-				{/each}
+								{#if post_count}
+									<p class="mt-0.5 text-[11px] text-slate-400">
+										{post_count}
+										{post_count === 1 ? 'post' : 'posts'}
+									</p>
+								{/if}
+							</div>
+							<ArrowUpRightIcon
+								class="size-3.5 text-slate-300 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-slate-600"
+							/>
+						</a>
+					{/each}
+				{/if}
 			</div>
 
 			<div class="mt-2 border-t border-slate-100 pt-2.5">
 				<a
-					href={resolve('/explore')}
+					href={`${resolve('/explore')}?period=${active_period}`}
 					class="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 transition hover:text-indigo-700"
 				>
 					<CompassIcon class="size-3.5" />

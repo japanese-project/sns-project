@@ -3,11 +3,13 @@ import type { Db } from '../db'
 import { follow, user } from '../db/schema'
 import {
 	complete_onboarding,
+	ensure_username,
 	get_suggested_users,
 	get_users_by_interests,
 	update_user_profile,
 } from './users'
 import { create_test_db, make_follow, make_user } from './test-db'
+import { MAX_INTEREST_LENGTH } from '$lib/limits'
 
 let db: Db
 let dispose: () => Promise<void>
@@ -72,6 +74,35 @@ describe('update_user_profile', () => {
 		const id = await make_user(db, 'BioUser')
 		expect(await status_of(update_user_profile(db, id, { bio: 'a'.repeat(161) }))).toBe(400)
 	})
+
+	it('rejects interests with values exceeding the max length', async () => {
+		const id = await make_user(db, 'LongInterestUser')
+		const long_interest = 'a'.repeat(MAX_INTEREST_LENGTH + 1)
+		expect(await status_of(update_user_profile(db, id, { interests: [long_interest] }))).toBe(400)
+	})
+
+	it('rejects interests containing control characters', async () => {
+		const id = await make_user(db, 'CtrlInterestUser')
+		expect(
+			await status_of(update_user_profile(db, id, { interests: ['valid', 'bad\x00char'] })),
+		).toBe(400)
+	})
+
+	it('trims interest values and filters out empty strings', async () => {
+		const id = await make_user(db, 'TrimInterestUser')
+		const updated = await update_user_profile(db, id, {
+			interests: ['  Music  ', '', '  ', 'Art'],
+		})
+		expect(updated.interests).toBe(JSON.stringify(['Music', 'Art']))
+	})
+
+	it('caps interests at the configured maximum count', async () => {
+		const id = await make_user(db, 'ManyInterestsUser')
+		const many = Array.from({ length: 20 }, (_, i) => `Topic${i}`)
+		const updated = await update_user_profile(db, id, { interests: many })
+		const parsed = JSON.parse(updated.interests!)
+		expect(parsed.length).toBeLessThanOrEqual(10)
+	})
 })
 
 describe('complete_onboarding', () => {
@@ -89,6 +120,12 @@ describe('complete_onboarding', () => {
 		const id = await make_user(db, 'Skipper')
 		const result = await complete_onboarding(db, id, { skip: true })
 		expect(result.onboarded).toBe(true)
+	})
+
+	it('validates interest values during onboarding', async () => {
+		const id = await make_user(db, 'OnboardInterest')
+		const long_interest = 'x'.repeat(MAX_INTEREST_LENGTH + 1)
+		expect(await status_of(complete_onboarding(db, id, { interests: [long_interest] }))).toBe(400)
 	})
 })
 
@@ -135,5 +172,29 @@ describe('get_users_by_interests', () => {
 		const ids = matched.map((u) => u.id)
 		expect(ids).toContain(gamer)
 		expect(ids).not.toContain(coder)
+	})
+})
+
+describe('ensure_username', () => {
+	it('assigns a username derived from email for users without one', async () => {
+		const id = crypto.randomUUID()
+		const now = new Date()
+		await db.insert(user).values({
+			id,
+			name: 'NoUsername',
+			email: `nousername-${id.slice(0, 6)}@example.com`,
+			username: null,
+			createdAt: now,
+			updatedAt: now,
+		})
+		const result = await ensure_username(db, id, `nousername-${id.slice(0, 6)}@example.com`)
+		expect(result).not.toBe(id) // should not fall back to user_id
+		expect(result.length).toBeGreaterThan(0)
+	})
+
+	it('returns the existing username if already set', async () => {
+		const id = await make_user(db, 'HasUsername')
+		const result = await ensure_username(db, id, 'ignored@example.com')
+		expect(result).toBe('hasusername')
 	})
 })

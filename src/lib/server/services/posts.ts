@@ -1,9 +1,9 @@
-import { and, desc, eq, lt, or, sql, type SQL } from 'drizzle-orm'
+import { and, desc, eq, gte, lt, or, sql, type SQL } from 'drizzle-orm'
 import { error } from '@sveltejs/kit'
 import type { Db } from '../db'
 import { comment, follow, like, post, user } from '../db/schema'
-import { MAX_POST_LENGTH } from '$lib/limits'
-import type { Page, PostView } from '$lib/types'
+import { MAX_POST_LENGTH, MAX_TRENDING_LIMIT } from '$lib/limits'
+import type { Page, PostView, TrendingPeriod } from '$lib/types'
 import { validate_text } from '../validation'
 import { clamp_limit, decode_cursor, encode_cursor, like_pattern, new_id } from './cursor'
 import { to_user_summary } from './users'
@@ -215,17 +215,56 @@ export async function delete_post(db: Db, user_id: string, post_id: string): Pro
 	await db.delete(post).where(eq(post.id, post_id))
 }
 
-/** Analyzes public post content and ranks top hashtags by frequency. */
+/**
+ * Returns the start-of-period Date for the given trending window.
+ * `today` = midnight UTC today, `week` = 7 days ago, `month` = 30 days ago.
+ */
+function period_start(period: TrendingPeriod): Date {
+	const now = new Date()
+	switch (period) {
+		case 'today': {
+			return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
+		}
+		case 'week':
+			return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+		case 'month':
+			return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+	}
+}
+
+export function parse_trending_period(raw: string | null | undefined): TrendingPeriod {
+	if (raw === 'today' || raw === 'week' || raw === 'month') return raw
+	return 'week' // sensible default
+}
+
+/**
+ * Analyzes public post content and ranks top hashtags by frequency.
+ *
+ * Accepts a `period` parameter to restrict the time window:
+ *   - `today`  – posts created since midnight UTC
+ *   - `week`   – posts from the last 7 days (default)
+ *   - `month`  – posts from the last 30 days
+ *
+ * Design note: this scans up to 500 recent public posts in-database within
+ * the chosen window and aggregates hashtags application-side. This is
+ * intentional for the expected workload (< 10k posts); at larger scale a
+ * materialized tag-count table or scheduled worker would be appropriate.
+ */
 export async function get_trending_topics(
 	db: Db,
 	limit = 8,
+	period: TrendingPeriod = 'week',
 ): Promise<{ tag: string; count: number }[]> {
+	limit = Math.min(Math.max(Math.floor(limit), 1), MAX_TRENDING_LIMIT)
+
+	const since = period_start(period)
+
 	const rows = await db
 		.select({ content: post.content })
 		.from(post)
-		.where(sql`${post.visibility} = 'public'`)
+		.where(and(sql`${post.visibility} = 'public'`, gte(post.createdAt, since)))
 		.orderBy(desc(post.createdAt))
-		.limit(300)
+		.limit(500)
 
 	const counts = new Map<string, number>()
 	const regex = /(#[a-zA-Z0-9_\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]+)/g

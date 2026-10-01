@@ -70,3 +70,5 @@ export interface Page<T> {
 	items: T[]
 	next_cursor: string | null
 }
+
+export type TrendingPeriod = 'today' | 'week' | 'month'
