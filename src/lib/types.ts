@@ -37,8 +37,10 @@ export interface CommentView {
 	parent_id: string | null
 	content: string
 	created_at: string
+	updated_at?: string
 	author: UserSummary
 	replies: CommentView[]
+	is_owner: boolean
 }
 
 export interface NotificationView {

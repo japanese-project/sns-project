@@ -2,7 +2,14 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { MAX_POST_LENGTH } from '$lib/limits'
 import type { Db } from '../db'
 import { follow, post } from '../db/schema'
-import { create_post, delete_post, get_visible_post, list_feed, update_post } from './posts'
+import {
+	create_post,
+	delete_post,
+	get_trending_topics,
+	get_visible_post,
+	list_feed,
+	update_post,
+} from './posts'
 import { create_test_db, make_follow, make_user } from './test-db'
 
 let db: Db
@@ -82,23 +89,32 @@ describe('visibility', () => {
 		expect(feed.items.some((p) => p.id === public_id)).toBe(true)
 	})
 
-	it('the author sees their own followers-only post', async () => {
+	it('the author sees their own followers-only post via direct view and following feed, but global feed is public-only', async () => {
 		expect(await get_visible_post(db, alice, secret_id)).not.toBeNull()
 		expect((await list_feed(db, alice, { limit: 50 })).items.some((p) => p.id === secret_id)).toBe(
-			true,
-		)
-	})
-
-	it('a non-follower cannot see it, a follower can', async () => {
-		expect(await get_visible_post(db, carol, secret_id)).toBeNull()
-		expect((await list_feed(db, carol, { limit: 50 })).items.some((p) => p.id === secret_id)).toBe(
 			false,
 		)
+		expect(
+			(await list_feed(db, alice, { feed: 'following', limit: 50 })).items.some(
+				(p) => p.id === secret_id,
+			),
+		).toBe(true)
+	})
+
+	it('a non-follower cannot see it, a follower can in following feed', async () => {
+		expect(await get_visible_post(db, carol, secret_id)).toBeNull()
+		expect(
+			(await list_feed(db, carol, { feed: 'following', limit: 50 })).items.some(
+				(p) => p.id === secret_id,
+			),
+		).toBe(false)
 		await make_follow(db, carol, alice)
 		expect(await get_visible_post(db, carol, secret_id)).not.toBeNull()
-		expect((await list_feed(db, carol, { limit: 50 })).items.some((p) => p.id === secret_id)).toBe(
-			true,
-		)
+		expect(
+			(await list_feed(db, carol, { feed: 'following', limit: 50 })).items.some(
+				(p) => p.id === secret_id,
+			),
+		).toBe(true)
 		await db.delete(follow)
 	})
 
@@ -216,5 +232,26 @@ describe('feed separation (following vs global)', () => {
 		const global_feed = await list_feed(db, u1, { feed: 'global' })
 		const global_ids = global_feed.items.map((p) => p.id)
 		expect(global_ids).toContain(p_stranger.id)
+	})
+})
+
+describe('get_trending_topics', () => {
+	it('extracts hashtags from public posts and ranks by frequency', async () => {
+		await create_post(db, alice, { content: 'Loving #svelte and #typescript!' })
+		await create_post(db, bob, { content: 'More #svelte discussions today' })
+		await create_post(db, carol, {
+			content: 'Followers only #secret',
+			visibility: 'followers-only',
+		})
+
+		const topics = await get_trending_topics(db, 5)
+		const tags = topics.map((t) => t.tag)
+		expect(tags).toContain('svelte')
+		expect(tags).toContain('typescript')
+		// followers-only posts are excluded from public trending
+		expect(tags).not.toContain('secret')
+
+		const svelte_topic = topics.find((t) => t.tag === 'svelte')
+		expect(svelte_topic?.count).toBe(2)
 	})
 })

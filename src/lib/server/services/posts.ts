@@ -136,7 +136,7 @@ export function list_feed(
 		const following_filter = sql<boolean>`(${post.userId} = ${viewer_id} or exists (select 1 from ${follow} where ${follow.followerId} = ${viewer_id} and ${follow.followingId} = ${post.userId}))`
 		return paginate(db, viewer_id, [following_filter], opts)
 	}
-	return paginate(db, viewer_id, [], opts)
+	return paginate(db, viewer_id, [eq(post.visibility, 'public')], opts)
 }
 
 export function list_posts_by_user(
@@ -213,4 +213,39 @@ export async function update_post(
 export async function delete_post(db: Db, user_id: string, post_id: string): Promise<void> {
 	await require_owned_post(db, user_id, post_id)
 	await db.delete(post).where(eq(post.id, post_id))
+}
+
+/** Analyzes public post content and ranks top hashtags by frequency. */
+export async function get_trending_topics(
+	db: Db,
+	limit = 8,
+): Promise<{ tag: string; count: number }[]> {
+	const rows = await db
+		.select({ content: post.content })
+		.from(post)
+		.where(sql`${post.visibility} = 'public'`)
+		.orderBy(desc(post.createdAt))
+		.limit(300)
+
+	const counts = new Map<string, number>()
+	const regex = /(#[a-zA-Z0-9_\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]+)/g
+
+	for (const row of rows) {
+		const matches = row.content.match(regex)
+		if (matches) {
+			const unique_in_post = new Set(matches.map((m) => m.toLowerCase()))
+			for (const raw_tag of unique_in_post) {
+				const tag = raw_tag.startsWith('#') ? raw_tag.slice(1) : raw_tag
+				if (tag.length > 0) {
+					counts.set(tag, (counts.get(tag) ?? 0) + 1)
+				}
+			}
+		}
+	}
+
+	const sorted = [...counts.entries()]
+		.sort((a, b) => b[1] - a[1])
+		.map(([tag, count]) => ({ tag, count }))
+
+	return sorted.slice(0, limit)
 }

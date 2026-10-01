@@ -10,11 +10,14 @@
 	import UserRow from '$lib/components/app/UserRow.svelte'
 	import { api } from '$lib/api'
 	import { MAX_SEARCH_LENGTH } from '$lib/limits'
+	import SearchSuggestions from '$lib/components/app/SearchSuggestions.svelte'
+	import { search_history } from '$lib/search-history.svelte'
 	import type { Page, PostView } from '$lib/types'
 
 	let { data } = $props()
 
 	let input = $state('')
+	let is_focused = $state(false)
 	// Reset local paging state whenever a new search result set arrives.
 	let extra_posts = $state<PostView[]>([])
 	let next_cursor = $state<string | null>(null)
@@ -31,6 +34,8 @@
 
 	function search_for(q: string) {
 		const trimmed = q.trim()
+		if (trimmed) search_history.add(trimmed)
+		is_focused = false
 		const path = resolve('/explore')
 		const destination = trimmed ? `${path}?q=${encodeURIComponent(trimmed)}` : path
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
@@ -63,19 +68,37 @@
 
 <AppShell user={data.user} title="Explore">
 	<div class="mx-auto w-full max-w-2xl">
-		<form onsubmit={submit} role="search" class="relative">
-			<SearchIcon
-				class="pointer-events-none absolute top-1/2 left-4 size-4.5 -translate-y-1/2 text-slate-400"
-			/>
-			<input
-				type="search"
-				bind:value={input}
-				maxlength={MAX_SEARCH_LENGTH}
-				placeholder="Search people or posts…"
-				aria-label="Search"
-				class="w-full rounded-2xl border border-slate-200/80 bg-white py-3 pr-4 pl-11 text-sm text-slate-900 shadow-xs transition outline-none placeholder:text-slate-400 focus:border-black focus:ring-1 focus:ring-black"
-			/>
-		</form>
+		<div class="relative">
+			<form onsubmit={submit} role="search" class="relative">
+				<SearchIcon
+					class="pointer-events-none absolute top-1/2 left-4 size-4.5 -translate-y-1/2 text-slate-400"
+				/>
+				<input
+					type="search"
+					bind:value={input}
+					onfocus={() => (is_focused = true)}
+					maxlength={MAX_SEARCH_LENGTH}
+					placeholder="Search people or posts…"
+					aria-label="Search"
+					class="w-full rounded-2xl border border-slate-200/80 bg-white py-3 pr-4 pl-11 text-sm text-slate-900 shadow-xs transition outline-none placeholder:text-slate-400 focus:border-black focus:ring-1 focus:ring-black"
+				/>
+			</form>
+
+			{#if is_focused}
+				<div
+					class="fixed inset-0 z-40"
+					role="presentation"
+					onclick={() => (is_focused = false)}
+				></div>
+				<SearchSuggestions
+					on_select={(q) => {
+						input = q
+						search_for(q)
+					}}
+					trending_topics={data.discovery?.topics ?? []}
+				/>
+			{/if}
+		</div>
 
 		<div class="mt-6 space-y-6">
 			{#if data.error}
@@ -92,14 +115,21 @@
 							Explore Topics
 						</h2>
 					</div>
-					<div class="flex flex-wrap gap-1.5">
-						{#each data.discovery.topics as topic (topic)}
+					<div class="flex flex-wrap gap-x-5 gap-y-2">
+						{#each data.discovery.topics as item (typeof item === 'string' ? item : item.tag)}
+							{@const tag_name = typeof item === 'string' ? item : item.tag}
+							{@const post_count = typeof item === 'string' ? null : item.count}
 							<button
 								type="button"
-								onclick={() => search_for(topic)}
-								class="rounded-full border border-slate-200 bg-white px-3.5 py-1 text-xs font-semibold text-slate-700 shadow-xs transition hover:border-slate-300 hover:bg-slate-50"
+								onclick={() => search_for(`#${tag_name}`)}
+								class="group flex items-baseline gap-1.5 text-sm font-semibold text-indigo-600 transition hover:text-indigo-800 hover:underline"
 							>
-								#{topic}
+								<span>#{tag_name}</span>
+								{#if post_count && post_count > 1}
+									<span class="text-[11px] font-normal text-slate-400 group-hover:text-slate-500">
+										{post_count}
+									</span>
+								{/if}
 							</button>
 						{/each}
 					</div>

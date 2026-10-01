@@ -16,19 +16,21 @@ type CommentRow = {
 	parent_id: string | null
 	content: string
 	created_at: Date
+	updated_at: Date
 	user_id: string
 	name: string
 	username: string | null
 	image: string | null
 }
 
-function to_view(row: CommentRow): CommentView {
+function to_view(row: CommentRow, viewer_id: string | null): CommentView {
 	return {
 		id: row.id,
 		post_id: row.post_id,
 		parent_id: row.parent_id,
 		content: row.content,
 		created_at: row.created_at.toISOString(),
+		updated_at: row.updated_at.toISOString(),
 		author: to_user_summary({
 			id: row.user_id,
 			name: row.name,
@@ -36,6 +38,7 @@ function to_view(row: CommentRow): CommentView {
 			image: row.image,
 		}),
 		replies: [],
+		is_owner: viewer_id !== null && viewer_id === row.user_id,
 	}
 }
 
@@ -45,6 +48,7 @@ const columns = {
 	parent_id: comment.parentId,
 	content: comment.content,
 	created_at: comment.createdAt,
+	updated_at: comment.updatedAt,
 	user_id: comment.userId,
 	name: user.name,
 	username: user.username,
@@ -66,7 +70,7 @@ export async function list_comments(db: Db, viewer_id: string | null, post_id: s
 	const top_level: CommentView[] = []
 	const by_id = new Map<string, CommentView>()
 	for (const row of rows) {
-		const view = to_view(row)
+		const view = to_view(row, viewer_id)
 		by_id.set(view.id, view)
 		if (!row.parent_id) top_level.push(view)
 	}
@@ -135,5 +139,42 @@ export async function create_comment(
 		.from(comment)
 		.innerJoin(user, eq(user.id, comment.userId))
 		.where(inArray(comment.id, [id]))
-	return to_view(rows[0])
+	return to_view(rows[0], user_id)
+}
+
+export async function update_comment(
+	db: Db,
+	user_id: string,
+	comment_id: string,
+	input: { content?: unknown },
+): Promise<CommentView> {
+	const existing = await db
+		.select({ id: comment.id, userId: comment.userId, postId: comment.postId })
+		.from(comment)
+		.where(eq(comment.id, comment_id))
+		.get()
+	if (!existing) error(404, 'Comment not found')
+	if (existing.userId !== user_id) error(403, 'Only the author can edit this comment')
+
+	const content = validate_text(input.content, MAX_COMMENT_LENGTH, 'Comment')
+	await db.update(comment).set({ content, updatedAt: new Date() }).where(eq(comment.id, comment_id))
+
+	const rows = await db
+		.select(columns)
+		.from(comment)
+		.innerJoin(user, eq(user.id, comment.userId))
+		.where(eq(comment.id, comment_id))
+	return to_view(rows[0], user_id)
+}
+
+export async function delete_comment(db: Db, user_id: string, comment_id: string): Promise<void> {
+	const existing = await db
+		.select({ id: comment.id, userId: comment.userId })
+		.from(comment)
+		.where(eq(comment.id, comment_id))
+		.get()
+	if (!existing) error(404, 'Comment not found')
+	if (existing.userId !== user_id) error(403, 'Only the author can delete this comment')
+
+	await db.delete(comment).where(eq(comment.id, comment_id))
 }

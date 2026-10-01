@@ -79,18 +79,24 @@
 	})
 </script>
 
-<div class="space-y-4">
+<div class="divide-y divide-slate-100">
 	{#if loading}
-		<div class="space-y-4" aria-busy="true" aria-label="Loading posts">
+		<div class="divide-y divide-slate-100" aria-busy="true" aria-label="Loading posts">
 			{#each [0, 1, 2] as n (n)}
-				<div class="h-36 animate-pulse rounded-2xl border border-slate-200/60 bg-white/60"></div>
+				<div class="h-32 animate-pulse px-2 py-5">
+					<div class="flex gap-3">
+						<div class="size-11 rounded-full bg-slate-200/80"></div>
+						<div class="flex-1 space-y-2 py-1">
+							<div class="h-3.5 w-1/3 rounded bg-slate-200/80"></div>
+							<div class="h-4 w-4/5 rounded bg-slate-200/60"></div>
+							<div class="h-4 w-2/3 rounded bg-slate-200/60"></div>
+						</div>
+					</div>
+				</div>
 			{/each}
 		</div>
 	{:else if error_message && posts.length === 0}
-		<div
-			class="rounded-2xl border border-slate-200/80 bg-white p-8 text-center shadow-xs"
-			role="alert"
-		>
+		<div class="px-4 py-12 text-center" role="alert">
 			<p class="text-sm font-medium text-rose-600">{error_message}</p>
 			<button
 				type="button"
@@ -100,7 +106,7 @@
 			>
 		</div>
 	{:else if posts.length === 0}
-		<div class="rounded-2xl border border-slate-200/80 bg-white p-8 text-center shadow-xs">
+		<div class="px-4 py-12 text-center">
 			<p class="text-sm text-slate-500">{empty_message}</p>
 			{#if signed_in && accepts_new_posts}
 				<button

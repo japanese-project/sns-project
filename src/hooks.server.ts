@@ -7,7 +7,9 @@
 import { dev, building } from '$app/environment'
 import { create_auth } from '$lib/server/auth'
 import { create_db } from '$lib/server/db'
+import { user as user_table } from '$lib/server/db/schema'
 import { ensure_username } from '$lib/server/services/users'
+import { eq } from 'drizzle-orm'
 import type { Handle } from '@sveltejs/kit'
 
 let platform_proxy: {
@@ -46,13 +48,29 @@ export const handle: Handle = async ({ event, resolve }) => {
 	event.locals.user = session_data?.user ?? null
 	event.locals.session = session_data?.session ?? null
 
-	if (event.locals.user && !event.locals.user.username) {
-		// Accounts created before usernames existed (and brand-new sign-ups) get one lazily.
-		event.locals.user.username = await ensure_username(
-			event.locals.db,
-			event.locals.user.id,
-			event.locals.user.email,
-		)
+	if (event.locals.user) {
+		try {
+			const db_user = await event.locals.db
+				.select({ username: user_table.username, onboarded: user_table.onboarded })
+				.from(user_table)
+				.where(eq(user_table.id, event.locals.user.id))
+				.get()
+
+			if (db_user) {
+				event.locals.user.onboarded = Boolean(db_user.onboarded)
+				if (!db_user.username) {
+					event.locals.user.username = await ensure_username(
+						event.locals.db,
+						event.locals.user.id,
+						event.locals.user.email,
+					)
+				} else {
+					event.locals.user.username = db_user.username
+				}
+			}
+		} catch {
+			// Best-effort enrichment for user fields
+		}
 	}
 
 	return resolve(event)

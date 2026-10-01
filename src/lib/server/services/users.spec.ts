@@ -1,7 +1,12 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import type { Db } from '../db'
 import { follow, user } from '../db/schema'
-import { complete_onboarding, get_suggested_users, update_user_profile } from './users'
+import {
+	complete_onboarding,
+	get_suggested_users,
+	get_users_by_interests,
+	update_user_profile,
+} from './users'
 import { create_test_db, make_follow, make_user } from './test-db'
 
 let db: Db
@@ -38,6 +43,14 @@ describe('update_user_profile', () => {
 		expect(updated.username).toBe('new_handle')
 		expect(updated.handle).toBe('new_handle')
 		expect(updated.bio).toBe('Hello world from bio!')
+	})
+
+	it('updates interests array when provided', async () => {
+		const id = await make_user(db, 'InterestUser')
+		const updated = await update_user_profile(db, id, {
+			interests: ['Technology', 'Music'],
+		})
+		expect(updated.interests).toBe(JSON.stringify(['Technology', 'Music']))
 	})
 
 	it('rejects invalid username formats', async () => {
@@ -106,5 +119,21 @@ describe('get_suggested_users', () => {
 		const u2_item = suggestions.find((s) => s.id === u2)
 		expect(u2_item?.is_followed_by).toBe(true)
 		expect(u2_item?.is_following).toBe(false)
+	})
+})
+
+describe('get_users_by_interests', () => {
+	it('matches users sharing specified interests', async () => {
+		const viewer = await make_user(db, 'IntViewer')
+		const gamer = await make_user(db, 'Gamer')
+		const coder = await make_user(db, 'Coder')
+
+		await update_user_profile(db, gamer, { interests: ['Gaming', 'Music'] })
+		await update_user_profile(db, coder, { interests: ['Technology', 'Open Source'] })
+
+		const matched = await get_users_by_interests(db, viewer, ['Gaming'])
+		const ids = matched.map((u) => u.id)
+		expect(ids).toContain(gamer)
+		expect(ids).not.toContain(coder)
 	})
 })

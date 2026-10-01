@@ -68,18 +68,14 @@
 		</div>
 	{/snippet}
 
-	<div class="mx-auto flex w-full max-w-5xl items-start justify-center gap-8">
-		<!-- Primary Feed Stream -->
-		<div class="w-full max-w-2xl min-w-0 flex-1">
-			<!-- Posts stream starts immediately below header -->
-			<PostList {endpoint} {signed_in} accepts_new_posts={signed_in} {empty_message} />
-		</div>
+	{#snippet right_sidebar()}
+		<HomeSidebar
+			suggested_users={data.suggested_users ?? []}
+			trending_topics={data.trending_topics ?? []}
+			{signed_in}
+		/>
+	{/snippet}
 
-		<!-- Right-side Discovery Sidebar (X-like UX: search, topics, who to follow) -->
-		{#if data.suggested_users && data.suggested_users.length > 0}
-			<aside class="sticky top-20 hidden w-72 shrink-0 xl:block">
-				<HomeSidebar suggested_users={data.suggested_users} {signed_in} />
-			</aside>
-		{/if}
-	</div>
+	<!-- Primary Feed -->
+	<PostList {endpoint} {signed_in} accepts_new_posts={signed_in} {empty_message} />
 </AppShell>

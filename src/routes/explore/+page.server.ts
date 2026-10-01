@@ -1,4 +1,4 @@
-import { list_feed } from '$lib/server/services/posts'
+import { get_trending_topics, list_feed } from '$lib/server/services/posts'
 import { parse_query, search_all } from '$lib/server/services/search'
 import { get_suggested_users } from '$lib/server/services/users'
 import type { PageServerLoad } from './$types'
@@ -8,31 +8,11 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	const raw = url.searchParams.get('q')
 
 	if (raw === null || raw.trim() === '') {
-		const [suggested_users, discovery_feed] = await Promise.all([
+		const [suggested_users, discovery_feed, topics] = await Promise.all([
 			get_suggested_users(locals.db, viewer_id, 6),
 			list_feed(locals.db, viewer_id, { limit: 8 }),
+			get_trending_topics(locals.db, 10),
 		])
-
-		let user_interests: string[] = []
-		if (locals.user?.interests) {
-			try {
-				user_interests = JSON.parse(locals.user.interests)
-			} catch {
-				user_interests = []
-			}
-		}
-
-		const default_topics = [
-			'Technology',
-			'Design',
-			'Photography',
-			'Art',
-			'Music',
-			'Gaming',
-			'OpenSource',
-			'Writing',
-		]
-		const topics = user_interests.length > 0 ? user_interests : default_topics
 
 		return {
 			user: locals.user ?? null,

@@ -7,6 +7,7 @@
 	import LogInIcon from '@lucide/svelte/icons/log-in'
 	import LogOutIcon from '@lucide/svelte/icons/log-out'
 	import PencilIcon from '@lucide/svelte/icons/pencil'
+	import PlusIcon from '@lucide/svelte/icons/plus'
 	import { onMount, type Snippet } from 'svelte'
 	import { api } from '$lib/api'
 	import { sign_out } from '$lib/auth-client'
@@ -19,6 +20,7 @@
 		user,
 		title,
 		header_content,
+		right_sidebar,
 		children,
 	}: {
 		user?: {
@@ -30,6 +32,7 @@
 		} | null
 		title: string
 		header_content?: Snippet
+		right_sidebar?: Snippet
 		children: Snippet
 	} = $props()
 
@@ -97,6 +100,18 @@
 		>
 			<HouseIcon class="size-5" />
 		</a>
+
+		{#if user && me_handle}
+			<button
+				type="button"
+				onclick={() => composer.show()}
+				title="Create post"
+				aria-label="Create post"
+				class="{nav_button} {idle}"
+			>
+				<PlusIcon class="size-5" />
+			</button>
+		{/if}
 
 		<a
 			href={resolve('/explore')}
@@ -174,16 +189,26 @@
 			<HouseIcon class="size-5" />
 		</a>
 
-		<a
-			href={resolve('/explore')}
-			aria-label="Explore"
-			aria-current={path.startsWith('/explore') ? 'page' : undefined}
-			class="{nav_button} {path.startsWith('/explore') ? active : idle}"
-		>
-			<CompassIcon class="size-5" />
-		</a>
-
 		{#if user && me_handle}
+			<button
+				type="button"
+				onclick={() => composer.show()}
+				title="Create post"
+				aria-label="Create post"
+				class="{nav_button} {idle}"
+			>
+				<PlusIcon class="size-5" />
+			</button>
+
+			<a
+				href={resolve('/explore')}
+				aria-label="Explore"
+				aria-current={path.startsWith('/explore') ? 'page' : undefined}
+				class="{nav_button} {path.startsWith('/explore') ? active : idle}"
+			>
+				<CompassIcon class="size-5" />
+			</a>
+
 			<a
 				href={resolve('/notifications')}
 				aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
@@ -213,6 +238,15 @@
 			</a>
 		{:else}
 			<a
+				href={resolve('/explore')}
+				aria-label="Explore"
+				aria-current={path.startsWith('/explore') ? 'page' : undefined}
+				class="{nav_button} {path.startsWith('/explore') ? active : idle}"
+			>
+				<CompassIcon class="size-5" />
+			</a>
+
+			<a
 				href={resolve('/login')}
 				aria-label="Sign in"
 				class="flex size-11 items-center justify-center rounded-2xl text-slate-500 hover:text-slate-900"
@@ -222,46 +256,61 @@
 		{/if}
 	</nav>
 
-	<!-- Content Layout: Left Padding on md+ explicitly clears the vertical nav pill -->
-	<div class="relative min-h-screen w-full md:pl-24 lg:pl-28">
-		<!-- Centered Floating Header Pill -->
-		<header class="sticky top-0 z-20 flex justify-center px-4 pt-4 pb-2">
-			<div
-				class="flex items-center gap-3 rounded-full border border-slate-200/80 bg-white/90 p-1.5 shadow-sm shadow-slate-900/5 backdrop-blur-md sm:gap-3.5 sm:px-5 sm:py-2"
-			>
-				{#if header_content}
-					{@render header_content()}
-				{:else}
-					<h1 class="px-2 text-sm font-bold tracking-tight text-slate-900">{title}</h1>
-				{/if}
-
-				<span class="h-4 w-px bg-slate-200"></span>
-
-				{#if user}
-					<button
-						type="button"
-						onclick={() => composer.show()}
-						class="flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 sm:px-2.5"
+	<!-- Content Layout: two-column flex so sidebar starts at the same top as the header -->
+	<div
+		class="flex min-h-screen w-full items-start px-4 md:pl-20 lg:pl-24"
+		style="padding-right: 2.5cm;"
+	>
+		<!-- Left column: header + main content, centered with max width -->
+		<div class="relative min-w-0 flex-1">
+			<div class="mx-auto w-full max-w-4xl">
+				<!-- Centered Header Pill -->
+				<header class="flex justify-center pt-4 pb-2">
+					<div
+						class="inline-flex items-center gap-3 rounded-full border border-slate-200/80 bg-white/90 p-1.5 shadow-sm shadow-slate-900/5 backdrop-blur-md sm:gap-3.5 sm:px-5 sm:py-2"
 					>
-						<PencilIcon class="size-3.5" />
-						<span class="hidden sm:inline">Share a thought…</span>
-						<span class="sm:hidden">Post</span>
-					</button>
-				{:else}
-					<a
-						href={resolve('/login')}
-						class="rounded-full px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
-					>
-						Sign in
-					</a>
-				{/if}
+						{#if header_content}
+							{@render header_content()}
+						{:else}
+							<h1 class="px-2 text-sm font-bold tracking-tight text-slate-900">{title}</h1>
+						{/if}
+
+						<span class="h-4 w-px bg-slate-200"></span>
+
+						{#if user}
+							<button
+								type="button"
+								onclick={() => composer.show()}
+								class="flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 sm:px-2.5"
+							>
+								<PencilIcon class="size-3.5" />
+								<span class="hidden sm:inline">Share a thought…</span>
+								<span class="sm:hidden">Post</span>
+							</button>
+						{:else}
+							<a
+								href={resolve('/login')}
+								class="rounded-full px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
+							>
+								Sign in
+							</a>
+						{/if}
+					</div>
+				</header>
+
+				<!-- Main Page Content -->
+				<main class="w-full pt-2 pb-24 md:pb-12">
+					{@render children()}
+				</main>
 			</div>
-		</header>
+		</div>
 
-		<!-- Main Page Content -->
-		<main class="mx-auto w-full max-w-5xl px-4 pt-2 pb-24 md:pb-12">
-			{@render children()}
-		</main>
+		<!-- Right column: sidebar — starts at the very top of the page, sticks at header-pill level (top-4 = 16px = pt-4) -->
+		{#if right_sidebar}
+			<div class="sticky top-4 hidden shrink-0 lg:block" style="width: 320px; margin-left: 2rem;">
+				{@render right_sidebar()}
+			</div>
+		{/if}
 	</div>
 
 	{#if user && composer.open}

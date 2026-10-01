@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import type { Db } from '../db'
 import { comment, follow, like, notification, post, user } from '../db/schema'
-import { create_comment, list_comments } from './comments'
+import { create_comment, delete_comment, list_comments, update_comment } from './comments'
 import { follow_user, list_followers, list_following, unfollow_user } from './follows'
 import { like_post, unlike_post } from './likes'
 import { list_notifications, mark_read, unread_count } from './notifications'
@@ -86,6 +86,24 @@ describe('comments', () => {
 		expect(tree[0].replies.map((c) => c.content)).toEqual(['reply', 'deep'])
 	})
 
+	it('allows author to update comment, rejecting non-author and invalid content', async () => {
+		const p = await create_post(db, alice, { content: 'test post' })
+		const c = await create_comment(db, bob, p.id, { content: 'original note' })
+		expect(await status_of(update_comment(db, carol, c.id, { content: 'hacked' }))).toBe(403)
+		expect(await status_of(update_comment(db, bob, c.id, { content: '  ' }))).toBe(400)
+		const updated = await update_comment(db, bob, c.id, { content: 'revised note' })
+		expect(updated.content).toBe('revised note')
+		expect(updated.is_owner).toBe(true)
+	})
+
+	it('allows author to delete comment and forbids non-author', async () => {
+		const p = await create_post(db, alice, { content: 'test post' })
+		const c = await create_comment(db, bob, p.id, { content: 'bye note' })
+		expect(await status_of(delete_comment(db, carol, c.id))).toBe(403)
+		await delete_comment(db, bob, c.id)
+		expect(await list_comments(db, bob, p.id)).toHaveLength(0)
+	})
+
 	it('rejects invalid content and parents from another post', async () => {
 		const p = await create_post(db, alice, { content: 'a' })
 		const other = await create_post(db, alice, { content: 'b' })
@@ -131,12 +149,12 @@ describe('follows', () => {
 			content: 'inner circle',
 			visibility: 'followers-only',
 		})
-		expect((await list_feed(db, bob)).items).toHaveLength(0)
+		expect((await list_feed(db, bob, { feed: 'following' })).items).toHaveLength(0)
 		await follow_user(db, bob, alice)
-		expect((await list_feed(db, bob)).items.map((x) => x.id)).toEqual([p.id])
+		expect((await list_feed(db, bob, { feed: 'following' })).items.map((x) => x.id)).toEqual([p.id])
 		expect((await list_posts_by_user(db, bob, alice)).items).toHaveLength(1)
 		await unfollow_user(db, bob, alice)
-		expect((await list_feed(db, bob)).items).toHaveLength(0)
+		expect((await list_feed(db, bob, { feed: 'following' })).items).toHaveLength(0)
 		expect((await list_posts_by_user(db, bob, alice)).items).toHaveLength(0)
 	})
 

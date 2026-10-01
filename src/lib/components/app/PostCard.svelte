@@ -110,11 +110,49 @@
 			confirming_delete = false
 		}
 	}
+
+	function handle_card_click(event: MouseEvent) {
+		if (editing) return
+		if (window.getSelection()?.toString()) return
+		const target = event.target as HTMLElement | null
+		if (target?.closest('a, button, input, textarea, form, [role="button"]')) {
+			return
+		}
+		void goto(resolve('/posts/[id]', { id: post.id }))
+	}
+
+	function handle_card_keydown(event: KeyboardEvent) {
+		if (editing) return
+		if (event.key === 'Enter' || event.key === ' ') {
+			const target = event.target as HTMLElement | null
+			if (target?.closest('a, button, input, textarea, form, [role="button"]')) {
+				return
+			}
+			event.preventDefault()
+			void goto(resolve('/posts/[id]', { id: post.id }))
+		}
+	}
+
+	function parse_hashtags(text: string) {
+		const regex = /(#[a-zA-Z0-9_\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]+)/g
+		const parts = text.split(regex)
+		return parts.map((part) => {
+			if (part.startsWith('#') && part.length > 1) {
+				return { type: 'tag' as const, text: part }
+			}
+			return { type: 'text' as const, text: part }
+		})
+	}
 </script>
 
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <article
-	class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition hover:border-slate-300"
+	class="min-w-0 overflow-hidden border-b border-slate-200/60 px-2 py-5 [overflow-wrap:anywhere] break-words transition-colors hover:bg-slate-50/50 {!editing
+		? 'cursor-pointer'
+		: ''}"
 	data-testid="post-card"
+	onclick={handle_card_click}
+	onkeydown={handle_card_keydown}
 >
 	<header class="flex items-center gap-3">
 		<a
@@ -170,39 +208,32 @@
 	</header>
 
 	{#if editing}
-		<form
-			onsubmit={save_edit}
-			class="mt-4 space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 shadow-inner sm:p-4"
-		>
-			<div class="flex flex-wrap items-center justify-between gap-2">
-				<span
-					class="flex items-center gap-1.5 text-xs font-bold tracking-wider text-slate-700 uppercase"
-				>
-					<PencilIcon class="size-3.5 text-indigo-600" />
-					Edit post
+		<form onsubmit={save_edit} class="mt-3 space-y-3">
+			<div class="flex items-center justify-between text-xs">
+				<span class="flex items-center gap-1.5 font-semibold text-slate-400">
+					<PencilIcon class="size-3.5 text-indigo-500" />
+					Editing
 				</span>
-				<div
-					class="flex items-center gap-1 rounded-full bg-white p-0.5 text-xs ring-1 ring-slate-200"
-				>
+				<div class="flex items-center gap-1">
 					<button
 						type="button"
 						onclick={() => (draft_visibility = 'public')}
-						class="flex items-center gap-1 rounded-full px-2.5 py-1 font-semibold transition {draft_visibility ===
+						class="flex items-center gap-1 rounded-full px-2.5 py-1 transition {draft_visibility ===
 						'public'
-							? 'bg-black text-white'
-							: 'text-slate-600 hover:text-slate-900'}"
+							? 'bg-slate-100 font-semibold text-slate-900'
+							: 'text-slate-400 hover:text-slate-600'}"
 					>
-						<GlobeIcon class="size-3" /> Public
+						<GlobeIcon class="size-3.5" /> Public
 					</button>
 					<button
 						type="button"
 						onclick={() => (draft_visibility = 'followers-only')}
-						class="flex items-center gap-1 rounded-full px-2.5 py-1 font-semibold transition {draft_visibility ===
+						class="flex items-center gap-1 rounded-full px-2.5 py-1 transition {draft_visibility ===
 						'followers-only'
-							? 'bg-black text-white'
-							: 'text-slate-600 hover:text-slate-900'}"
+							? 'bg-slate-100 font-semibold text-slate-900'
+							: 'text-slate-400 hover:text-slate-600'}"
 					>
-						<LockIcon class="size-3" /> Followers
+						<LockIcon class="size-3.5" /> Followers
 					</button>
 				</div>
 			</div>
@@ -211,16 +242,14 @@
 				bind:value={draft}
 				rows="3"
 				aria-label="Edit post text"
-				class="w-full resize-none rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-black focus:ring-2 focus:ring-black/10"
+				class="w-full resize-none border-0 bg-transparent p-0 text-lg leading-relaxed [overflow-wrap:anywhere] break-words text-slate-900 outline-none focus:ring-0"
 			></textarea>
 
-			<div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+			<div class="flex items-center justify-between text-xs">
 				<span
 					class="tabular-nums {draft.length > MAX_POST_LENGTH
 						? 'font-bold text-rose-600'
-						: draft.length > MAX_POST_LENGTH - 50
-							? 'text-amber-600'
-							: 'text-slate-400'}"
+						: 'text-slate-400'}"
 				>
 					{MAX_POST_LENGTH - draft.length} characters left
 				</span>
@@ -228,13 +257,13 @@
 					<button
 						type="button"
 						onclick={() => (editing = false)}
-						class="rounded-full px-3.5 py-1.5 font-semibold text-slate-600 hover:bg-white"
+						class="px-3 py-1.5 font-medium text-slate-500 transition hover:text-slate-800"
 						>Cancel</button
 					>
 					<button
 						type="submit"
 						disabled={saving || draft.trim().length === 0 || draft.length > MAX_POST_LENGTH}
-						class="rounded-full bg-black px-4 py-1.5 font-semibold text-white shadow-xs hover:bg-slate-800 disabled:opacity-50"
+						class="rounded-full bg-slate-900 px-4 py-1.5 font-medium text-white transition hover:bg-slate-800 disabled:opacity-50"
 					>
 						{saving ? 'Saving…' : 'Save changes'}
 					</button>
@@ -242,8 +271,21 @@
 			</div>
 		</form>
 	{:else}
-		<p class="mt-4 text-lg leading-relaxed whitespace-pre-wrap text-slate-900">
-			{active_post.content}
+		<p
+			class="mt-4 text-lg leading-relaxed [overflow-wrap:anywhere] break-words whitespace-pre-wrap text-slate-900"
+		>
+			{#each parse_hashtags(active_post.content) as segment, i (i)}
+				{#if segment.type === 'tag'}
+					<a
+						href="{resolve('/explore')}?q={encodeURIComponent(segment.text)}"
+						class="font-medium text-indigo-600 hover:text-indigo-700 hover:underline"
+					>
+						{segment.text}
+					</a>
+				{:else}
+					{segment.text}
+				{/if}
+			{/each}
 		</p>
 	{/if}
 

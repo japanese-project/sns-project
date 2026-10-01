@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { invalidateAll } from '$app/navigation'
 	import { api } from '$lib/api'
 	import { MAX_BIO_LENGTH } from '$lib/limits'
 
@@ -51,6 +52,7 @@
 							interests: selected_interests,
 						},
 			})
+			await invalidateAll()
 			on_done()
 		} catch (e) {
 			error_message = e instanceof Error ? e.message : 'Could not save profile setup'

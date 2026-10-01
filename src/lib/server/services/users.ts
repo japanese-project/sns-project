@@ -101,6 +101,7 @@ export async function update_user_profile(
 		name?: unknown
 		username?: unknown
 		bio?: unknown
+		interests?: unknown
 	},
 ) {
 	const current = await db.select().from(user).where(eq(user.id, user_id)).get()
@@ -144,6 +145,12 @@ export async function update_user_profile(
 		next_bio = raw_bio && raw_bio.length > 0 ? raw_bio : null
 	}
 
+	let next_interests = current.interests
+	if (Array.isArray(input.interests)) {
+		const valid = (input.interests as unknown[]).filter((i) => typeof i === 'string').slice(0, 10)
+		next_interests = JSON.stringify(valid)
+	}
+
 	const now = new Date()
 	await db
 		.update(user)
@@ -151,6 +158,7 @@ export async function update_user_profile(
 			name: next_name,
 			username: next_username,
 			bio: next_bio,
+			interests: next_interests,
 			updatedAt: now,
 		})
 		.where(eq(user.id, user_id))
@@ -161,6 +169,7 @@ export async function update_user_profile(
 		username: next_username,
 		handle: next_username ?? user_id,
 		bio: next_bio,
+		interests: next_interests,
 		image: current.image,
 	}
 }
@@ -238,6 +247,66 @@ export async function get_suggested_users(
 		.limit(limit)
 
 	return rows.map((row) => ({
+		...to_user_summary(row),
+		is_following: Boolean(row.is_following),
+		is_followed_by: Boolean(row.is_followed_by),
+		is_self: viewer_id === row.id,
+	}))
+}
+
+/**
+ * Returns up to `limit` users (not self, not already followed) who share at least one interest
+ * from the provided list. Falls back to recent users if no interests given.
+ */
+export async function get_users_by_interests(
+	db: Db,
+	viewer_id: string | null,
+	interests: string[],
+	limit = 5,
+): Promise<UserListItem[]> {
+	if (interests.length === 0) return get_suggested_users(db, viewer_id, limit)
+
+	const rows = await db
+		.select({
+			id: user.id,
+			name: user.name,
+			username: user.username,
+			image: user.image,
+			bio: user.bio,
+			interests: user.interests,
+			is_following: viewer_id
+				? sql<number>`exists(select 1 from ${follow} where ${follow.followerId} = ${viewer_id} and ${follow.followingId} = ${user.id})`
+				: sql<number>`0`,
+			is_followed_by: viewer_id
+				? sql<number>`exists(select 1 from ${follow} where ${follow.followerId} = ${user.id} and ${follow.followingId} = ${viewer_id})`
+				: sql<number>`0`,
+		})
+		.from(user)
+		.where(
+			viewer_id
+				? and(
+						ne(user.id, viewer_id),
+						sql`not exists(select 1 from ${follow} where ${follow.followerId} = ${viewer_id} and ${follow.followingId} = ${user.id})`,
+					)
+				: undefined,
+		)
+		.orderBy(desc(user.createdAt))
+		.limit(50) // over-fetch then filter in JS for shared interests
+
+	// Filter to users who share at least one interest
+	const lower_interests = interests.map((i) => i.toLowerCase())
+	const with_shared = rows.filter((row) => {
+		if (!row.interests) return false
+		try {
+			const their: string[] = JSON.parse(row.interests)
+			return their.some((t) => lower_interests.includes(t.toLowerCase()))
+		} catch {
+			return false
+		}
+	})
+
+	const result = with_shared.slice(0, limit)
+	return result.map((row) => ({
 		...to_user_summary(row),
 		is_following: Boolean(row.is_following),
 		is_followed_by: Boolean(row.is_followed_by),

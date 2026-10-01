@@ -4,7 +4,7 @@
 	import { api } from '$lib/api'
 	import { MAX_COMMENT_LENGTH } from '$lib/limits'
 	import { relative_time } from '$lib/time'
-	import type { CommentView } from '$lib/types'
+	import type { CommentView, UserSummary } from '$lib/types'
 	import Avatar from './Avatar.svelte'
 
 	let {
@@ -18,7 +18,7 @@
 	let load_error = $state<string | null>(null)
 	let text = $state('')
 	let reply_to = $state<CommentView | null>(null)
-	let reply_target_name = $state<string | null>(null)
+	let reply_target_author = $state<UserSummary | null>(null)
 	let submitting = $state(false)
 	let submit_error = $state<string | null>(null)
 
@@ -52,14 +52,19 @@
 				method: 'POST',
 				body: { content, parent_id: reply_to?.id ?? null },
 			})
+			// Attach parent_author for immediate rendering of @username tag
+			const created_with_parent = {
+				...created,
+				parent_author: reply_to ? (reply_target_author ?? reply_to.author) : null,
+			}
 			if (created.parent_id) {
-				comments.find((c) => c.id === created.parent_id)?.replies.push(created)
+				comments.find((c) => c.id === created.parent_id)?.replies.push(created_with_parent)
 			} else {
-				comments.push(created)
+				comments.push(created_with_parent)
 			}
 			text = ''
 			reply_to = null
-			reply_target_name = null
+			reply_target_author = null
 			on_count(total(comments))
 		} catch (e) {
 			// Nothing was added optimistically, so a failure leaves the list and the draft untouched.
@@ -68,10 +73,86 @@
 			submitting = false
 		}
 	}
+
+	function parse_hashtags(text: string) {
+		const regex = /(#[a-zA-Z0-9_\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]+)/g
+		const parts = text.split(regex)
+		return parts.map((part) => {
+			if (part.startsWith('#') && part.length > 1) {
+				return { type: 'tag' as const, text: part }
+			}
+			return { type: 'text' as const, text: part }
+		})
+	}
+	let editing_comment_id = $state<string | null>(null)
+	let edit_draft = $state('')
+	let saving_edit = $state(false)
+	let deleting_comment_id = $state<string | null>(null)
+
+	function start_edit(comment: CommentView) {
+		editing_comment_id = comment.id
+		edit_draft = comment.content
+	}
+
+	function cancel_edit() {
+		editing_comment_id = null
+		edit_draft = ''
+	}
+
+	async function save_comment_edit(comment: CommentView) {
+		const val = edit_draft.trim()
+		if (!val || val.length > MAX_COMMENT_LENGTH || saving_edit) return
+		saving_edit = true
+		try {
+			const updated = await api<CommentView>(`/api/comments/${comment.id}`, {
+				method: 'PATCH',
+				body: { content: val },
+			})
+			comment.content = updated.content
+			comment.updated_at = updated.updated_at
+			editing_comment_id = null
+			edit_draft = ''
+		} catch (e) {
+			alert(e instanceof Error ? e.message : 'Failed to update comment')
+		} finally {
+			saving_edit = false
+		}
+	}
+
+	async function delete_comment_action(comment: CommentView) {
+		if (deleting_comment_id === comment.id) return
+		deleting_comment_id = comment.id
+		try {
+			await api(`/api/comments/${comment.id}`, { method: 'DELETE' })
+			// Remove from comments list recursively
+			function remove_from(list: CommentView[]): boolean {
+				const idx = list.findIndex((c) => c.id === comment.id)
+				if (idx !== -1) {
+					list.splice(idx, 1)
+					return true
+				}
+				for (const c of list) {
+					if (remove_from(c.replies)) return true
+				}
+				return false
+			}
+			remove_from(comments)
+			on_count(total(comments))
+		} catch (e) {
+			alert(e instanceof Error ? e.message : 'Failed to delete comment')
+		} finally {
+			deleting_comment_id = null
+		}
+	}
 </script>
 
-{#snippet row(comment: CommentView, root_parent: CommentView | null)}
+{#snippet row(
+	comment: CommentView & { parent_author?: UserSummary | null },
+	root_parent: CommentView | null,
+)}
 	{@const is_nested = root_parent !== null}
+	{@const target_author = comment.parent_author ?? root_parent?.author}
+	{@const is_editing = editing_comment_id === comment.id}
 	<li class="flex gap-3 {is_nested ? 'mt-3' : ''}">
 		<Avatar user={comment.author} size={is_nested ? 28 : 32} />
 		<div class="min-w-0 flex-1">
@@ -81,25 +162,98 @@
 					class="font-semibold text-slate-900 hover:underline">{comment.author.name}</a
 				>
 				<span class="ml-1 text-xs text-slate-400">{relative_time(comment.created_at)}</span>
-			</p>
-			<p class="text-sm whitespace-pre-wrap text-slate-700">
-				{#if is_nested && comment.author.username}
-					<span class="font-medium text-indigo-600">@{comment.author.username} </span>
+				{#if comment.updated_at && comment.updated_at !== comment.created_at}
+					<span class="ml-1 text-[0.68rem] text-slate-400">(edited)</span>
 				{/if}
-				{comment.content}
 			</p>
-			{#if signed_in}
-				<button
-					type="button"
-					onclick={() => {
-						reply_to = root_parent ?? comment
-						reply_target_name = comment.author.name
+
+			{#if is_editing}
+				<form
+					onsubmit={(e) => {
+						e.preventDefault()
+						void save_comment_edit(comment)
 					}}
-					class="mt-0.5 text-xs font-medium text-slate-500 hover:text-slate-900"
+					class="mt-1 space-y-2"
 				>
-					{is_nested ? `Reply to ${comment.author.name}` : 'Reply'}
-				</button>
+					<input
+						type="text"
+						bind:value={edit_draft}
+						maxlength={MAX_COMMENT_LENGTH}
+						class="w-full rounded-full border border-slate-200 bg-transparent px-3 py-1 text-sm transition outline-none focus:border-slate-900 focus:ring-0"
+					/>
+					<div class="flex items-center gap-2 text-xs">
+						<button
+							type="submit"
+							disabled={saving_edit || !edit_draft.trim()}
+							class="rounded-full bg-slate-900 px-3 py-1 font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
+						>
+							{saving_edit ? 'Saving…' : 'Save'}
+						</button>
+						<button
+							type="button"
+							onclick={cancel_edit}
+							class="font-medium text-slate-500 hover:text-slate-800"
+						>
+							Cancel
+						</button>
+					</div>
+				</form>
+			{:else}
+				<p class="text-sm [overflow-wrap:anywhere] break-words whitespace-pre-wrap text-slate-700">
+					{#if is_nested && target_author?.username}
+						<a
+							href={resolve('/u/[handle]', { handle: target_author.handle })}
+							class="font-medium text-indigo-600 hover:underline">@{target_author.username}</a
+						>&nbsp;
+					{/if}
+					{#each parse_hashtags(comment.content) as segment, i (i)}
+						{#if segment.type === 'tag'}
+							<a
+								href="{resolve('/explore')}?q={encodeURIComponent(segment.text)}"
+								class="font-medium text-indigo-600 hover:underline"
+							>
+								{segment.text}
+							</a>
+						{:else}
+							{segment.text}
+						{/if}
+					{/each}
+				</p>
 			{/if}
+
+			<div class="mt-0.5 flex items-center gap-3 text-xs">
+				{#if signed_in && !is_editing}
+					<button
+						type="button"
+						onclick={() => {
+							reply_to = root_parent ?? comment
+							reply_target_author = comment.author
+						}}
+						class="font-medium text-slate-500 transition hover:text-slate-900"
+					>
+						{is_nested ? `Reply to ${comment.author.name}` : 'Reply'}
+					</button>
+				{/if}
+
+				{#if comment.is_owner && !is_editing}
+					<button
+						type="button"
+						onclick={() => start_edit(comment)}
+						class="font-medium text-slate-400 transition hover:text-slate-700"
+					>
+						Edit
+					</button>
+					<button
+						type="button"
+						onclick={() => void delete_comment_action(comment)}
+						disabled={deleting_comment_id === comment.id}
+						class="font-medium text-slate-400 transition hover:text-rose-600 disabled:opacity-50"
+					>
+						{deleting_comment_id === comment.id ? 'Deleting…' : 'Delete'}
+					</button>
+				{/if}
+			</div>
+
 			{#if !is_nested && comment.replies.length > 0}
 				<ul class="mt-2 border-l border-slate-200 pl-3">
 					{#each comment.replies as reply (reply.id)}
@@ -130,21 +284,18 @@
 
 	{#if signed_in}
 		<form onsubmit={submit} class="mt-4 space-y-2">
-			{#if reply_to}
+			{#if reply_to && reply_target_author}
 				<p
 					class="flex items-center justify-between rounded-full border border-indigo-100 bg-indigo-50/80 px-3.5 py-1 text-xs text-indigo-700"
 				>
 					<span>
-						Replying to <span class="font-bold">{reply_target_name ?? reply_to.author.name}</span>
-						{#if reply_target_name && reply_target_name !== reply_to.author.name}
-							<span class="text-[11px] text-slate-400"> (in thread)</span>
-						{/if}
+						Replying to <span class="font-bold">{reply_target_author.name}</span>
 					</span>
 					<button
 						type="button"
 						onclick={() => {
 							reply_to = null
-							reply_target_name = null
+							reply_target_author = null
 						}}
 						aria-label="Cancel reply"
 						class="font-bold hover:text-indigo-900">✕</button
