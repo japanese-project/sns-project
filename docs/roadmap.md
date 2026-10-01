@@ -134,7 +134,7 @@ Notifications must take users directly to the referenced content:
 
 - **Like / Comment / Reply:** Deep-links directly to the post permalink (`/posts/:id`).
 - **Follow:** Links to the follower's profile (`/u/:username`).
-- **Mark-as-Read:** Clicking any notification marks it read immediately (optimistic UI), decrementing the unread badge.
+- **Mark-as-Read:** Clicking any notification marks it read immediately (optimistic UI), decrementing the unread badge. The request is sent with `keepalive`, so it still completes if the click triggers a full-page navigation; navigation itself is never delayed waiting for it.
 - **Mark All as Read:** Header action clears all unread indicators at once.
 - **Unread Badge Refresh:** The nav badge refreshes when the shell mounts (only if the last count is older than 60 seconds), every 60 seconds, and immediately when notifications change (mark read). It deliberately does not refresh on every route change; navigating doesn't alter the count.
 

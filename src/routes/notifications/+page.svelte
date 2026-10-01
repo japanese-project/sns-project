@@ -55,6 +55,8 @@
 				await api<{ unread_count: number }>('/api/notifications/read', {
 					method: 'POST',
 					body: { id: note.id },
+					// Fired from a link click, so it must survive the navigation that follows.
+					keepalive: true,
 				})
 			).unread_count
 			announce()

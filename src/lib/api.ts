@@ -7,12 +7,18 @@ export class ApiError extends Error {
 	}
 }
 
+/**
+ * `keepalive` lets the request outlive the page: use it for writes triggered right before a
+ * navigation (e.g. marking a notification read on link click). Without it, a full-page
+ * navigation drops the connection and the server may be cut off before it finishes.
+ */
 export async function api<T>(
 	path: string,
-	init: { method?: string; body?: unknown } = {},
+	init: { method?: string; body?: unknown; keepalive?: boolean } = {},
 ): Promise<T> {
 	const response = await fetch(path, {
 		method: init.method ?? 'GET',
+		keepalive: init.keepalive,
 		headers: init.body !== undefined ? { 'content-type': 'application/json' } : undefined,
 		body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
 	})
