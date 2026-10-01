@@ -71,13 +71,6 @@
 	>
 		<a
 			href={resolve('/')}
-			aria-label="SNS home"
-			class="flex size-12 items-center justify-center rounded-full bg-black text-white md:mb-2"
-		>
-			<span class="text-lg font-bold">S</span>
-		</a>
-		<a
-			href={resolve('/')}
 			aria-label="Home"
 			aria-current={path === '/' ? 'page' : undefined}
 			class="{nav_button} {path === '/' ? active : idle}"
