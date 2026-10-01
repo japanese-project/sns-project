@@ -73,7 +73,7 @@ A user's profile represents their public identity on the platform.
 - **Username / Handle (`username`):** URL slug (e.g. `@ada`). Unique, lowercase alphanumeric characters plus underscores (`^[a-z0-9_]{3,30}$`).
   - _Bootstrap Rule:_ Automatically generated on first login from email prefix. If taken, a numerical suffix is appended.
   - _Fallback Rule:_ If a user somehow lacks a handle, routes fall back to `/u/<user_id>` gracefully.
-  - _Change Rule (MVP limitation):_ Users may change their username. The old handle is **not** kept as an alias or redirect, so existing links and bookmarks to `/u/<old>` stop resolving. `/u/<user_id>` always resolves and is the stable permalink. The edit form warns about this. _Post-MVP:_ a username-history table plus a reservation policy would allow old handles to redirect.
+  - _Change Rule (MVP limitation):_ Users may change their username. The old handle is **not** kept as an alias or redirect, so existing links and bookmarks to `/u/<old>` stop resolving. `/u/<user_id>` always resolves and is the stable permalink. The edit form warns about this, and after a successful change the app navigates to the new `/u/<new>` URL (replacing the old history entry) so the address bar matches the profile. _Post-MVP:_ a username-history table plus a reservation policy would allow old handles to redirect.
 - **Bio (`bio`):** Short user bio (max 160 characters), plaintext. _(Planned for profile edit milestone)_.
 - **Avatar (`image`):** Profile picture URL. When null, UI renders an accessible initials-based avatar chip.
 - **Joined Date (`created_at`):** Displayed formatted as "Joined Month Year" (e.g., "Joined October 2026").

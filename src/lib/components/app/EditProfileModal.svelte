@@ -94,6 +94,10 @@
 			return
 		}
 
+		// Read the handle now: on_saved makes the parent update the `user` prop, so comparing
+		// against `user.handle` afterwards would always see the new value and never navigate.
+		const previous_handle = user.handle
+
 		saving = true
 		error_message = null
 
@@ -121,8 +125,10 @@
 			}
 			on_saved({ ...updated, interests: parsed_interests })
 			on_close()
-			if (updated.handle !== user.handle) {
-				void goto(resolve('/u/[handle]', { handle: updated.handle }))
+			if (updated.handle !== previous_handle) {
+				// Move to the new canonical URL. The old one no longer resolves (no alias), so
+				// replace it in history instead of leaving a Back entry that would 404.
+				void goto(resolve('/u/[handle]', { handle: updated.handle }), { replaceState: true })
 			}
 		} catch (e) {
 			error_message = e instanceof Error ? e.message : 'Failed to update profile.'
