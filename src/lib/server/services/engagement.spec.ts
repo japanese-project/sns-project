@@ -1,0 +1,293 @@
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import type { Db } from '../db'
+import { comment, follow, like, notification, post, user } from '../db/schema'
+import { create_comment, delete_comment, list_comments, update_comment } from './comments'
+import { follow_user, list_followers, list_following, unfollow_user } from './follows'
+import { like_post, unlike_post } from './likes'
+import { list_notifications, mark_read, unread_count } from './notifications'
+import { create_post, delete_post, list_feed, list_posts_by_user } from './posts'
+import { parse_query, search_all, search_users } from './search'
+import { create_test_db, make_follow, make_user } from './test-db'
+import { eq } from 'drizzle-orm'
+
+let db: Db
+let dispose: () => Promise<void>
+let alice: string
+let bob: string
+let carol: string
+
+beforeAll(async () => {
+	;({ db, dispose } = await create_test_db())
+})
+afterAll(() => dispose())
+
+beforeEach(async () => {
+	await db.delete(notification)
+	await db.delete(like)
+	await db.delete(comment)
+	await db.delete(follow)
+	await db.delete(post)
+	await db.delete(user)
+	alice = await make_user(db, 'Alice')
+	bob = await make_user(db, 'Bob')
+	carol = await make_user(db, 'Carol')
+})
+
+async function status_of(promise: Promise<unknown>) {
+	try {
+		await promise
+		return 200
+	} catch (e) {
+		return (e as { status?: number }).status ?? 500
+	}
+}
+
+describe('likes', () => {
+	it('toggles and never stacks duplicates', async () => {
+		const p = await create_post(db, alice, { content: 'like me' })
+		expect((await like_post(db, bob, p.id)).like_count).toBe(1)
+		expect((await like_post(db, bob, p.id)).like_count).toBe(1)
+		expect((await like_post(db, carol, p.id)).like_count).toBe(2)
+		expect((await unlike_post(db, bob, p.id)).like_count).toBe(1)
+		expect((await unlike_post(db, bob, p.id)).like_count).toBe(1)
+		const [view] = (await list_feed(db, carol)).items
+		expect(view.like_count).toBe(1)
+		expect(view.liked_by_me).toBe(true)
+	})
+
+	it('cannot like a post the user cannot see', async () => {
+		const p = await create_post(db, alice, { content: 'hidden', visibility: 'followers-only' })
+		expect(await status_of(like_post(db, bob, p.id))).toBe(404)
+		await make_follow(db, bob, alice)
+		expect((await like_post(db, bob, p.id)).liked).toBe(true)
+	})
+})
+
+describe('comments', () => {
+	it('lists comments oldest-first with replies nested one level', async () => {
+		const p = await create_post(db, alice, { content: 'discuss' })
+		const first = await create_comment(db, bob, p.id, { content: 'first' })
+		const second = await create_comment(db, carol, p.id, { content: 'second' })
+		await create_comment(db, alice, p.id, { content: 'reply', parent_id: first.id })
+		const tree = await list_comments(db, bob, p.id)
+		expect(tree.map((c) => c.content)).toEqual(['first', 'second'])
+		expect(tree[0].replies.map((c) => c.content)).toEqual(['reply'])
+		expect(tree[1].id).toBe(second.id)
+	})
+
+	it('flattens a reply to a reply onto the top-level parent', async () => {
+		const p = await create_post(db, alice, { content: 'discuss' })
+		const top = await create_comment(db, bob, p.id, { content: 'top' })
+		const reply = await create_comment(db, carol, p.id, { content: 'reply', parent_id: top.id })
+		const nested = await create_comment(db, alice, p.id, { content: 'deep', parent_id: reply.id })
+		expect(nested.parent_id).toBe(top.id)
+		const tree = await list_comments(db, bob, p.id)
+		expect(tree).toHaveLength(1)
+		expect(tree[0].replies.map((c) => c.content)).toEqual(['reply', 'deep'])
+	})
+
+	it('allows author to update comment, rejecting non-author and invalid content', async () => {
+		const p = await create_post(db, alice, { content: 'test post' })
+		const c = await create_comment(db, bob, p.id, { content: 'original note' })
+		expect(await status_of(update_comment(db, carol, c.id, { content: 'hacked' }))).toBe(403)
+		expect(await status_of(update_comment(db, bob, c.id, { content: '  ' }))).toBe(400)
+		const updated = await update_comment(db, bob, c.id, { content: 'revised note' })
+		expect(updated.content).toBe('revised note')
+		expect(updated.is_owner).toBe(true)
+	})
+
+	it('allows author to delete comment and forbids non-author', async () => {
+		const p = await create_post(db, alice, { content: 'test post' })
+		const c = await create_comment(db, bob, p.id, { content: 'bye note' })
+		expect(await status_of(delete_comment(db, carol, c.id))).toBe(403)
+		await delete_comment(db, bob, c.id)
+		expect(await list_comments(db, bob, p.id)).toHaveLength(0)
+	})
+
+	it('rejects invalid content and parents from another post', async () => {
+		const p = await create_post(db, alice, { content: 'a' })
+		const other = await create_post(db, alice, { content: 'b' })
+		const elsewhere = await create_comment(db, bob, other.id, { content: 'x' })
+		expect(await status_of(create_comment(db, bob, p.id, { content: '  ' }))).toBe(400)
+		expect(await status_of(create_comment(db, bob, p.id, { content: 'x'.repeat(501) }))).toBe(400)
+		expect(
+			await status_of(create_comment(db, bob, p.id, { content: 'x', parent_id: elsewhere.id })),
+		).toBe(400)
+	})
+
+	it('hides comments of followers-only posts from non-followers', async () => {
+		const p = await create_post(db, alice, { content: 'secret', visibility: 'followers-only' })
+		await create_comment(db, alice, p.id, { content: 'author note' })
+		expect(await status_of(list_comments(db, bob, p.id))).toBe(404)
+		expect(await status_of(create_comment(db, bob, p.id, { content: 'let me in' }))).toBe(404)
+		await make_follow(db, bob, alice)
+		expect(await list_comments(db, bob, p.id)).toHaveLength(1)
+	})
+})
+
+describe('follows', () => {
+	it('rejects self-follow', async () => {
+		expect(await status_of(follow_user(db, alice, alice))).toBe(400)
+	})
+
+	it('is idempotent and unfollow removes the relation', async () => {
+		await follow_user(db, bob, alice)
+		const again = await follow_user(db, bob, alice)
+		expect(again.follower_count).toBe(1)
+		expect(await db.select().from(follow)).toHaveLength(1)
+		expect((await unfollow_user(db, bob, alice)).follower_count).toBe(0)
+		expect(await db.select().from(follow)).toHaveLength(0)
+	})
+
+	it('returns 404 for an unknown user', async () => {
+		expect(await status_of(follow_user(db, alice, 'ghost'))).toBe(404)
+	})
+
+	it('real follow data unlocks followers-only posts and unfollow revokes it', async () => {
+		const p = await create_post(db, alice, {
+			content: 'inner circle',
+			visibility: 'followers-only',
+		})
+		expect((await list_feed(db, bob, { feed: 'following' })).items).toHaveLength(0)
+		await follow_user(db, bob, alice)
+		expect((await list_feed(db, bob, { feed: 'following' })).items.map((x) => x.id)).toEqual([p.id])
+		expect((await list_posts_by_user(db, bob, alice)).items).toHaveLength(1)
+		await unfollow_user(db, bob, alice)
+		expect((await list_feed(db, bob, { feed: 'following' })).items).toHaveLength(0)
+		expect((await list_posts_by_user(db, bob, alice)).items).toHaveLength(0)
+	})
+
+	it('lists followers and following with stable pagination', async () => {
+		const fans: string[] = []
+		for (let i = 0; i < 7; i++) {
+			const id = await make_user(db, `Fan${i}`)
+			fans.push(id)
+			await db.insert(follow).values({
+				followerId: id,
+				followingId: alice,
+				createdAt: new Date(1_800_000_000_000 + Math.floor(i / 2) * 1000),
+			})
+		}
+		await follow_user(db, alice, bob)
+		const seen: string[] = []
+		let cursor: string | null = null
+		do {
+			const page = await list_followers(db, carol, alice, { limit: 3, cursor })
+			seen.push(...page.items.map((u) => u.id))
+			cursor = page.next_cursor
+		} while (cursor)
+		expect(seen.sort()).toEqual([...fans].sort())
+		expect((await list_following(db, carol, alice)).items.map((u) => u.id)).toEqual([bob])
+		expect((await list_followers(db, carol, carol)).items).toEqual([])
+	})
+})
+
+describe('notifications', () => {
+	it('creates one notification per like and de-duplicates re-likes', async () => {
+		const p = await create_post(db, alice, { content: 'x' })
+		await like_post(db, bob, p.id)
+		await like_post(db, bob, p.id)
+		expect(await unread_count(db, alice)).toBe(1)
+		await unlike_post(db, bob, p.id)
+		expect(await unread_count(db, alice)).toBe(0)
+		await like_post(db, bob, p.id)
+		expect(await unread_count(db, alice)).toBe(1)
+	})
+
+	it('notifies on follow and comment, but never for your own actions', async () => {
+		const p = await create_post(db, alice, { content: 'x' })
+		await follow_user(db, bob, alice)
+		await follow_user(db, bob, alice)
+		await create_comment(db, bob, p.id, { content: 'hey' })
+		await create_comment(db, alice, p.id, { content: 'self comment' })
+		await like_post(db, alice, p.id)
+		const page = await list_notifications(db, alice)
+		expect(page.items.map((n) => n.type).sort()).toEqual(['comment', 'follow'])
+		const comment_note = page.items.find((n) => n.type === 'comment')!
+		expect(comment_note.actor.id).toBe(bob)
+		expect(comment_note.snippet).toBe('hey')
+	})
+
+	it('notifies the parent comment author about replies', async () => {
+		const p = await create_post(db, alice, { content: 'x' })
+		const top = await create_comment(db, bob, p.id, { content: 'top' })
+		await create_comment(db, carol, p.id, { content: 'reply', parent_id: top.id })
+		expect((await list_notifications(db, bob)).items.map((n) => n.type)).toEqual(['comment'])
+		expect(await unread_count(db, alice)).toBe(2)
+	})
+
+	it('only the owner can read or mark notifications', async () => {
+		const p = await create_post(db, alice, { content: 'x' })
+		await like_post(db, bob, p.id)
+		const [note] = (await list_notifications(db, alice)).items
+		expect((await list_notifications(db, carol)).items).toHaveLength(0)
+		expect(await status_of(mark_read(db, carol, note.id))).toBe(404)
+		expect(await unread_count(db, alice)).toBe(1)
+		expect((await mark_read(db, alice, note.id)).unread_count).toBe(0)
+		expect((await list_notifications(db, alice)).items[0].read).toBe(true)
+	})
+
+	it('marks everything read when no id is given', async () => {
+		const p = await create_post(db, alice, { content: 'x' })
+		await like_post(db, bob, p.id)
+		await follow_user(db, carol, alice)
+		expect(await unread_count(db, alice)).toBe(2)
+		expect((await mark_read(db, alice)).unread_count).toBe(0)
+	})
+
+	it('deleting a post cascades to likes, comments and their notifications', async () => {
+		const p = await create_post(db, alice, { content: 'x' })
+		await like_post(db, bob, p.id)
+		await create_comment(db, bob, p.id, { content: 'c' })
+		expect(await unread_count(db, alice)).toBe(2)
+		await delete_post(db, alice, p.id)
+		expect(await db.select().from(like).where(eq(like.postId, p.id))).toHaveLength(0)
+		expect(await db.select().from(comment).where(eq(comment.postId, p.id))).toHaveLength(0)
+		expect(await unread_count(db, alice)).toBe(0)
+	})
+})
+
+describe('search', () => {
+	it('matches usernames case-insensitively', async () => {
+		expect((await search_users(db, bob, 'ALI')).map((u) => u.id)).toEqual([alice])
+		expect((await search_users(db, bob, '@bob')).map((u) => u.id)).toEqual([bob])
+	})
+
+	it('matches post text case-insensitively and treats wildcards literally', async () => {
+		await create_post(db, alice, { content: 'Hello World' })
+		await create_post(db, alice, { content: '100% sure' })
+		expect((await search_all(db, bob, 'hello wORLD')).posts).toHaveLength(1)
+		expect((await search_all(db, bob, '100%')).posts).toHaveLength(1)
+		expect((await search_all(db, bob, '%')).posts).toHaveLength(1)
+		expect((await search_all(db, bob, '_')).posts).toHaveLength(0)
+	})
+
+	it('never returns followers-only posts to non-followers', async () => {
+		await create_post(db, alice, { content: 'needle public' })
+		await create_post(db, alice, { content: 'needle secret', visibility: 'followers-only' })
+		expect((await search_all(db, bob, 'needle')).posts).toHaveLength(1)
+		expect((await search_all(db, alice, 'needle')).posts).toHaveLength(2)
+		await make_follow(db, bob, alice)
+		expect((await search_all(db, bob, 'needle')).posts).toHaveLength(2)
+	})
+
+	it('paginates results without duplicates', async () => {
+		for (let i = 0; i < 7; i++) await create_post(db, alice, { content: `page item ${i}` })
+		const seen: string[] = []
+		let cursor: string | null = null
+		do {
+			const result = await search_all(db, bob, 'page item', { limit: 3, cursor })
+			seen.push(...result.posts.map((p) => p.id))
+			cursor = result.next_cursor
+		} while (cursor)
+		expect(seen).toHaveLength(7)
+		expect(new Set(seen).size).toBe(7)
+	})
+
+	it('rejects empty and oversized queries', () => {
+		expect(() => parse_query('   ')).toThrow()
+		expect(() => parse_query(null)).toThrow()
+		expect(() => parse_query('x'.repeat(101))).toThrow()
+		expect(parse_query('  ok ')).toBe('ok')
+	})
+})

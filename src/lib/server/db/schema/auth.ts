@@ -3,17 +3,28 @@
 // Field names are camelCase to match Better Auth's expected schema keys;
 // the second argument to each column defines the actual snake_case DB
 // column name per the project's naming convention (see docs/database.md).
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
+import { sqliteTable, text, integer, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
-export const user = sqliteTable('user', {
-	id: text('id').primaryKey(),
-	name: text('name').notNull(),
-	email: text('email').notNull().unique(),
-	emailVerified: integer('email_verified', { mode: 'boolean' }).notNull().default(false),
-	image: text('image'),
-	createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
-	updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
-})
+export const user = sqliteTable(
+	'user',
+	{
+		id: text('id').primaryKey(),
+		name: text('name').notNull(),
+		email: text('email').notNull().unique(),
+		emailVerified: integer('email_verified', { mode: 'boolean' }).notNull().default(false),
+		image: text('image'),
+		// Public handle used in /u/:username. Stored lowercase. Nullable so the column
+		// can be added without a backfill; it is assigned on sign-up and lazily for
+		// accounts created before it existed (see services/users.ts).
+		username: text('username'),
+		bio: text('bio'),
+		interests: text('interests'),
+		onboarded: integer('onboarded', { mode: 'boolean' }).notNull().default(false),
+		createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+		updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+	},
+	(table) => [uniqueIndex('user_username_unique').on(table.username)],
+)
 
 export const session = sqliteTable('session', {
 	id: text('id').primaryKey(),
