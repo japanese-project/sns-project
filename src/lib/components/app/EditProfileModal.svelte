@@ -78,7 +78,7 @@
 	aria-modal="true"
 	aria-labelledby="edit-profile-title"
 >
-	<div class="w-full max-w-md rounded-[2.5rem] bg-white p-6 shadow-2xl ring-1 ring-slate-200">
+	<div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl sm:p-6">
 		<div class="flex items-center justify-between border-b border-slate-100 pb-4">
 			<h2 id="edit-profile-title" class="text-lg font-bold text-slate-900">Edit Profile</h2>
 			<button

@@ -54,21 +54,21 @@
 	}
 </script>
 
-<span class="inline-flex flex-col items-end">
+<span class="inline-flex shrink-0 flex-col items-end">
 	<button
 		type="button"
 		onclick={toggle}
 		disabled={pending}
 		aria-pressed={following}
-		class="rounded-full px-4 py-1.5 text-xs font-semibold transition disabled:opacity-60 {following
+		class="inline-flex shrink-0 items-center justify-center rounded-full px-3.5 py-1 text-xs font-semibold whitespace-nowrap transition disabled:opacity-60 {following
 			? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
 			: follows_you
-				? 'bg-indigo-600 text-white shadow-sm hover:bg-indigo-700'
+				? 'bg-indigo-600 text-white shadow-xs hover:bg-indigo-700'
 				: 'bg-black text-white hover:bg-slate-800'}"
 	>
 		{following ? label_following : follow_label}
 	</button>
 	{#if error_message}
-		<span class="mt-1 text-xs text-rose-600" role="alert">{error_message}</span>
+		<span class="mt-1 text-[10px] text-rose-600" role="alert">{error_message}</span>
 	{/if}
 </span>

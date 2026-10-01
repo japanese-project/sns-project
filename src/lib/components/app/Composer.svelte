@@ -51,7 +51,7 @@
 	<form
 		onsubmit={submit}
 		aria-label="New post"
-		class="w-full max-w-xl rounded-[2rem] bg-white/90 p-6 shadow-2xl ring-1 ring-slate-200"
+		class="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl sm:p-6"
 	>
 		<div class="flex items-center justify-between gap-3">
 			<button

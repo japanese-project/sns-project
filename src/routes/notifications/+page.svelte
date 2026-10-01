@@ -90,99 +90,116 @@
 </script>
 
 <AppShell user={data.user} title="Activity">
-	<div class="mb-4 flex items-center justify-between px-2">
-		<h2 class="text-2xl font-semibold text-slate-900">Activity</h2>
+	<div class="mx-auto w-full max-w-2xl">
 		{#if unread > 0}
-			<button
-				type="button"
-				onclick={mark_all}
-				class="rounded-full px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-white"
-				>Mark all as read ({unread})</button
-			>
-		{/if}
-	</div>
-
-	{#if loading}
-		<div class="space-y-3" aria-busy="true" aria-label="Loading notifications">
-			{#each [0, 1, 2] as n (n)}<div
-					class="h-20 animate-pulse rounded-3xl bg-white/60"
-				></div>{/each}
-		</div>
-	{:else if error_message && items.length === 0}
-		<div class="rounded-3xl bg-white/80 p-8 text-center ring-1 ring-slate-200" role="alert">
-			<p class="text-rose-600">{error_message}</p>
-			<button
-				type="button"
-				onclick={() => load(true)}
-				class="mt-3 rounded-full bg-black px-4 py-2 text-sm text-white">Try again</button
-			>
-		</div>
-	{:else if items.length === 0}
-		<div class="rounded-3xl bg-white/80 p-10 text-center text-slate-500 ring-1 ring-slate-200">
-			<BellIcon class="mx-auto mb-3 size-8 text-slate-300" />
-			You're all caught up. Likes, comments and new followers will show up here.
-		</div>
-	{:else}
-		{#if error_message}<p class="mb-3 text-sm text-rose-600" role="alert">{error_message}</p>{/if}
-		<ul class="divide-y divide-slate-100 rounded-[2rem] bg-white/80 p-2 ring-1 ring-slate-200/70">
-			{#each items as note (note.id)}
-				<li>
-					<a
-						href={note.type === 'follow'
-							? resolve('/u/[handle]', { handle: note.actor.handle })
-							: note.post_id
-								? resolve('/posts/[id]', { id: note.post_id })
-								: resolve('/')}
-						onclick={() => mark_one(note)}
-						class="flex gap-4 rounded-3xl p-4 hover:bg-slate-50"
-						data-unread={!note.read}
-					>
-						<span class="relative">
-							<Avatar user={note.actor} size={44} />
-							<span
-								class="absolute -right-1 -bottom-1 flex size-5 items-center justify-center rounded-full ring-2 ring-white {note.type ===
-								'like'
-									? 'bg-rose-500 text-white'
-									: note.type === 'comment'
-										? 'bg-emerald-500 text-white'
-										: 'bg-blue-500 text-white'}"
-							>
-								{#if note.type === 'like'}<HeartIcon
-										class="size-3 fill-current"
-									/>{:else if note.type === 'comment'}<MessageCircleIcon
-										class="size-3"
-									/>{:else}<UserPlusIcon class="size-3" />{/if}
-							</span>
-						</span>
-						<span class="min-w-0 flex-1">
-							<span class="block text-sm text-slate-800"
-								><strong>{note.actor.name}</strong> {message(note)}</span
-							>
-							{#if note.snippet}<span
-									class="mt-1 block truncate border-l-2 border-slate-200 pl-2 text-sm text-slate-500"
-									>“{note.snippet}”</span
-								>{/if}
-							<span class="mt-1 block text-xs text-slate-400">{relative_time(note.created_at)}</span
-							>
-						</span>
-						{#if !note.read}<span
-								class="mt-2 size-2.5 shrink-0 rounded-full bg-blue-500"
-								aria-label="Unread"
-							></span>{/if}
-					</a>
-				</li>
-			{/each}
-		</ul>
-		{#if next_cursor}
-			<div class="mt-6 flex justify-center">
+			<div class="mb-4 flex items-center justify-between px-1">
+				<span class="text-xs font-bold tracking-wider text-slate-500 uppercase">
+					Notifications ({unread} unread)
+				</span>
 				<button
 					type="button"
-					onclick={() => load(false)}
-					disabled={loading_more}
-					class="rounded-full bg-white px-5 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200 disabled:opacity-60"
-					>{loading_more ? 'Loading…' : 'Load more'}</button
+					onclick={mark_all}
+					class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50"
 				>
+					Mark all as read
+				</button>
 			</div>
 		{/if}
-	{/if}
+
+		{#if loading}
+			<div class="space-y-3" aria-busy="true" aria-label="Loading notifications">
+				{#each [0, 1, 2] as n (n)}
+					<div class="h-20 animate-pulse rounded-2xl border border-slate-200/60 bg-white/60"></div>
+				{/each}
+			</div>
+		{:else if error_message && items.length === 0}
+			<div
+				class="rounded-2xl border border-slate-200/80 bg-white p-8 text-center shadow-xs"
+				role="alert"
+			>
+				<p class="text-sm font-medium text-rose-600">{error_message}</p>
+				<button
+					type="button"
+					onclick={() => load(true)}
+					class="mt-4 rounded-full bg-black px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800"
+				>
+					Try again
+				</button>
+			</div>
+		{:else if items.length === 0}
+			<div class="rounded-2xl border border-slate-200/80 bg-white p-10 text-center shadow-xs">
+				<BellIcon class="mx-auto mb-3 size-8 text-slate-300" />
+				<p class="text-sm text-slate-500">
+					You're all caught up. Likes, comments, and new followers will show up here.
+				</p>
+			</div>
+		{:else}
+			{#if error_message}<p class="mb-3 text-sm text-rose-600" role="alert">{error_message}</p>{/if}
+			<ul
+				class="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs"
+			>
+				{#each items as note (note.id)}
+					<li>
+						<a
+							href={note.type === 'follow'
+								? resolve('/u/[handle]', { handle: note.actor.handle })
+								: note.post_id
+									? resolve('/posts/[id]', { id: note.post_id })
+									: resolve('/')}
+							onclick={() => mark_one(note)}
+							class="flex items-center gap-3.5 p-4 transition hover:bg-slate-50 {!note.read
+								? 'bg-indigo-50/20'
+								: ''}"
+							data-unread={!note.read}
+						>
+							<span class="relative shrink-0">
+								<Avatar user={note.actor} size={40} />
+								<span
+									class="absolute -right-1 -bottom-1 flex size-5 items-center justify-center rounded-full ring-2 ring-white {note.type ===
+									'like'
+										? 'bg-rose-500 text-white'
+										: note.type === 'comment'
+											? 'bg-emerald-500 text-white'
+											: 'bg-indigo-600 text-white'}"
+								>
+									{#if note.type === 'like'}<HeartIcon
+											class="size-3 fill-current"
+										/>{:else if note.type === 'comment'}<MessageCircleIcon
+											class="size-3"
+										/>{:else}<UserPlusIcon class="size-3" />{/if}
+								</span>
+							</span>
+							<span class="min-w-0 flex-1">
+								<span class="block text-sm text-slate-900"
+									><strong>{note.actor.name}</strong> {message(note)}</span
+								>
+								{#if note.snippet}<span
+										class="mt-1 block truncate border-l-2 border-slate-200 pl-2 text-xs text-slate-500"
+										>“{note.snippet}”</span
+									>{/if}
+								<span class="mt-1 block text-xs text-slate-400"
+									>{relative_time(note.created_at)}</span
+								>
+							</span>
+							{#if !note.read}<span
+									class="my-auto size-2 shrink-0 rounded-full bg-indigo-600"
+									aria-label="Unread notification"
+								></span>{/if}
+						</a>
+					</li>
+				{/each}
+			</ul>
+			{#if next_cursor}
+				<div class="mt-6 flex justify-center">
+					<button
+						type="button"
+						onclick={() => load(false)}
+						disabled={loading_more}
+						class="rounded-full border border-slate-200 bg-white px-5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 disabled:opacity-60"
+						>{loading_more ? 'Loading…' : 'Load more'}</button
+					>
+				</div>
+			{/if}
+		{/if}
+	</div>
 </AppShell>

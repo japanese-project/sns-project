@@ -113,7 +113,7 @@
 </script>
 
 <article
-	class="rounded-[2rem] bg-white/80 p-5 shadow-sm ring-1 ring-slate-200/70 backdrop-blur"
+	class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition hover:border-slate-300"
 	data-testid="post-card"
 >
 	<header class="flex items-center gap-3">
@@ -172,9 +172,9 @@
 	{#if editing}
 		<form
 			onsubmit={save_edit}
-			class="mt-4 space-y-3 rounded-2xl border border-indigo-200 bg-indigo-50/30 p-4 shadow-inner"
+			class="mt-4 space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 shadow-inner sm:p-4"
 		>
-			<div class="flex items-center justify-between">
+			<div class="flex flex-wrap items-center justify-between gap-2">
 				<span
 					class="flex items-center gap-1.5 text-xs font-bold tracking-wider text-slate-700 uppercase"
 				>
@@ -214,7 +214,7 @@
 				class="w-full resize-none rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-black focus:ring-2 focus:ring-black/10"
 			></textarea>
 
-			<div class="flex items-center justify-between text-xs">
+			<div class="flex flex-wrap items-center justify-between gap-2 text-xs">
 				<span
 					class="tabular-nums {draft.length > MAX_POST_LENGTH
 						? 'font-bold text-rose-600'
@@ -224,7 +224,7 @@
 				>
 					{MAX_POST_LENGTH - draft.length} characters left
 				</span>
-				<div class="flex gap-2">
+				<div class="flex items-center gap-2">
 					<button
 						type="button"
 						onclick={() => (editing = false)}
@@ -234,7 +234,7 @@
 					<button
 						type="submit"
 						disabled={saving || draft.trim().length === 0 || draft.length > MAX_POST_LENGTH}
-						class="rounded-full bg-black px-4 py-1.5 font-semibold text-white shadow-sm hover:bg-slate-800 disabled:opacity-50"
+						class="rounded-full bg-black px-4 py-1.5 font-semibold text-white shadow-xs hover:bg-slate-800 disabled:opacity-50"
 					>
 						{saving ? 'Saving…' : 'Save changes'}
 					</button>

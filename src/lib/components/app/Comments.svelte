@@ -157,12 +157,12 @@
 					placeholder="Write a comment…"
 					aria-label="Comment text"
 					maxlength={MAX_COMMENT_LENGTH}
-					class="min-w-0 flex-1 rounded-full border-slate-200 bg-white text-sm"
+					class="min-w-0 flex-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm transition outline-none focus:border-black focus:ring-1 focus:ring-black"
 				/>
 				<button
 					type="submit"
 					disabled={submitting || text.trim().length === 0}
-					class="rounded-full bg-black px-4 py-2 text-sm text-white disabled:bg-slate-400"
+					class="shrink-0 rounded-full bg-black px-4 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-slate-800 disabled:opacity-50"
 					>{submitting ? '…' : 'Send'}</button
 				>
 			</div>

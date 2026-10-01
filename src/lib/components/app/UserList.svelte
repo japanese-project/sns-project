@@ -39,45 +39,67 @@
 	onMount(() => void load(true))
 </script>
 
-<a
-	href={resolve('/u/[handle]', { handle: owner.handle })}
-	class="mb-4 inline-block px-2 text-sm text-slate-500 hover:text-slate-900">← {owner.name}</a
->
-<h2 class="mb-4 px-2 text-2xl font-semibold text-slate-900 capitalize">{kind}</h2>
-
-{#if loading}
-	<div class="space-y-2" aria-busy="true">
-		{#each [0, 1, 2] as n (n)}<div class="h-16 animate-pulse rounded-3xl bg-white/60"></div>{/each}
-	</div>
-{:else if error_message && people.length === 0}
-	<div class="rounded-3xl bg-white/80 p-8 text-center" role="alert">
-		<p class="text-rose-600">{error_message}</p>
-		<button
-			type="button"
-			onclick={() => load(true)}
-			class="mt-3 rounded-full bg-black px-4 py-2 text-sm text-white">Try again</button
+<div class="mx-auto w-full max-w-2xl">
+	<div class="mb-4 flex items-center justify-between">
+		<a
+			href={resolve('/u/[handle]', { handle: owner.handle })}
+			class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 transition hover:text-slate-900"
 		>
+			← {owner.name}
+		</a>
+		<span class="text-xs font-bold tracking-wider text-slate-400 uppercase">
+			{kind}
+		</span>
 	</div>
-{:else if people.length === 0}
-	<p class="rounded-3xl bg-white/80 p-10 text-center text-slate-500 ring-1 ring-slate-200">
-		{kind === 'followers' ? 'No followers yet.' : 'Not following anyone yet.'}
-	</p>
-{:else}
-	<ul class="space-y-2">
-		{#each people as person (person.id)}<UserRow {person} {signed_in} />{/each}
-	</ul>
-	{#if error_message}<p class="mt-3 text-center text-sm text-rose-600" role="alert">
-			{error_message}
-		</p>{/if}
-	{#if next_cursor}
-		<div class="mt-6 flex justify-center">
+
+	{#if loading}
+		<div class="space-y-2.5" aria-busy="true">
+			{#each [0, 1, 2] as n (n)}
+				<div class="h-16 animate-pulse rounded-2xl border border-slate-200/60 bg-white/60"></div>
+			{/each}
+		</div>
+	{:else if error_message && people.length === 0}
+		<div
+			class="rounded-2xl border border-slate-200/80 bg-white p-8 text-center shadow-xs"
+			role="alert"
+		>
+			<p class="text-sm font-medium text-rose-600">{error_message}</p>
 			<button
 				type="button"
-				onclick={() => load(false)}
-				disabled={loading_more}
-				class="rounded-full bg-white px-5 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200 disabled:opacity-60"
-				>{loading_more ? 'Loading…' : 'Load more'}</button
+				onclick={() => load(true)}
+				class="mt-4 rounded-full bg-black px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800"
 			>
+				Try again
+			</button>
 		</div>
+	{:else if people.length === 0}
+		<div class="rounded-2xl border border-slate-200/80 bg-white p-10 text-center shadow-xs">
+			<p class="text-sm text-slate-500">
+				{kind === 'followers' ? 'No followers yet.' : 'Not following anyone yet.'}
+			</p>
+		</div>
+	{:else}
+		<ul class="space-y-2.5">
+			{#each people as person (person.id)}
+				<UserRow {person} {signed_in} />
+			{/each}
+		</ul>
+		{#if error_message}
+			<p class="mt-3 text-center text-sm text-rose-600" role="alert">
+				{error_message}
+			</p>
+		{/if}
+		{#if next_cursor}
+			<div class="mt-6 flex justify-center">
+				<button
+					type="button"
+					onclick={() => load(false)}
+					disabled={loading_more}
+					class="rounded-full border border-slate-200 bg-white px-5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 disabled:opacity-60"
+				>
+					{loading_more ? 'Loading…' : 'Load more'}
+				</button>
+			</div>
+		{/if}
 	{/if}
-{/if}
+</div>

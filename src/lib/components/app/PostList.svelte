@@ -79,30 +79,34 @@
 	})
 </script>
 
-<div class="space-y-6">
+<div class="space-y-4">
 	{#if loading}
-		<div class="space-y-6" aria-busy="true" aria-label="Loading posts">
+		<div class="space-y-4" aria-busy="true" aria-label="Loading posts">
 			{#each [0, 1, 2] as n (n)}
-				<div class="h-40 animate-pulse rounded-[2rem] bg-white/60"></div>
+				<div class="h-36 animate-pulse rounded-2xl border border-slate-200/60 bg-white/60"></div>
 			{/each}
 		</div>
 	{:else if error_message && posts.length === 0}
-		<div class="rounded-[2rem] bg-white/80 p-8 text-center ring-1 ring-slate-200" role="alert">
-			<p class="text-rose-600">{error_message}</p>
+		<div
+			class="rounded-2xl border border-slate-200/80 bg-white p-8 text-center shadow-xs"
+			role="alert"
+		>
+			<p class="text-sm font-medium text-rose-600">{error_message}</p>
 			<button
 				type="button"
 				onclick={() => load(true)}
-				class="mt-3 rounded-full bg-black px-4 py-2 text-sm text-white">Try again</button
+				class="mt-4 rounded-full bg-black px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800"
+				>Try again</button
 			>
 		</div>
 	{:else if posts.length === 0}
-		<div class="rounded-[2rem] bg-white/80 p-10 text-center ring-1 ring-slate-200">
-			<p class="text-slate-500">{empty_message}</p>
+		<div class="rounded-2xl border border-slate-200/80 bg-white p-8 text-center shadow-xs">
+			<p class="text-sm text-slate-500">{empty_message}</p>
 			{#if signed_in && accepts_new_posts}
 				<button
 					type="button"
 					onclick={() => composer.show()}
-					class="mt-4 rounded-full bg-black px-4 py-2 text-sm text-white"
+					class="mt-4 rounded-full bg-black px-5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-slate-800"
 					>Write the first post</button
 				>
 			{/if}

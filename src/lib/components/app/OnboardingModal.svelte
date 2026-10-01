@@ -67,7 +67,7 @@
 	aria-labelledby="onboarding-title"
 >
 	<div
-		class="w-full max-w-lg overflow-hidden rounded-[2.5rem] bg-white p-7 shadow-2xl ring-1 ring-slate-200"
+		class="w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl sm:p-7"
 	>
 		<div class="text-center">
 			<span
