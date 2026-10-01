@@ -147,7 +147,7 @@
 								People to Discover
 							</h2>
 						</div>
-						<ul class="space-y-2.5">
+						<ul class="divide-y divide-slate-100">
 							{#each data.discovery.suggested_users as person (person.id)}
 								<UserRow {person} signed_in={data.user !== null} />
 							{/each}
@@ -167,7 +167,7 @@
 								Recent Discussions
 							</h2>
 						</div>
-						<div class="space-y-4">
+						<div class="divide-y divide-slate-100">
 							{#each data.discovery.posts as post (post.id)}
 								<PostCard {post} signed_in={data.user !== null} />
 							{/each}
@@ -186,7 +186,7 @@
 					{#if data.results.users.length === 0}
 						<p class="px-2 text-sm text-slate-500">No people match “{data.query}”.</p>
 					{:else}
-						<ul class="space-y-2.5">
+						<ul class="divide-y divide-slate-100">
 							{#each data.results.users as person (person.id)}
 								<UserRow {person} signed_in={data.user !== null} />
 							{/each}
@@ -204,7 +204,7 @@
 					{#if posts.length === 0}
 						<p class="px-2 text-sm text-slate-500">No posts match “{data.query}”.</p>
 					{:else}
-						<div class="space-y-4">
+						<div class="divide-y divide-slate-100">
 							{#each posts as post (post.id)}
 								<PostCard
 									{post}

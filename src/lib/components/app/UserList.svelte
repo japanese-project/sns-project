@@ -53,33 +53,38 @@
 	</div>
 
 	{#if loading}
-		<div class="space-y-2.5" aria-busy="true">
+		<div class="divide-y divide-slate-100" aria-busy="true">
 			{#each [0, 1, 2] as n (n)}
-				<div class="h-16 animate-pulse rounded-2xl border border-slate-200/60 bg-white/60"></div>
+				<div class="h-16 animate-pulse px-2 py-3.5">
+					<div class="flex items-center gap-3">
+						<div class="size-10 rounded-full bg-slate-200/80"></div>
+						<div class="flex-1 space-y-1.5 py-1">
+							<div class="h-3.5 w-1/3 rounded bg-slate-200/80"></div>
+							<div class="h-3 w-1/4 rounded bg-slate-200/60"></div>
+						</div>
+					</div>
+				</div>
 			{/each}
 		</div>
 	{:else if error_message && people.length === 0}
-		<div
-			class="rounded-2xl border border-slate-200/80 bg-white p-8 text-center shadow-xs"
-			role="alert"
-		>
+		<div class="px-4 py-12 text-center" role="alert">
 			<p class="text-sm font-medium text-rose-600">{error_message}</p>
 			<button
 				type="button"
 				onclick={() => load(true)}
-				class="mt-4 rounded-full bg-black px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800"
+				class="mt-4 rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
 			>
 				Try again
 			</button>
 		</div>
 	{:else if people.length === 0}
-		<div class="rounded-2xl border border-slate-200/80 bg-white p-10 text-center shadow-xs">
+		<div class="px-4 py-12 text-center">
 			<p class="text-sm text-slate-500">
 				{kind === 'followers' ? 'No followers yet.' : 'Not following anyone yet.'}
 			</p>
 		</div>
 	{:else}
-		<ul class="space-y-2.5">
+		<ul class="divide-y divide-slate-100">
 			{#each people as person (person.id)}
 				<UserRow {person} {signed_in} />
 			{/each}

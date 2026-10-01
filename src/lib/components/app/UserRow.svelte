@@ -10,7 +10,7 @@
 </script>
 
 <li
-	class="flex items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-xs transition hover:border-slate-300"
+	class="flex items-center justify-between gap-3 border-b border-slate-200/60 px-2 py-3.5 transition-colors hover:bg-slate-50/50"
 >
 	<a
 		href={resolve('/u/[handle]', { handle: person.handle })}
