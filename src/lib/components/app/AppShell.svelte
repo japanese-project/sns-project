@@ -5,10 +5,13 @@
 	import CompassIcon from '@lucide/svelte/icons/compass'
 	import HouseIcon from '@lucide/svelte/icons/house'
 	import LogOutIcon from '@lucide/svelte/icons/log-out'
+	import PencilIcon from '@lucide/svelte/icons/pencil'
 	import { onMount, type Snippet } from 'svelte'
 	import { api } from '$lib/api'
 	import { sign_out } from '$lib/auth-client'
+	import { composer } from '$lib/composer-state.svelte'
 	import Avatar from './Avatar.svelte'
+	import Composer from './Composer.svelte'
 
 	let {
 		user,
@@ -121,10 +124,22 @@
 			class="flex items-center gap-4 rounded-full bg-white/80 px-6 py-3 shadow-md ring-1 shadow-slate-900/5 ring-slate-200 backdrop-blur"
 		>
 			<h1 class="text-sm font-semibold text-slate-800">{title}</h1>
+			<span class="h-4 w-px bg-slate-200"></span>
+			<button
+				type="button"
+				onclick={() => composer.show()}
+				class="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900"
+			>
+				<PencilIcon class="size-4" /> Share a thought…
+			</button>
 		</div>
 	</header>
 
 	<main class="mx-auto w-full max-w-2xl px-4 pt-4 pb-28 md:pb-16">
 		{@render children()}
 	</main>
+
+	{#if composer.open}
+		<Composer {user} />
+	{/if}
 </div>

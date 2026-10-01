@@ -58,6 +58,7 @@
 		<PostList
 			endpoint="/api/users/{encodeURIComponent(profile.user.handle)}/posts"
 			signed_in={true}
+			accepts_new_posts={profile.is_self}
 			empty_message={profile.is_self
 				? "You haven't posted yet."
 				: `${profile.user.name} has no posts you can see yet.`}

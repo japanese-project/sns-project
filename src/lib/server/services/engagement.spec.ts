@@ -5,9 +5,9 @@ import { create_comment, list_comments } from './comments'
 import { follow_user, list_followers, list_following, unfollow_user } from './follows'
 import { like_post, unlike_post } from './likes'
 import { list_notifications, mark_read, unread_count } from './notifications'
-import { delete_post, get_visible_post, list_posts_by_user } from './posts'
+import { create_post, delete_post, list_feed, list_posts_by_user } from './posts'
 import { parse_query, search_all, search_users } from './search'
-import { create_test_db, make_follow, make_post, make_user } from './test-db'
+import { create_test_db, make_follow, make_user } from './test-db'
 import { eq } from 'drizzle-orm'
 
 let db: Db
@@ -44,19 +44,19 @@ async function status_of(promise: Promise<unknown>) {
 
 describe('likes', () => {
 	it('toggles and never stacks duplicates', async () => {
-		const p = await make_post(db, alice, { content: 'like me' })
+		const p = await create_post(db, alice, { content: 'like me' })
 		expect((await like_post(db, bob, p.id)).like_count).toBe(1)
 		expect((await like_post(db, bob, p.id)).like_count).toBe(1)
 		expect((await like_post(db, carol, p.id)).like_count).toBe(2)
 		expect((await unlike_post(db, bob, p.id)).like_count).toBe(1)
 		expect((await unlike_post(db, bob, p.id)).like_count).toBe(1)
-		const view = await get_visible_post(db, carol, p.id)
-		expect(view?.like_count).toBe(1)
-		expect(view?.liked_by_me).toBe(true)
+		const [view] = (await list_feed(db, carol)).items
+		expect(view.like_count).toBe(1)
+		expect(view.liked_by_me).toBe(true)
 	})
 
 	it('cannot like a post the user cannot see', async () => {
-		const p = await make_post(db, alice, { content: 'hidden', visibility: 'followers-only' })
+		const p = await create_post(db, alice, { content: 'hidden', visibility: 'followers-only' })
 		expect(await status_of(like_post(db, bob, p.id))).toBe(404)
 		await make_follow(db, bob, alice)
 		expect((await like_post(db, bob, p.id)).liked).toBe(true)
@@ -65,7 +65,7 @@ describe('likes', () => {
 
 describe('comments', () => {
 	it('lists comments oldest-first with replies nested one level', async () => {
-		const p = await make_post(db, alice, { content: 'discuss' })
+		const p = await create_post(db, alice, { content: 'discuss' })
 		const first = await create_comment(db, bob, p.id, { content: 'first' })
 		const second = await create_comment(db, carol, p.id, { content: 'second' })
 		await create_comment(db, alice, p.id, { content: 'reply', parent_id: first.id })
@@ -76,7 +76,7 @@ describe('comments', () => {
 	})
 
 	it('flattens a reply to a reply onto the top-level parent', async () => {
-		const p = await make_post(db, alice, { content: 'discuss' })
+		const p = await create_post(db, alice, { content: 'discuss' })
 		const top = await create_comment(db, bob, p.id, { content: 'top' })
 		const reply = await create_comment(db, carol, p.id, { content: 'reply', parent_id: top.id })
 		const nested = await create_comment(db, alice, p.id, { content: 'deep', parent_id: reply.id })
@@ -87,8 +87,8 @@ describe('comments', () => {
 	})
 
 	it('rejects invalid content and parents from another post', async () => {
-		const p = await make_post(db, alice, { content: 'a' })
-		const other = await make_post(db, alice, { content: 'b' })
+		const p = await create_post(db, alice, { content: 'a' })
+		const other = await create_post(db, alice, { content: 'b' })
 		const elsewhere = await create_comment(db, bob, other.id, { content: 'x' })
 		expect(await status_of(create_comment(db, bob, p.id, { content: '  ' }))).toBe(400)
 		expect(await status_of(create_comment(db, bob, p.id, { content: 'x'.repeat(501) }))).toBe(400)
@@ -98,7 +98,7 @@ describe('comments', () => {
 	})
 
 	it('hides comments of followers-only posts from non-followers', async () => {
-		const p = await make_post(db, alice, { content: 'secret', visibility: 'followers-only' })
+		const p = await create_post(db, alice, { content: 'secret', visibility: 'followers-only' })
 		await create_comment(db, alice, p.id, { content: 'author note' })
 		expect(await status_of(list_comments(db, bob, p.id))).toBe(404)
 		expect(await status_of(list_comments(db, null, p.id))).toBe(404)
@@ -127,14 +127,16 @@ describe('follows', () => {
 	})
 
 	it('real follow data unlocks followers-only posts and unfollow revokes it', async () => {
-		const p = await make_post(db, alice, {
+		const p = await create_post(db, alice, {
 			content: 'inner circle',
 			visibility: 'followers-only',
 		})
-		expect((await list_posts_by_user(db, bob, alice)).items).toHaveLength(0)
+		expect((await list_feed(db, bob)).items).toHaveLength(0)
 		await follow_user(db, bob, alice)
-		expect((await list_posts_by_user(db, bob, alice)).items.map((x) => x.id)).toEqual([p.id])
+		expect((await list_feed(db, bob)).items.map((x) => x.id)).toEqual([p.id])
+		expect((await list_posts_by_user(db, bob, alice)).items).toHaveLength(1)
 		await unfollow_user(db, bob, alice)
+		expect((await list_feed(db, bob)).items).toHaveLength(0)
 		expect((await list_posts_by_user(db, bob, alice)).items).toHaveLength(0)
 	})
 
@@ -165,7 +167,7 @@ describe('follows', () => {
 
 describe('notifications', () => {
 	it('creates one notification per like and de-duplicates re-likes', async () => {
-		const p = await make_post(db, alice, { content: 'x' })
+		const p = await create_post(db, alice, { content: 'x' })
 		await like_post(db, bob, p.id)
 		await like_post(db, bob, p.id)
 		expect(await unread_count(db, alice)).toBe(1)
@@ -176,7 +178,7 @@ describe('notifications', () => {
 	})
 
 	it('notifies on follow and comment, but never for your own actions', async () => {
-		const p = await make_post(db, alice, { content: 'x' })
+		const p = await create_post(db, alice, { content: 'x' })
 		await follow_user(db, bob, alice)
 		await follow_user(db, bob, alice)
 		await create_comment(db, bob, p.id, { content: 'hey' })
@@ -190,7 +192,7 @@ describe('notifications', () => {
 	})
 
 	it('notifies the parent comment author about replies', async () => {
-		const p = await make_post(db, alice, { content: 'x' })
+		const p = await create_post(db, alice, { content: 'x' })
 		const top = await create_comment(db, bob, p.id, { content: 'top' })
 		await create_comment(db, carol, p.id, { content: 'reply', parent_id: top.id })
 		expect((await list_notifications(db, bob)).items.map((n) => n.type)).toEqual(['comment'])
@@ -198,7 +200,7 @@ describe('notifications', () => {
 	})
 
 	it('only the owner can read or mark notifications', async () => {
-		const p = await make_post(db, alice, { content: 'x' })
+		const p = await create_post(db, alice, { content: 'x' })
 		await like_post(db, bob, p.id)
 		const [note] = (await list_notifications(db, alice)).items
 		expect((await list_notifications(db, carol)).items).toHaveLength(0)
@@ -209,7 +211,7 @@ describe('notifications', () => {
 	})
 
 	it('marks everything read when no id is given', async () => {
-		const p = await make_post(db, alice, { content: 'x' })
+		const p = await create_post(db, alice, { content: 'x' })
 		await like_post(db, bob, p.id)
 		await follow_user(db, carol, alice)
 		expect(await unread_count(db, alice)).toBe(2)
@@ -217,7 +219,7 @@ describe('notifications', () => {
 	})
 
 	it('deleting a post cascades to likes, comments and their notifications', async () => {
-		const p = await make_post(db, alice, { content: 'x' })
+		const p = await create_post(db, alice, { content: 'x' })
 		await like_post(db, bob, p.id)
 		await create_comment(db, bob, p.id, { content: 'c' })
 		expect(await unread_count(db, alice)).toBe(2)
@@ -235,8 +237,8 @@ describe('search', () => {
 	})
 
 	it('matches post text case-insensitively and treats wildcards literally', async () => {
-		await make_post(db, alice, { content: 'Hello World' })
-		await make_post(db, alice, { content: '100% sure' })
+		await create_post(db, alice, { content: 'Hello World' })
+		await create_post(db, alice, { content: '100% sure' })
 		expect((await search_all(db, null, 'hello wORLD')).posts).toHaveLength(1)
 		expect((await search_all(db, null, '100%')).posts).toHaveLength(1)
 		expect((await search_all(db, null, '%')).posts).toHaveLength(1)
@@ -244,8 +246,8 @@ describe('search', () => {
 	})
 
 	it('never returns followers-only posts to non-followers', async () => {
-		await make_post(db, alice, { content: 'needle public' })
-		await make_post(db, alice, { content: 'needle secret', visibility: 'followers-only' })
+		await create_post(db, alice, { content: 'needle public' })
+		await create_post(db, alice, { content: 'needle secret', visibility: 'followers-only' })
 		expect((await search_all(db, null, 'needle')).posts).toHaveLength(1)
 		expect((await search_all(db, bob, 'needle')).posts).toHaveLength(1)
 		expect((await search_all(db, alice, 'needle')).posts).toHaveLength(2)
@@ -254,7 +256,7 @@ describe('search', () => {
 	})
 
 	it('paginates results without duplicates', async () => {
-		for (let i = 0; i < 7; i++) await make_post(db, alice, { content: `page item ${i}` })
+		for (let i = 0; i < 7; i++) await create_post(db, alice, { content: `page item ${i}` })
 		const seen: string[] = []
 		let cursor: string | null = null
 		do {
