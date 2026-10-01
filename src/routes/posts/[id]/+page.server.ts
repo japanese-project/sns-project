@@ -1,4 +1,4 @@
-import { require_session_user } from '$lib/server/access'
+import { require_session_user } from '$lib/server/validation'
 import { get_post_or_404 } from '$lib/server/services/posts'
 import type { PageServerLoad } from './$types'
 

@@ -1,4 +1,4 @@
-import { error } from '@sveltejs/kit'
+import { error, redirect } from '@sveltejs/kit'
 import { MAX_INTEREST_LENGTH, MAX_INTERESTS_COUNT } from '$lib/limits'
 
 /** Validates user-supplied text: must be a string, non-empty after trimming, and within `max`. */
@@ -59,6 +59,16 @@ export function is_unique_constraint_error(err: unknown): boolean {
 export function require_user_id(locals: App.Locals): string {
 	if (!locals.user) error(401, 'Authentication required')
 	return locals.user.id
+}
+
+/**
+ * Page-load counterpart of require_user_id: the signed-in user, or a redirect to /login.
+ * SvelteKit turns the redirect into the right response for full-page loads and for
+ * client-side navigations alike.
+ */
+export function require_session_user(locals: App.Locals) {
+	if (!locals.user) redirect(302, '/login')
+	return locals.user
 }
 
 export async function read_json(request: Request): Promise<Record<string, unknown>> {

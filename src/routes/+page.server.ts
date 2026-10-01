@@ -1,4 +1,4 @@
-import { require_session_user } from '$lib/server/access'
+import { require_session_user } from '$lib/server/validation'
 import { get_trending_topics } from '$lib/server/services/posts'
 import { get_suggested_users } from '$lib/server/services/users'
 import type { PageServerLoad } from './$types'

@@ -1,4 +1,4 @@
-import { require_session_user } from '$lib/server/access'
+import { require_session_user } from '$lib/server/validation'
 import type { PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ locals }) => {

@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { MAX_INTEREST_LENGTH, MAX_INTERESTS_COUNT } from '$lib/limits'
-import { is_unique_constraint_error, validate_interests } from './validation'
+import { isHttpError, isRedirect } from '@sveltejs/kit'
+import {
+	is_unique_constraint_error,
+	require_session_user,
+	require_user_id,
+	validate_interests,
+} from './validation'
 
 function status_of(fn: () => unknown) {
 	try {
@@ -105,5 +111,34 @@ describe('validate_interests', () => {
 	it('caps the number of interests', () => {
 		const many = Array.from({ length: MAX_INTERESTS_COUNT * 3 }, (_, i) => `topic${i}`)
 		expect(validate_interests(many)).toHaveLength(MAX_INTERESTS_COUNT)
+	})
+})
+
+describe('require_user_id / require_session_user', () => {
+	const signed_in = { user: { id: 'u1', name: 'Ann' } } as unknown as App.Locals
+	const signed_out = { user: null } as unknown as App.Locals
+
+	it('return the signed-in user', () => {
+		expect(require_user_id(signed_in)).toBe('u1')
+		expect(require_session_user(signed_in).id).toBe('u1')
+	})
+
+	it('answer a missing session with 401 for APIs', () => {
+		try {
+			require_user_id(signed_out)
+			expect.unreachable('should have thrown')
+		} catch (e) {
+			expect(isHttpError(e) && e.status).toBe(401)
+		}
+	})
+
+	it('answer a missing session with a redirect to /login for pages', () => {
+		try {
+			require_session_user(signed_out)
+			expect.unreachable('should have redirected')
+		} catch (e) {
+			expect(isRedirect(e)).toBe(true)
+			if (isRedirect(e)) expect([e.status, e.location]).toEqual([302, '/login'])
+		}
 	})
 })

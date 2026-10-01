@@ -1,4 +1,4 @@
-import { require_session_user } from '$lib/server/access'
+import { require_session_user } from '$lib/server/validation'
 import { build_profile } from '$lib/server/services/follows'
 import { require_user_by_handle } from '$lib/server/services/users'
 import type { PageServerLoad } from './$types'

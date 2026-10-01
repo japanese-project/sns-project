@@ -1,5 +1,5 @@
 import { redirect } from '@sveltejs/kit'
-import { require_session_user } from '$lib/server/access'
+import { require_session_user } from '$lib/server/validation'
 import type { PageServerLoad } from './$types'
 
 // The old placeholder profile lives on at /u/:username.

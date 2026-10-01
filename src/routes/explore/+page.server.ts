@@ -1,4 +1,4 @@
-import { require_session_user } from '$lib/server/access'
+import { require_session_user } from '$lib/server/validation'
 import { get_trending_topics, list_feed, parse_trending_period } from '$lib/server/services/posts'
 import { parse_query, search_all } from '$lib/server/services/search'
 import { get_suggested_users } from '$lib/server/services/users'

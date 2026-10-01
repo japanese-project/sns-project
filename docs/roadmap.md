@@ -25,7 +25,7 @@ This document serves as the single source of truth for both **backend business l
 
 ## 2. Access Model: Signed-In Users Only
 
-The app is for signed-in users only. There is no guest mode: no guest sessions, no signed-out views and no "sign in to continue" prompts inside the app. A request without a session can reach only three things; everything else is rejected before any route runs.
+The app is for signed-in users only. There is no guest mode: no guest sessions, no signed-out views and no "sign in to continue" prompts inside the app. A request without a session can reach only three things; every other route rejects it itself.
 
 ### What a request without a session can reach
 
@@ -37,7 +37,9 @@ The app is for signed-in users only. There is no guest mode: no guest sessions, 
 | Any other page | `/`, `/explore`, `/u/*`, `/posts/*`, `/notifications`, `/profile`, ...                                  | ❌ Redirect (302) to `/login`                            |
 | Any other API  | `/api/posts`, `/api/search`, `/api/trending`, `/api/users/*`, `/api/notifications/*`, ...               | ❌ `401` JSON `{ "message": "Authentication required" }` |
 
-The gate lives in one place, `check_access()` (`src/lib/server/access.ts`), called from `hooks.server.ts`. It is an allowlist that fails closed: a path that is not listed is protected. Handlers also check for a session themselves (`require_user_id` for APIs, `require_session_user` for page loads), so a missing hook can't expose data. Redirects use SvelteKit's `redirect()`, which also works for client-side navigations; if a session expires mid-visit, the next navigation lands on `/login` and the next API call returns `401`.
+There is no central allowlist or guest handling. Every API handler checks the session itself (`require_user_id` → `401`) and every page load does too (`require_session_user` → redirect to `/login`, which also works for client-side navigations), so a session that expires mid-visit lands on `/login` at the next navigation. The only routes without that check are the three above and the `/demo` template pages, which show no user data.
+
+`src/routes/route-guards.spec.ts` keeps this from regressing: it discovers every API handler and page load, calls each one with no session, and fails if any does not reject first (before touching the database) or if a page has no server load. A newly added route that forgets its check therefore fails CI instead of becoming public.
 
 ### Route Behavior (signed in)
 

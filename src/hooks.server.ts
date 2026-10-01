@@ -5,7 +5,6 @@
 // layouts and pages can access the authenticated user.
 
 import { dev, building } from '$app/environment'
-import { check_access } from '$lib/server/access'
 import { create_auth } from '$lib/server/auth'
 import { create_db } from '$lib/server/db'
 import { user as user_table } from '$lib/server/db/schema'
@@ -48,10 +47,6 @@ export const handle: Handle = async ({ event, resolve }) => {
 	event.locals.db = create_db(db)
 	event.locals.user = session_data?.user ?? null
 	event.locals.session = session_data?.session ?? null
-
-	// Signed-in users only: reject (or redirect) everything else before any route runs.
-	const blocked = check_access(event.url.pathname, event.locals.user !== null)
-	if (blocked) return blocked
 
 	if (event.locals.user) {
 		try {
