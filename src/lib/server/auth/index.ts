@@ -32,6 +32,12 @@ export function create_auth(d1: D1Database, kv: KVNamespace) {
 
 		secondaryStorage: create_kv_storage(kv),
 
+		user: {
+			additionalFields: {
+				username: { type: 'string', required: false, input: false },
+			},
+		},
+
 		emailAndPassword: {
 			enabled: false,
 		},

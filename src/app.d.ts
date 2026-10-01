@@ -2,12 +2,14 @@
 // for information about these interfaces
 
 import type { User, Session } from 'better-auth/types'
+import type { Db } from '$lib/server/db'
 
 declare global {
 	namespace App {
 		// interface Error {}
 		interface Locals {
-			user: User | null
+			db: Db
+			user: (User & { username?: string | null }) | null
 			session: Session | null
 		}
 		// interface PageData {}
