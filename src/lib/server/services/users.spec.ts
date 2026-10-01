@@ -221,6 +221,83 @@ describe('complete_onboarding', () => {
 		expect(Boolean(row?.onboarded)).toBe(false)
 	})
 
+	describe('is atomic', () => {
+		async function row_of(id: string) {
+			return await db
+				.select({
+					name: user.name,
+					username: user.username,
+					bio: user.bio,
+					interests: user.interests,
+					onboarded: user.onboarded,
+				})
+				.from(user)
+				.where(eq(user.id, id))
+				.get()
+		}
+
+		// The onboarding modal sends exactly this shape.
+		it('saves bio, interests and the onboarded flag together', async () => {
+			const id = await make_user(db, 'AtomicOk')
+			const result = await complete_onboarding(db, id, { bio: 'Hi there', interests: ['Music'] })
+			expect(result).toEqual({ onboarded: true, interests: JSON.stringify(['Music']) })
+			const row = await row_of(id)
+			expect(row?.bio).toBe('Hi there')
+			expect(row?.interests).toBe(JSON.stringify(['Music']))
+			expect(Boolean(row?.onboarded)).toBe(true)
+		})
+
+		// Regression: the profile fields and the onboarded flag used to be written by two separate
+		// UPDATEs, so a failure of the second left the profile changed but onboarding incomplete.
+		// One statement is atomic on D1, so there must be exactly one write.
+		it('writes everything in a single UPDATE statement', async () => {
+			const id = await make_user(db, 'AtomicOne')
+			const spy = vi.spyOn(db, 'update')
+			try {
+				await complete_onboarding(db, id, {
+					name: 'New Name',
+					username: 'brand_new',
+					bio: 'Hi',
+					interests: ['Art'],
+				})
+				expect(spy).toHaveBeenCalledTimes(1)
+			} finally {
+				spy.mockRestore()
+			}
+			expect((await row_of(id))?.username).toBe('brand_new')
+		})
+
+		it('applies nothing when the write fails', async () => {
+			const id = await make_user(db, 'AtomicFail')
+			const spy = vi.spyOn(db, 'update').mockImplementation(() => {
+				throw new Error('D1_ERROR: database is locked')
+			})
+			try {
+				await expect(
+					complete_onboarding(db, id, { name: 'Changed', bio: 'Hi', interests: ['Art'] }),
+				).rejects.toThrow('database is locked')
+			} finally {
+				spy.mockRestore()
+			}
+			const row = await row_of(id)
+			expect(row).toMatchObject({ name: 'AtomicFail', bio: null, interests: null })
+			expect(Boolean(row?.onboarded)).toBe(false)
+		})
+
+		it('applies nothing when the username is taken', async () => {
+			await make_user(db, 'Holder') // username "holder"
+			const id = await make_user(db, 'AtomicTaken')
+			expect(
+				await status_of(
+					complete_onboarding(db, id, { username: 'holder', bio: 'Hi', interests: ['Art'] }),
+				),
+			).toBe(400)
+			const row = await row_of(id)
+			expect(row).toMatchObject({ username: 'atomictaken', bio: null, interests: null })
+			expect(Boolean(row?.onboarded)).toBe(false)
+		})
+	})
+
 	it('validates interest values during onboarding', async () => {
 		const id = await make_user(db, 'OnboardInterest')
 		const long_interest = 'x'.repeat(MAX_INTEREST_LENGTH + 1)

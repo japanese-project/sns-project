@@ -107,7 +107,13 @@ export async function require_user_by_handle(db: Db, handle: string) {
 	return row
 }
 
-export async function update_user_profile(
+/**
+ * Validates the profile fields and applies them in ONE UPDATE statement. A single statement is
+ * atomic on D1 (which has no interactive transactions), so either every column changes or none
+ * does. `extra` columns are written in that same statement; `extra.interests` takes precedence
+ * over `input.interests`.
+ */
+async function apply_profile_update(
 	db: Db,
 	user_id: string,
 	input: {
@@ -116,6 +122,7 @@ export async function update_user_profile(
 		bio?: unknown
 		interests?: unknown
 	},
+	extra: { onboarded?: boolean; interests?: string | null } = {},
 ) {
 	const current = await db.select().from(user).where(eq(user.id, user_id)).get()
 	if (!current) error(404, 'User not found')
@@ -166,6 +173,7 @@ export async function update_user_profile(
 	if (input.interests !== undefined && input.interests !== null) {
 		next_interests = JSON.stringify(validate_interests(input.interests))
 	}
+	if (extra.interests !== undefined) next_interests = extra.interests
 
 	const now = new Date()
 	try {
@@ -176,6 +184,7 @@ export async function update_user_profile(
 				username: next_username,
 				bio: next_bio,
 				interests: next_interests,
+				...(extra.onboarded !== undefined ? { onboarded: extra.onboarded } : {}),
 				updatedAt: now,
 			})
 			.where(eq(user.id, user_id))
@@ -189,14 +198,26 @@ export async function update_user_profile(
 	}
 
 	return {
-		id: user_id,
 		name: next_name,
 		username: next_username,
-		handle: next_username ?? user_id,
 		bio: next_bio,
 		interests: next_interests,
 		image: current.image,
 	}
+}
+
+export async function update_user_profile(
+	db: Db,
+	user_id: string,
+	input: {
+		name?: unknown
+		username?: unknown
+		bio?: unknown
+		interests?: unknown
+	},
+) {
+	const next = await apply_profile_update(db, user_id, input)
+	return { id: user_id, ...next, handle: next.username ?? user_id }
 }
 
 export async function complete_onboarding(
@@ -217,26 +238,18 @@ export async function complete_onboarding(
 			.where(eq(user.id, user_id))
 		return { onboarded: true }
 	}
-	// Validate before writing anything so a bad interest can't leave a half-applied onboarding.
+	// Everything is validated, then written in a single UPDATE together with `onboarded`, so a
+	// failure can never leave the profile changed while onboarding is still incomplete.
 	const interests_json =
 		input.interests !== undefined && input.interests !== null
 			? JSON.stringify(validate_interests(input.interests))
 			: null
-	if (input.name !== undefined || input.username !== undefined || input.bio !== undefined) {
-		await update_user_profile(db, user_id, {
-			name: input.name,
-			username: input.username,
-			bio: input.bio,
-		})
-	}
-	await db
-		.update(user)
-		.set({
-			onboarded: true,
-			interests: interests_json,
-			updatedAt: new Date(),
-		})
-		.where(eq(user.id, user_id))
+	await apply_profile_update(
+		db,
+		user_id,
+		{ name: input.name, username: input.username, bio: input.bio },
+		{ onboarded: true, interests: interests_json },
+	)
 	return { onboarded: true, interests: interests_json }
 }
 
