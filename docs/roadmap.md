@@ -37,9 +37,9 @@ The app is for signed-in users only. There is no guest mode: no guest sessions, 
 | Any other page | `/`, `/explore`, `/u/*`, `/posts/*`, `/notifications`, `/profile`, ...                                  | ❌ Redirect (302) to `/login`                            |
 | Any other API  | `/api/posts`, `/api/search`, `/api/trending`, `/api/users/*`, `/api/notifications/*`, ...               | ❌ `401` JSON `{ "message": "Authentication required" }` |
 
-There is no central allowlist or guest handling. Every API handler checks the session itself (`require_user_id` → `401`) and every page load does too (`require_session_user` → redirect to `/login`, which also works for client-side navigations), so a session that expires mid-visit lands on `/login` at the next navigation. The only routes without that check are the three above and the `/demo` template pages, which show no user data.
+There is no central allowlist or guest handling. Every API handler checks the session itself (`require_user_id` → `401`) and every page load does too (`require_session_user` → redirect to `/login`, which also works for client-side navigations), so a session that expires mid-visit lands on `/login` at the next navigation. The only routes without that check are the three above.
 
-`src/routes/route-guards.spec.ts` keeps this from regressing: it discovers every API handler and page load, calls each one with no session, and fails if any does not reject first (before touching the database) or if a page has no server load. A newly added route that forgets its check therefore fails CI instead of becoming public.
+`src/routes/route-guards.spec.ts` keeps this from regressing: it discovers every API handler and page load, calls each one with no session, and fails if any does not reject first (before touching the database) or if a page has no server load, with no exceptions. A newly added route that forgets its check therefore fails CI instead of becoming public.
 
 ### Route Behavior (signed in)
 
@@ -55,17 +55,17 @@ There is no central allowlist or guest handling. Every API handler checks the se
 
 ### Action Authorization Matrix
 
-| Action                       | Logged-in (Non-follower) | Follower           | Author / Owner          |
-| ---------------------------- | ------------------------ | ------------------ | ----------------------- |
-| **Read public post**         | ✅ Allowed               | ✅ Allowed         | ✅ Allowed              |
-| **Read followers-only post** | ❌ 404 (Hidden)          | ✅ Allowed         | ✅ Allowed              |
-| **Create post**              | ✅ Allowed               | —                  | —                       |
-| **Edit own post**            | ❌ 403 Forbidden         | ❌ 403 Forbidden   | ✅ Allowed              |
-| **Delete own post**          | ❌ 403 Forbidden         | ❌ 403 Forbidden   | ✅ Allowed (Cascades)   |
-| **Like / unlike post**       | ✅ If post visible       | ✅ If post visible | ✅ Allowed              |
-| **Comment / reply**          | ✅ If post visible       | ✅ If post visible | ✅ Allowed              |
-| **Follow / unfollow user**   | ✅ Allowed               | ✅ Allowed         | ❌ 400 (No self-follow) |
-| **View notifications**       | ✅ Own only              | ✅ Own only        | ✅ Own only             |
+| Action                       | Non-follower       | Follower           | Author / Owner          |
+| ---------------------------- | ------------------ | ------------------ | ----------------------- |
+| **Read public post**         | ✅ Allowed         | ✅ Allowed         | ✅ Allowed              |
+| **Read followers-only post** | ❌ 404 (Hidden)    | ✅ Allowed         | ✅ Allowed              |
+| **Create post**              | ✅ Allowed         | —                  | —                       |
+| **Edit own post**            | ❌ 403 Forbidden   | ❌ 403 Forbidden   | ✅ Allowed              |
+| **Delete own post**          | ❌ 403 Forbidden   | ❌ 403 Forbidden   | ✅ Allowed (Cascades)   |
+| **Like / unlike post**       | ✅ If post visible | ✅ If post visible | ✅ Allowed              |
+| **Comment / reply**          | ✅ If post visible | ✅ If post visible | ✅ Allowed              |
+| **Follow / unfollow user**   | ✅ Allowed         | ✅ Allowed         | ❌ 400 (No self-follow) |
+| **View notifications**       | ✅ Own only        | ✅ Own only        | ✅ Own only             |
 
 **Key Authorization Principles:**
 
@@ -78,7 +78,7 @@ There is no central allowlist or guest handling. Every API handler checks the se
 
 ## 3. Profile Model & Lifecycle
 
-A user's profile represents their public identity on the platform.
+A user's profile is how they appear to other signed-in users.
 
 ### Data Attributes
 
@@ -95,7 +95,7 @@ A user's profile represents their public identity on the platform.
 
 ### Future Profile Enhancements (Post-MVP)
 
-- **Account Privacy:** Toggle between public profile and approval-required private profile.
+- **Account Privacy:** Toggle between an open profile (any signed-in user can view it) and an approval-required private profile.
 - **Moderation:** Block and mute lists to protect users from unwanted interactions.
 
 ---
@@ -106,7 +106,7 @@ To allow clean platform growth, content delivery is structured into two distinct
 
 ### 1. Home Feed (`/`)
 
-- **For Logged-in Users:** Personal stream. In MVP, displays visible posts newest-first. Evolves post-MVP to prioritize posts by followed users alongside own posts.
+- **Personal stream:** In MVP, displays visible posts newest-first. Evolves post-MVP to prioritize posts by followed users alongside own posts.
 - **Pagination:** Strict cursor pagination on `(created_at, id)` descending. Prevents duplicate items or skips when new posts are created while scrolling.
 
 ### 2. Explore & Search (`/explore`)

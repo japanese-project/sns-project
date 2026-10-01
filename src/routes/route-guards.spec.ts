@@ -25,12 +25,6 @@ const modules = import.meta.glob<Record<string, unknown>>(
 	{ eager: true },
 )
 
-// Page routes that have no server load at all. Nothing but a load can guard a page, so each
-// page needs one, except these template demo pages, which show no user data.
-const pages_without_load_allowed = new Set([
-	'./demo/+page.svelte',
-	'./demo/playwright/+page.svelte',
-])
 const page_files = Object.keys(import.meta.glob(['./**/+page.svelte', '!./login/**']))
 
 const entry_points = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'load']
@@ -92,10 +86,10 @@ describe('route guards', () => {
 	})
 
 	it('has a server load behind every page, so a page cannot be left unguarded', () => {
-		const unguarded = page_files.filter((file) => {
-			const has_load = `${file.replace('+page.svelte', '+page.server.ts')}` in modules
-			return !has_load && !pages_without_load_allowed.has(file)
-		})
+		// Nothing but a load can guard a page, and there are no exceptions (login is out of scope).
+		const unguarded = page_files.filter(
+			(file) => !(file.replace('+page.svelte', '+page.server.ts') in modules),
+		)
 		expect(unguarded).toEqual([])
 	})
 })
