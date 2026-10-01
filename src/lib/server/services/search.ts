@@ -18,7 +18,7 @@ export function parse_query(raw: string | null | undefined): string {
 
 export async function search_users(
 	db: Db,
-	viewer_id: string | null,
+	viewer_id: string,
 	query: string,
 	limit?: number,
 ): Promise<UserListItem[]> {
@@ -30,12 +30,8 @@ export async function search_users(
 			username: user.username,
 			image: user.image,
 			bio: user.bio,
-			is_following: viewer_id
-				? sql<number>`exists(select 1 from ${follow} where ${follow.followerId} = ${viewer_id} and ${follow.followingId} = ${user.id})`
-				: sql<number>`0`,
-			is_followed_by: viewer_id
-				? sql<number>`exists(select 1 from ${follow} where ${follow.followerId} = ${user.id} and ${follow.followingId} = ${viewer_id})`
-				: sql<number>`0`,
+			is_following: sql<number>`exists(select 1 from ${follow} where ${follow.followerId} = ${viewer_id} and ${follow.followingId} = ${user.id})`,
+			is_followed_by: sql<number>`exists(select 1 from ${follow} where ${follow.followerId} = ${user.id} and ${follow.followingId} = ${viewer_id})`,
 		})
 		.from(user)
 		.where(
@@ -55,7 +51,7 @@ export async function search_users(
 
 export async function search_all(
 	db: Db,
-	viewer_id: string | null,
+	viewer_id: string,
 	query: string,
 	opts: { cursor?: string | null; limit?: number } = {},
 ): Promise<{ users: UserListItem[]; posts: PostView[]; next_cursor: string | null }> {

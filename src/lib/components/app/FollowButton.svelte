@@ -1,13 +1,10 @@
 <script lang="ts">
-	import { goto } from '$app/navigation'
-	import { resolve } from '$app/paths'
 	import { api } from '$lib/api'
 
 	let {
 		handle,
 		following: server_following,
 		follows_you = false,
-		signed_in = true,
 		label_following = 'Following',
 		label_follow,
 		on_change,
@@ -15,7 +12,6 @@
 		handle: string
 		following: boolean
 		follows_you?: boolean
-		signed_in?: boolean
 		label_following?: string
 		label_follow?: string
 		on_change?: (state: { following: boolean; follower_count: number }) => void
@@ -29,10 +25,6 @@
 	let follow_label = $derived(label_follow ?? (follows_you ? 'Follow Back' : 'Follow'))
 
 	async function toggle() {
-		if (!signed_in) {
-			void goto(resolve('/login'))
-			return
-		}
 		if (pending) return
 		const previous = following
 		pending = true

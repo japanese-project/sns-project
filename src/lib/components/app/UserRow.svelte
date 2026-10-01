@@ -4,7 +4,7 @@
 	import Avatar from './Avatar.svelte'
 	import FollowButton from './FollowButton.svelte'
 
-	let { person, signed_in }: { person: UserListItem; signed_in: boolean } = $props()
+	let { person }: { person: UserListItem } = $props()
 	let override = $state<boolean | null>(null)
 	let following = $derived(override ?? person.is_following)
 </script>
@@ -20,7 +20,7 @@
 		<div class="min-w-0 flex-1">
 			<div class="flex items-center gap-1.5 overflow-hidden">
 				<span class="truncate text-sm font-semibold text-slate-900">{person.name}</span>
-				{#if signed_in && !person.is_self && person.is_followed_by}
+				{#if !person.is_self && person.is_followed_by}
 					<span
 						class="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[0.65rem] font-semibold text-slate-600"
 					>
@@ -43,7 +43,6 @@
 				handle={person.handle}
 				{following}
 				follows_you={Boolean(person.is_followed_by)}
-				{signed_in}
 				on_change={(s) => (override = s.following)}
 			/>
 		</div>

@@ -5,11 +5,7 @@
 	import type { Page, UserListItem, UserSummary } from '$lib/types'
 	import UserRow from './UserRow.svelte'
 
-	let {
-		owner,
-		kind,
-		signed_in = true,
-	}: { owner: UserSummary; kind: 'followers' | 'following'; signed_in?: boolean } = $props()
+	let { owner, kind }: { owner: UserSummary; kind: 'followers' | 'following' } = $props()
 
 	let people = $state<UserListItem[]>([])
 	let next_cursor = $state<string | null>(null)
@@ -86,7 +82,7 @@
 	{:else}
 		<ul class="divide-y divide-slate-100">
 			{#each people as person (person.id)}
-				<UserRow {person} {signed_in} />
+				<UserRow {person} />
 			{/each}
 		</ul>
 		{#if error_message}

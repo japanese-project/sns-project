@@ -119,7 +119,6 @@ describe('comments', () => {
 		const p = await create_post(db, alice, { content: 'secret', visibility: 'followers-only' })
 		await create_comment(db, alice, p.id, { content: 'author note' })
 		expect(await status_of(list_comments(db, bob, p.id))).toBe(404)
-		expect(await status_of(list_comments(db, null, p.id))).toBe(404)
 		expect(await status_of(create_comment(db, bob, p.id, { content: 'let me in' }))).toBe(404)
 		await make_follow(db, bob, alice)
 		expect(await list_comments(db, bob, p.id)).toHaveLength(1)
@@ -250,23 +249,22 @@ describe('notifications', () => {
 
 describe('search', () => {
 	it('matches usernames case-insensitively', async () => {
-		expect((await search_users(db, null, 'ALI')).map((u) => u.id)).toEqual([alice])
-		expect((await search_users(db, null, '@bob')).map((u) => u.id)).toEqual([bob])
+		expect((await search_users(db, bob, 'ALI')).map((u) => u.id)).toEqual([alice])
+		expect((await search_users(db, bob, '@bob')).map((u) => u.id)).toEqual([bob])
 	})
 
 	it('matches post text case-insensitively and treats wildcards literally', async () => {
 		await create_post(db, alice, { content: 'Hello World' })
 		await create_post(db, alice, { content: '100% sure' })
-		expect((await search_all(db, null, 'hello wORLD')).posts).toHaveLength(1)
-		expect((await search_all(db, null, '100%')).posts).toHaveLength(1)
-		expect((await search_all(db, null, '%')).posts).toHaveLength(1)
-		expect((await search_all(db, null, '_')).posts).toHaveLength(0)
+		expect((await search_all(db, bob, 'hello wORLD')).posts).toHaveLength(1)
+		expect((await search_all(db, bob, '100%')).posts).toHaveLength(1)
+		expect((await search_all(db, bob, '%')).posts).toHaveLength(1)
+		expect((await search_all(db, bob, '_')).posts).toHaveLength(0)
 	})
 
 	it('never returns followers-only posts to non-followers', async () => {
 		await create_post(db, alice, { content: 'needle public' })
 		await create_post(db, alice, { content: 'needle secret', visibility: 'followers-only' })
-		expect((await search_all(db, null, 'needle')).posts).toHaveLength(1)
 		expect((await search_all(db, bob, 'needle')).posts).toHaveLength(1)
 		expect((await search_all(db, alice, 'needle')).posts).toHaveLength(2)
 		await make_follow(db, bob, alice)
@@ -278,7 +276,7 @@ describe('search', () => {
 		const seen: string[] = []
 		let cursor: string | null = null
 		do {
-			const result = await search_all(db, null, 'page item', { limit: 3, cursor })
+			const result = await search_all(db, bob, 'page item', { limit: 3, cursor })
 			seen.push(...result.posts.map((p) => p.id))
 			cursor = result.next_cursor
 		} while (cursor)

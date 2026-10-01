@@ -7,12 +7,10 @@
 
 	let {
 		endpoint,
-		signed_in,
 		empty_message = 'Nothing here yet.',
 		accepts_new_posts = false,
 	}: {
 		endpoint: string
-		signed_in: boolean
 		empty_message?: string
 		accepts_new_posts?: boolean
 	} = $props()
@@ -108,7 +106,7 @@
 	{:else if posts.length === 0}
 		<div class="px-4 py-12 text-center">
 			<p class="text-sm text-slate-500">{empty_message}</p>
-			{#if signed_in && accepts_new_posts}
+			{#if accepts_new_posts}
 				<button
 					type="button"
 					onclick={() => composer.show()}
@@ -121,7 +119,6 @@
 		{#each posts as post (post.id)}
 			<PostCard
 				{post}
-				{signed_in}
 				on_deleted={(id) => (posts = posts.filter((p) => p.id !== id))}
 				on_updated={(updated) => (posts = posts.map((p) => (p.id === updated.id ? updated : p)))}
 			/>

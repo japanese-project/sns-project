@@ -21,14 +21,13 @@ export function parse_visibility(raw: unknown): Visibility {
  *   public OR author = viewer OR viewer follows author
  * Every read path (feed, profile, search, single post, likes, comments) goes through this.
  */
-export function visible_to(viewer_id: string | null): SQL {
-	if (!viewer_id) return sql`${post.visibility} = 'public'`
+export function visible_to(viewer_id: string): SQL {
 	return sql`(${post.visibility} = 'public'
 		or ${post.userId} = ${viewer_id}
 		or exists (select 1 from ${follow} where ${follow.followerId} = ${viewer_id} and ${follow.followingId} = ${post.userId}))`
 }
 
-const post_columns = (viewer_id: string | null) => ({
+const post_columns = (viewer_id: string) => ({
 	id: post.id,
 	content: post.content,
 	visibility: post.visibility,
@@ -41,14 +40,12 @@ const post_columns = (viewer_id: string | null) => ({
 	author_image: user.image,
 	like_count: sql<number>`(select count(*) from ${like} where ${like.postId} = ${post.id})`,
 	comment_count: sql<number>`(select count(*) from ${comment} where ${comment.postId} = ${post.id})`,
-	liked_by_me: viewer_id
-		? sql<number>`exists(select 1 from ${like} where ${like.postId} = ${post.id} and ${like.userId} = ${viewer_id})`
-		: sql<number>`0`,
+	liked_by_me: sql<number>`exists(select 1 from ${like} where ${like.postId} = ${post.id} and ${like.userId} = ${viewer_id})`,
 })
 
 type PostRow = Awaited<ReturnType<typeof select_posts>>[number]
 
-function select_posts(db: Db, viewer_id: string | null, where: SQL | undefined, limit: number) {
+function select_posts(db: Db, viewer_id: string, where: SQL | undefined, limit: number) {
 	return db
 		.select(post_columns(viewer_id))
 		.from(post)
@@ -58,7 +55,7 @@ function select_posts(db: Db, viewer_id: string | null, where: SQL | undefined, 
 		.limit(limit)
 }
 
-function to_post_view(row: PostRow, viewer_id: string | null): PostView {
+function to_post_view(row: PostRow, viewer_id: string): PostView {
 	return {
 		id: row.id,
 		content: row.content,
@@ -75,7 +72,7 @@ function to_post_view(row: PostRow, viewer_id: string | null): PostView {
 		like_count: Number(row.like_count),
 		comment_count: Number(row.comment_count),
 		liked_by_me: Boolean(row.liked_by_me),
-		is_owner: viewer_id !== null && viewer_id === row.user_id,
+		is_owner: viewer_id === row.user_id,
 	}
 }
 
@@ -90,7 +87,7 @@ function after_cursor(cursor: string | null | undefined): SQL | undefined {
 
 async function paginate(
 	db: Db,
-	viewer_id: string | null,
+	viewer_id: string,
 	filters: (SQL | undefined)[],
 	opts: { cursor?: string | null; limit?: number },
 ): Promise<Page<PostView>> {
@@ -128,11 +125,10 @@ export async function create_post(
 
 export function list_feed(
 	db: Db,
-	viewer_id: string | null,
+	viewer_id: string,
 	opts: { cursor?: string | null; limit?: number; feed?: 'global' | 'following' } = {},
 ) {
 	if (opts.feed === 'following') {
-		if (!viewer_id) return Promise.resolve({ items: [], next_cursor: null })
 		const following_filter = sql<boolean>`(${post.userId} = ${viewer_id} or exists (select 1 from ${follow} where ${follow.followerId} = ${viewer_id} and ${follow.followingId} = ${post.userId}))`
 		return paginate(db, viewer_id, [following_filter], opts)
 	}
@@ -141,7 +137,7 @@ export function list_feed(
 
 export function list_posts_by_user(
 	db: Db,
-	viewer_id: string | null,
+	viewer_id: string,
 	author_id: string,
 	opts: { cursor?: string | null; limit?: number } = {},
 ) {
@@ -158,7 +154,7 @@ export function list_posts_by_user(
  */
 export function search_posts(
 	db: Db,
-	viewer_id: string | null,
+	viewer_id: string,
 	query: string,
 	opts: { cursor?: string | null; limit?: number } = {},
 ) {
@@ -171,7 +167,7 @@ export function search_posts(
 }
 
 /** Returns the post if the viewer may read it, otherwise null (never leaks existence). */
-export async function get_visible_post(db: Db, viewer_id: string | null, post_id: string) {
+export async function get_visible_post(db: Db, viewer_id: string, post_id: string) {
 	const rows = await select_posts(
 		db,
 		viewer_id,
@@ -181,7 +177,7 @@ export async function get_visible_post(db: Db, viewer_id: string | null, post_id
 	return rows[0] ? to_post_view(rows[0], viewer_id) : null
 }
 
-export async function get_post_or_404(db: Db, viewer_id: string | null, post_id: string) {
+export async function get_post_or_404(db: Db, viewer_id: string, post_id: string) {
 	const found = await get_visible_post(db, viewer_id, post_id)
 	if (!found) error(404, 'Post not found')
 	return found

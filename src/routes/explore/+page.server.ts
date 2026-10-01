@@ -1,10 +1,12 @@
+import { require_session_user } from '$lib/server/access'
 import { get_trending_topics, list_feed, parse_trending_period } from '$lib/server/services/posts'
 import { parse_query, search_all } from '$lib/server/services/search'
 import { get_suggested_users } from '$lib/server/services/users'
 import type { PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ locals, url }) => {
-	const viewer_id = locals.user?.id ?? null
+	const me = require_session_user(locals)
+	const viewer_id = me.id
 	const raw = url.searchParams.get('q')
 	const period = parse_trending_period(url.searchParams.get('period'))
 
@@ -16,7 +18,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		])
 
 		return {
-			user: locals.user ?? null,
+			user: me,
 			query: '',
 			period,
 			results: null,
@@ -32,7 +34,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	try {
 		const query = parse_query(raw)
 		return {
-			user: locals.user ?? null,
+			user: me,
 			query,
 			period,
 			results: await search_all(locals.db, viewer_id, query),
@@ -43,7 +45,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		const message = e instanceof Error ? e.message : 'Search failed'
 		const body = (e as { body?: { message?: string } }).body
 		return {
-			user: locals.user ?? null,
+			user: me,
 			query: raw,
 			period,
 			results: null,

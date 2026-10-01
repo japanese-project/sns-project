@@ -192,7 +192,7 @@
 						</div>
 						<ul class="divide-y divide-slate-100">
 							{#each data.discovery.suggested_users as person (person.id)}
-								<UserRow {person} signed_in={data.user !== null} />
+								<UserRow {person} />
 							{/each}
 						</ul>
 					</section>
@@ -212,7 +212,7 @@
 						</div>
 						<div class="divide-y divide-slate-100">
 							{#each data.discovery.posts as post (post.id)}
-								<PostCard {post} signed_in={data.user !== null} />
+								<PostCard {post} />
 							{/each}
 						</div>
 					</section>
@@ -231,7 +231,7 @@
 					{:else}
 						<ul class="divide-y divide-slate-100">
 							{#each data.results.users as person (person.id)}
-								<UserRow {person} signed_in={data.user !== null} />
+								<UserRow {person} />
 							{/each}
 						</ul>
 					{/if}
@@ -251,7 +251,6 @@
 							{#each posts as post (post.id)}
 								<PostCard
 									{post}
-									signed_in={data.user !== null}
 									on_deleted={(id) => (extra_posts = extra_posts.filter((p) => p.id !== id))}
 								/>
 							{/each}

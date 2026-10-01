@@ -4,7 +4,7 @@ import { read_json, require_user_id } from '$lib/server/validation'
 import type { RequestHandler } from './$types'
 
 export const GET: RequestHandler = async ({ locals, params }) => {
-	return json(await get_post_or_404(locals.db, locals.user?.id ?? null, params.id))
+	return json(await get_post_or_404(locals.db, require_user_id(locals), params.id))
 }
 
 export const PATCH: RequestHandler = async ({ locals, params, request }) => {

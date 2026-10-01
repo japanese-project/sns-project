@@ -242,7 +242,7 @@ export async function complete_onboarding(
 
 export async function get_suggested_users(
 	db: Db,
-	viewer_id: string | null,
+	viewer_id: string,
 	limit = 5,
 ): Promise<UserListItem[]> {
 	limit = clamp_limit(limit, 5, MAX_SUGGESTION_LIMIT)
@@ -253,21 +253,15 @@ export async function get_suggested_users(
 			username: user.username,
 			image: user.image,
 			bio: user.bio,
-			is_following: viewer_id
-				? sql<number>`exists(select 1 from ${follow} where ${follow.followerId} = ${viewer_id} and ${follow.followingId} = ${user.id})`
-				: sql<number>`0`,
-			is_followed_by: viewer_id
-				? sql<number>`exists(select 1 from ${follow} where ${follow.followerId} = ${user.id} and ${follow.followingId} = ${viewer_id})`
-				: sql<number>`0`,
+			is_following: sql<number>`exists(select 1 from ${follow} where ${follow.followerId} = ${viewer_id} and ${follow.followingId} = ${user.id})`,
+			is_followed_by: sql<number>`exists(select 1 from ${follow} where ${follow.followerId} = ${user.id} and ${follow.followingId} = ${viewer_id})`,
 		})
 		.from(user)
 		.where(
-			viewer_id
-				? and(
-						ne(user.id, viewer_id),
-						sql`not exists(select 1 from ${follow} where ${follow.followerId} = ${viewer_id} and ${follow.followingId} = ${user.id})`,
-					)
-				: undefined,
+			and(
+				ne(user.id, viewer_id),
+				sql`not exists(select 1 from ${follow} where ${follow.followerId} = ${viewer_id} and ${follow.followingId} = ${user.id})`,
+			),
 		)
 		.orderBy(desc(user.createdAt))
 		.limit(limit)
@@ -297,7 +291,7 @@ export async function get_suggested_users(
  */
 export async function get_users_by_interests(
 	db: Db,
-	viewer_id: string | null,
+	viewer_id: string,
 	interests: string[],
 	limit = 5,
 ): Promise<UserListItem[]> {
@@ -324,22 +318,16 @@ export async function get_users_by_interests(
 			username: user.username,
 			image: user.image,
 			bio: user.bio,
-			is_following: viewer_id
-				? sql<number>`exists(select 1 from ${follow} where ${follow.followerId} = ${viewer_id} and ${follow.followingId} = ${user.id})`
-				: sql<number>`0`,
-			is_followed_by: viewer_id
-				? sql<number>`exists(select 1 from ${follow} where ${follow.followerId} = ${user.id} and ${follow.followingId} = ${viewer_id})`
-				: sql<number>`0`,
+			is_following: sql<number>`exists(select 1 from ${follow} where ${follow.followerId} = ${viewer_id} and ${follow.followingId} = ${user.id})`,
+			is_followed_by: sql<number>`exists(select 1 from ${follow} where ${follow.followerId} = ${user.id} and ${follow.followingId} = ${viewer_id})`,
 		})
 		.from(user)
 		.where(
-			viewer_id
-				? and(
-						shares_interest,
-						ne(user.id, viewer_id),
-						sql`not exists(select 1 from ${follow} where ${follow.followerId} = ${viewer_id} and ${follow.followingId} = ${user.id})`,
-					)
-				: shares_interest,
+			and(
+				shares_interest,
+				ne(user.id, viewer_id),
+				sql`not exists(select 1 from ${follow} where ${follow.followerId} = ${viewer_id} and ${follow.followingId} = ${user.id})`,
+			),
 		)
 		.orderBy(desc(user.createdAt), desc(user.id))
 		.limit(limit)
@@ -351,8 +339,3 @@ export async function get_users_by_interests(
 		is_self: viewer_id === row.id,
 	}))
 }
-
-export const is_following_sql = (viewer_id: string | null) =>
-	viewer_id
-		? sql<number>`exists(select 1 from "follow" where "follow"."follower_id" = ${viewer_id} and "follow"."following_id" = "user"."id")`
-		: sql<number>`0`

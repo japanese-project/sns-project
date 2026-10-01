@@ -82,10 +82,10 @@ describe('visibility', () => {
 		public_id = (await create_post(db, alice, { content: 'everyone', visibility: 'public' })).id
 	})
 
-	it('anonymous users see public posts only', async () => {
-		expect(await get_visible_post(db, null, public_id)).not.toBeNull()
-		expect(await get_visible_post(db, null, secret_id)).toBeNull()
-		const feed = await list_feed(db, null, { limit: 50 })
+	it('a non-follower sees public posts only', async () => {
+		expect(await get_visible_post(db, carol, public_id)).not.toBeNull()
+		expect(await get_visible_post(db, carol, secret_id)).toBeNull()
+		const feed = await list_feed(db, carol, { limit: 50 })
 		expect(feed.items.some((p) => p.id === secret_id)).toBe(false)
 		expect(feed.items.some((p) => p.id === public_id)).toBe(true)
 	})
@@ -146,7 +146,7 @@ describe('pagination', () => {
 		const mine = (items: { id: string; author: { id: string } }[]) =>
 			items.filter((p) => p.author.id === author).map((p) => p.id)
 
-		const first = await list_feed(db, null, { limit: 5 })
+		const first = await list_feed(db, carol, { limit: 5 })
 		expect(first.next_cursor).not.toBeNull()
 
 		// A brand-new post arrives between page loads: it must not shift the cursor.
@@ -155,7 +155,7 @@ describe('pagination', () => {
 		const collected = [...first.items]
 		let cursor = first.next_cursor
 		while (cursor) {
-			const next = await list_feed(db, null, { limit: 5, cursor })
+			const next = await list_feed(db, carol, { limit: 5, cursor })
 			collected.push(...next.items)
 			cursor = next.next_cursor
 		}
@@ -168,7 +168,7 @@ describe('pagination', () => {
 	})
 
 	it('rejects a malformed cursor', async () => {
-		expect(await status_of(list_feed(db, null, { cursor: '!!!not-a-cursor' }))).toBe(400)
+		expect(await status_of(list_feed(db, alice, { cursor: '!!!not-a-cursor' }))).toBe(400)
 	})
 })
 
@@ -224,10 +224,6 @@ describe('feed separation (following vs global)', () => {
 		expect(ids).toContain(p1.id)
 		expect(ids).toContain(p2.id)
 		expect(ids).not.toContain(p_stranger.id)
-
-		// Anonymous following feed is empty
-		const anon_feed = await list_feed(db, null, { feed: 'following' })
-		expect(anon_feed.items).toHaveLength(0)
 
 		// Global feed includes all public posts
 		const global_feed = await list_feed(db, u1, { feed: 'global' })

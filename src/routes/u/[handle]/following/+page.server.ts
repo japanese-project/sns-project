@@ -1,7 +1,9 @@
+import { require_session_user } from '$lib/server/access'
 import { require_user_by_handle, to_user_summary } from '$lib/server/services/users'
 import type { PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ locals, params }) => {
+	const me = require_session_user(locals)
 	const target = await require_user_by_handle(locals.db, params.handle)
-	return { user: locals.user ?? null, owner: to_user_summary(target) }
+	return { user: me, owner: to_user_summary(target) }
 }

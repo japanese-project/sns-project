@@ -5,7 +5,6 @@
  * themselves. They do NOT exercise the route handlers (401 wiring, handle resolution, which
  * status an error becomes); that is covered by src/routes/api/authorization.spec.ts.
  * Rules covered here:
- *   - Anonymous access to public vs. followers-only posts
  *   - Non-owner post/comment modification
  *   - Notification isolation between users
  *   - Follow/unfollow authorization
@@ -35,9 +34,9 @@ import {
 	search_posts,
 	update_post,
 } from './posts'
-import { search_all, search_users } from './search'
+import { search_all } from './search'
 import { find_user_by_handle, require_user_by_handle } from './users'
-import { create_test_db, make_follow, make_user } from './test-db'
+import { create_test_db, make_user } from './test-db'
 
 let db: Db
 let dispose: () => Promise<void>
@@ -70,93 +69,6 @@ async function status_of(promise: Promise<unknown>) {
 		return (e as { status?: number }).status ?? 500
 	}
 }
-
-// ---------------------------------------------------------------------------
-// 1. Anonymous access to public vs. followers-only posts
-// ---------------------------------------------------------------------------
-describe('anonymous access', () => {
-	it('can view public posts but not followers-only posts', async () => {
-		const pub = await create_post(db, alice, { content: 'public hello' })
-		const priv = await create_post(db, alice, {
-			content: 'followers only',
-			visibility: 'followers-only',
-		})
-
-		expect(await get_visible_post(db, null, pub.id)).not.toBeNull()
-		expect(await get_visible_post(db, null, priv.id)).toBeNull()
-	})
-
-	it('sees only public posts in the global feed', async () => {
-		await create_post(db, alice, { content: 'public' })
-		await create_post(db, alice, { content: 'secret', visibility: 'followers-only' })
-		const feed = await list_feed(db, null, { limit: 50 })
-		expect(feed.items.every((p) => p.visibility === 'public')).toBe(true)
-	})
-
-	it('gets empty following feed', async () => {
-		await create_post(db, alice, { content: 'something' })
-		const feed = await list_feed(db, null, { feed: 'following' })
-		expect(feed.items).toHaveLength(0)
-	})
-
-	it('cannot see followers-only posts in search results', async () => {
-		await create_post(db, alice, { content: 'searchable needle public' })
-		await create_post(db, alice, {
-			content: 'searchable needle secret',
-			visibility: 'followers-only',
-		})
-		const results = await search_posts(db, null, 'searchable needle')
-		expect(results.items).toHaveLength(1)
-		expect(results.items[0].visibility).toBe('public')
-	})
-
-	it('returns 404 for followers-only post via get_post_or_404', async () => {
-		const priv = await create_post(db, alice, { content: 'nope', visibility: 'followers-only' })
-		expect(await status_of(get_post_or_404(db, null, priv.id))).toBe(404)
-	})
-
-	it('cannot list comments on a followers-only post', async () => {
-		const priv = await create_post(db, alice, {
-			content: 'secret post',
-			visibility: 'followers-only',
-		})
-		await create_comment(db, alice, priv.id, { content: 'author comment' })
-		expect(await status_of(list_comments(db, null, priv.id))).toBe(404)
-	})
-
-	it('can view user profiles, followers, and following lists', async () => {
-		await make_follow(db, bob, alice)
-		const profile = await build_profile(db, null, {
-			id: alice,
-			name: 'Alice',
-			username: 'alice',
-			image: null,
-			createdAt: new Date(),
-		})
-		expect(profile.user.id).toBe(alice)
-		expect(profile.is_self).toBe(false)
-		expect(profile.is_following).toBe(false)
-
-		const followers = await list_followers(db, null, alice)
-		expect(followers.items).toHaveLength(1)
-
-		const following = await list_following(db, null, alice)
-		expect(following.items).toHaveLength(0)
-	})
-
-	it('can search users without authentication', async () => {
-		const results = await search_users(db, null, 'alice')
-		expect(results.map((u) => u.id)).toContain(alice)
-	})
-
-	it('can view public posts on a user profile page', async () => {
-		await create_post(db, alice, { content: 'public on profile' })
-		await create_post(db, alice, { content: 'secret on profile', visibility: 'followers-only' })
-		const posts = await list_posts_by_user(db, null, alice)
-		expect(posts.items).toHaveLength(1)
-		expect(posts.items[0].visibility).toBe('public')
-	})
-})
 
 // ---------------------------------------------------------------------------
 // 2. Non-owner post/comment modification
@@ -325,12 +237,10 @@ describe('hidden post access through various paths', () => {
 
 	it('direct view (get_visible_post) returns null for non-followers', async () => {
 		expect(await get_visible_post(db, bob, secret_id)).toBeNull()
-		expect(await get_visible_post(db, null, secret_id)).toBeNull()
 	})
 
 	it('get_post_or_404 returns 404 for non-followers', async () => {
 		expect(await status_of(get_post_or_404(db, bob, secret_id))).toBe(404)
-		expect(await status_of(get_post_or_404(db, null, secret_id))).toBe(404)
 	})
 
 	it('author always sees their own followers-only post', async () => {
@@ -358,9 +268,6 @@ describe('hidden post access through various paths', () => {
 	})
 
 	it('search results respect visibility', async () => {
-		const anon_results = await search_posts(db, null, 'locked content')
-		expect(anon_results.items).toHaveLength(0)
-
 		const non_follower_results = await search_posts(db, bob, 'locked content')
 		expect(non_follower_results.items).toHaveLength(0)
 
@@ -419,26 +326,21 @@ describe('profile visibility', () => {
 		expect(carol_profile.is_self).toBe(false)
 		expect(carol_profile.is_following).toBe(false)
 		expect(carol_profile.is_followed_by).toBe(false)
-
-		// Anonymous viewer
-		const anon_profile = await build_profile(db, null, target)
-		expect(anon_profile.is_self).toBe(false)
-		expect(anon_profile.is_following).toBe(false)
 	})
 
-	it('follower/following lists are visible to all viewers', async () => {
+	it('follower/following lists are visible to any signed-in viewer', async () => {
 		await follow_user(db, alice, bob)
 		await follow_user(db, carol, bob)
 
-		// Anonymous can see bob's followers
-		const followers = await list_followers(db, null, bob)
+		// Any signed-in viewer can see bob's followers
+		const followers = await list_followers(db, carol, bob)
 		expect(followers.items).toHaveLength(2)
 		const follower_ids = followers.items.map((u) => u.id)
 		expect(follower_ids).toContain(alice)
 		expect(follower_ids).toContain(carol)
 
-		// Anonymous can see bob's following list (empty)
-		const following = await list_following(db, null, bob)
+		// ...and his (empty) following list
+		const following = await list_following(db, carol, bob)
 		expect(following.items).toHaveLength(0)
 
 		// Third party can see follower lists with relationship indicators

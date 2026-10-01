@@ -17,11 +17,9 @@
 	let {
 		suggested_users = [],
 		trending_topics = [],
-		signed_in = false,
 	}: {
 		suggested_users?: UserListItem[]
 		trending_topics?: Array<{ tag: string; count: number } | string>
-		signed_in: boolean
 	} = $props()
 
 	let search_input = $state('')
@@ -235,7 +233,6 @@
 								handle={person.handle}
 								following={person.is_following}
 								follows_you={Boolean(person.is_followed_by)}
-								{signed_in}
 							/>
 						</div>
 					</li>

@@ -7,11 +7,7 @@
 	import type { CommentView, UserSummary } from '$lib/types'
 	import Avatar from './Avatar.svelte'
 
-	let {
-		post_id,
-		signed_in,
-		on_count,
-	}: { post_id: string; signed_in: boolean; on_count: (n: number) => void } = $props()
+	let { post_id, on_count }: { post_id: string; on_count: (n: number) => void } = $props()
 
 	let comments = $state<CommentView[]>([])
 	let loading = $state(true)
@@ -222,7 +218,7 @@
 			{/if}
 
 			<div class="mt-0.5 flex items-center gap-3 text-xs">
-				{#if signed_in && !is_editing}
+				{#if !is_editing}
 					<button
 						type="button"
 						onclick={() => {
@@ -282,47 +278,40 @@
 		</ul>
 	{/if}
 
-	{#if signed_in}
-		<form onsubmit={submit} class="mt-4 space-y-2">
-			{#if reply_to && reply_target_author}
-				<p
-					class="flex items-center justify-between rounded-full border border-indigo-100 bg-indigo-50/80 px-3.5 py-1 text-xs text-indigo-700"
-				>
-					<span>
-						Replying to <span class="font-bold">{reply_target_author.name}</span>
-					</span>
-					<button
-						type="button"
-						onclick={() => {
-							reply_to = null
-							reply_target_author = null
-						}}
-						aria-label="Cancel reply"
-						class="font-bold hover:text-indigo-900">✕</button
-					>
-				</p>
-			{/if}
-			<div class="flex gap-2">
-				<input
-					bind:value={text}
-					placeholder="Write a comment…"
-					aria-label="Comment text"
-					maxlength={MAX_COMMENT_LENGTH}
-					class="min-w-0 flex-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm transition outline-none focus:border-black focus:ring-1 focus:ring-black"
-				/>
+	<form onsubmit={submit} class="mt-4 space-y-2">
+		{#if reply_to && reply_target_author}
+			<p
+				class="flex items-center justify-between rounded-full border border-indigo-100 bg-indigo-50/80 px-3.5 py-1 text-xs text-indigo-700"
+			>
+				<span>
+					Replying to <span class="font-bold">{reply_target_author.name}</span>
+				</span>
 				<button
-					type="submit"
-					disabled={submitting || text.trim().length === 0}
-					class="shrink-0 rounded-full bg-black px-4 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-slate-800 disabled:opacity-50"
-					>{submitting ? '…' : 'Send'}</button
+					type="button"
+					onclick={() => {
+						reply_to = null
+						reply_target_author = null
+					}}
+					aria-label="Cancel reply"
+					class="font-bold hover:text-indigo-900">✕</button
 				>
-			</div>
-			{#if submit_error}<p class="text-xs text-rose-600" role="alert">{submit_error}</p>{/if}
-		</form>
-	{:else}
-		<p class="mt-4 text-center text-xs text-slate-500">
-			<a href={resolve('/login')} class="font-medium text-slate-800 underline">Sign in</a> to join the
-			conversation.
-		</p>
-	{/if}
+			</p>
+		{/if}
+		<div class="flex gap-2">
+			<input
+				bind:value={text}
+				placeholder="Write a comment…"
+				aria-label="Comment text"
+				maxlength={MAX_COMMENT_LENGTH}
+				class="min-w-0 flex-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm transition outline-none focus:border-black focus:ring-1 focus:ring-black"
+			/>
+			<button
+				type="submit"
+				disabled={submitting || text.trim().length === 0}
+				class="shrink-0 rounded-full bg-black px-4 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-slate-800 disabled:opacity-50"
+				>{submitting ? '…' : 'Send'}</button
+			>
+		</div>
+		{#if submit_error}<p class="text-xs text-rose-600" role="alert">{submit_error}</p>{/if}
+	</form>
 </section>

@@ -19,7 +19,6 @@
 
 		<PostCard
 			post={data.post}
-			signed_in={data.user !== null}
 			initial_open_comments={true}
 			on_deleted={() => {
 				window.location.href = resolve('/')

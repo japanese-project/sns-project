@@ -16,14 +16,12 @@
 
 	let {
 		post,
-		signed_in,
 		initial_open_comments = false,
 		on_deleted,
 		on_updated,
 	}: {
 		initial_open_comments?: boolean
 		post: PostView
-		signed_in: boolean
 		on_deleted?: (id: string) => void
 		on_updated?: (post: PostView) => void
 	} = $props()
@@ -50,10 +48,6 @@
 	let deleting = $state(false)
 
 	async function toggle_like() {
-		if (!signed_in) {
-			void goto(resolve('/login'))
-			return
-		}
 		if (like_pending) return
 		const previous = { liked, like_count }
 		like_pending = true
@@ -317,7 +311,6 @@
 		<button
 			type="button"
 			onclick={toggle_like}
-			disabled={!signed_in}
 			aria-pressed={liked}
 			aria-label={liked ? 'Unlike' : 'Like'}
 			class="flex items-center gap-1.5 transition enabled:hover:text-rose-600 {liked
@@ -341,6 +334,6 @@
 	{#if error_message}<p class="mt-2 text-sm text-rose-600" role="alert">{error_message}</p>{/if}
 
 	{#if show_comments}
-		<Comments post_id={post.id} {signed_in} on_count={(n) => (comment_override = n)} />
+		<Comments post_id={post.id} on_count={(n) => (comment_override = n)} />
 	{/if}
 </article>

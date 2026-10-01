@@ -23,7 +23,7 @@ type CommentRow = {
 	image: string | null
 }
 
-function to_view(row: CommentRow, viewer_id: string | null): CommentView {
+function to_view(row: CommentRow, viewer_id: string): CommentView {
 	return {
 		id: row.id,
 		post_id: row.post_id,
@@ -38,7 +38,7 @@ function to_view(row: CommentRow, viewer_id: string | null): CommentView {
 			image: row.image,
 		}),
 		replies: [],
-		is_owner: viewer_id !== null && viewer_id === row.user_id,
+		is_owner: viewer_id === row.user_id,
 	}
 }
 
@@ -56,7 +56,7 @@ const columns = {
 }
 
 /** Comments inherit the visibility of their post: invisible post => 404, never an empty list. */
-export async function list_comments(db: Db, viewer_id: string | null, post_id: string) {
+export async function list_comments(db: Db, viewer_id: string, post_id: string) {
 	const visible = await get_visible_post(db, viewer_id, post_id)
 	if (!visible) error(404, 'Post not found')
 

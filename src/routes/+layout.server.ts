@@ -1,18 +1,7 @@
-import { get_trending_topics } from '$lib/server/services/posts'
-import { get_suggested_users } from '$lib/server/services/users'
 import type { LayoutServerLoad } from './$types'
 
-export const load: LayoutServerLoad = async ({ locals }) => {
-	const viewer_id = locals.user?.id ?? null
-	const [suggested_users, trending_topics] = await Promise.all([
-		get_suggested_users(locals.db, viewer_id, 4),
-		get_trending_topics(locals.db, 5),
-	])
-
-	return {
-		user: locals.user,
-		session: locals.session,
-		suggested_users,
-		trending_topics,
-	}
+// Pages load the data they show (trending, suggestions, ...) themselves. The layout only forwards
+// the session user, which is null solely on /login, the one page reachable without a session.
+export const load: LayoutServerLoad = ({ locals }) => {
+	return { user: locals.user, session: locals.session }
 }

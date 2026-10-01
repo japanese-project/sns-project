@@ -23,42 +23,54 @@ This document serves as the single source of truth for both **backend business l
 
 ---
 
-## 2. Public vs. Authenticated Experience
+## 2. Access Model: Signed-In Users Only
 
-SNS platforms balance open discovery with authenticated community interactions. Public content must be accessible without forced login barriers.
+The app is for signed-in users only. There is no guest mode: no guest sessions, no signed-out views and no "sign in to continue" prompts inside the app. A request without a session can reach only three things; everything else is rejected before any route runs.
 
-### Route Access & Behavior
+### What a request without a session can reach
 
-| Route                                   | Anonymous Visitor                                                                              | Authenticated User                                                                                                              |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `/` (Home Feed)                         | Views global public feed. Nav shows Home, Explore, and a "Sign in" button. Composer is hidden. | Views personal/global feed. Nav includes Notifications and Profile. Has "Share a thought…" composer.                            |
-| `/explore`                              | Can search public posts and discover user profiles.                                            | Full search and discovery; can follow users directly from search results.                                                       |
-| `/u/:username`                          | Can view the user's profile, follower/following counts, and public posts.                      | Full profile view. Shows followers-only posts if following. Shows "Follow" / "Unfollow" button (or Edit/Delete if own profile). |
-| `/u/:username/followers` & `/following` | Can read the follower and following lists.                                                     | Can read lists and follow/unfollow individuals directly.                                                                        |
-| `/posts/:id` (Permalink)                | Can view public post and read its comments.                                                    | Can view post, like, comment, or delete (if owner).                                                                             |
-| `/notifications`                        | Redirects to `/login`.                                                                         | Views in-app activity, marks items read, views unread badge.                                                                    |
-| `/profile`                              | Redirects to `/login`.                                                                         | Redirects (302) to user's canonical handle `/u/:username`.                                                                      |
+| Path           | Purpose                                                                                                 | Behavior without a session                               |
+| -------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `/login`       | Google sign-in page. Signed-in users are redirected to `/`.                                             | ✅ Reachable                                             |
+| `/api/auth/*`  | Better Auth endpoints the sign-in flow calls (OAuth start/callback, session lookup).                    | ✅ Reachable                                             |
+| `/api/health`  | Deployment health probe used by the preview/production workflows. Returns binding status, no user data. | ✅ Reachable                                             |
+| Any other page | `/`, `/explore`, `/u/*`, `/posts/*`, `/notifications`, `/profile`, ...                                  | ❌ Redirect (302) to `/login`                            |
+| Any other API  | `/api/posts`, `/api/search`, `/api/trending`, `/api/users/*`, `/api/notifications/*`, ...               | ❌ `401` JSON `{ "message": "Authentication required" }` |
+
+The gate lives in one place, `check_access()` (`src/lib/server/access.ts`), called from `hooks.server.ts`. It is an allowlist that fails closed: a path that is not listed is protected. Handlers also check for a session themselves (`require_user_id` for APIs, `require_session_user` for page loads), so a missing hook can't expose data. Redirects use SvelteKit's `redirect()`, which also works for client-side navigations; if a session expires mid-visit, the next navigation lands on `/login` and the next API call returns `401`.
+
+### Route Behavior (signed in)
+
+| Route                                   | Behavior                                                                                                                            |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `/` (Home Feed)                         | Following / Global feed. Nav includes Home, Create post, Explore, Notifications, Profile and Sign out. "Share a thought…" composer. |
+| `/explore`                              | Search and discovery; can follow users directly from search results.                                                                |
+| `/u/:username`                          | Profile view. Shows followers-only posts if following. Shows "Follow" / "Unfollow" button (or Edit Profile if own profile).         |
+| `/u/:username/followers` & `/following` | Reads lists and follows/unfollows individuals directly.                                                                             |
+| `/posts/:id` (Permalink)                | Views post, likes, comments, or deletes (if owner).                                                                                 |
+| `/notifications`                        | Views in-app activity, marks items read, views unread badge.                                                                        |
+| `/profile`                              | Redirects (302) to the user's canonical handle `/u/:username`.                                                                      |
 
 ### Action Authorization Matrix
 
-| Action                       | Anonymous Visitor   | Logged-in (Non-follower) | Follower           | Author / Owner          |
-| ---------------------------- | ------------------- | ------------------------ | ------------------ | ----------------------- |
-| **Read public post**         | ✅ Allowed          | ✅ Allowed               | ✅ Allowed         | ✅ Allowed              |
-| **Read followers-only post** | ❌ 404 (Hidden)     | ❌ 404 (Hidden)          | ✅ Allowed         | ✅ Allowed              |
-| **Create post**              | ❌ Prompts `/login` | ✅ Allowed               | —                  | —                       |
-| **Edit own post**            | ❌ Prompts `/login` | ❌ 403 Forbidden         | ❌ 403 Forbidden   | ✅ Allowed              |
-| **Delete own post**          | ❌ Prompts `/login` | ❌ 403 Forbidden         | ❌ 403 Forbidden   | ✅ Allowed (Cascades)   |
-| **Like / unlike post**       | ❌ Prompts `/login` | ✅ If post visible       | ✅ If post visible | ✅ Allowed              |
-| **Comment / reply**          | ❌ Prompts `/login` | ✅ If post visible       | ✅ If post visible | ✅ Allowed              |
-| **Follow / unfollow user**   | ❌ Prompts `/login` | ✅ Allowed               | ✅ Allowed         | ❌ 400 (No self-follow) |
-| **View notifications**       | ❌ Prompts `/login` | ✅ Own only              | ✅ Own only        | ✅ Own only             |
+| Action                       | Logged-in (Non-follower) | Follower           | Author / Owner          |
+| ---------------------------- | ------------------------ | ------------------ | ----------------------- |
+| **Read public post**         | ✅ Allowed               | ✅ Allowed         | ✅ Allowed              |
+| **Read followers-only post** | ❌ 404 (Hidden)          | ✅ Allowed         | ✅ Allowed              |
+| **Create post**              | ✅ Allowed               | —                  | —                       |
+| **Edit own post**            | ❌ 403 Forbidden         | ❌ 403 Forbidden   | ✅ Allowed              |
+| **Delete own post**          | ❌ 403 Forbidden         | ❌ 403 Forbidden   | ✅ Allowed (Cascades)   |
+| **Like / unlike post**       | ✅ If post visible       | ✅ If post visible | ✅ Allowed              |
+| **Comment / reply**          | ✅ If post visible       | ✅ If post visible | ✅ Allowed              |
+| **Follow / unfollow user**   | ✅ Allowed               | ✅ Allowed         | ❌ 400 (No self-follow) |
+| **View notifications**       | ✅ Own only              | ✅ Own only        | ✅ Own only             |
 
 **Key Authorization Principles:**
 
-1. **Public means public:** Public posts, comments, profiles, and follower lists never require authentication to view.
-2. **Never leak existence:** If a user requests a post or profile they are not authorized to see (e.g. a followers-only post requested by a stranger or logged-out visitor), the API and page MUST return **404 Not Found**, never 403.
+1. **Signed-in only:** every feature, including reading public posts, profiles and follower lists, requires a session. Post visibility (`public` vs. `followers-only`) is a rule between signed-in users, not between signed-in users and visitors.
+2. **Never leak existence:** If a user requests a post or profile they are not authorized to see (e.g. a followers-only post requested by a non-follower), the API and page MUST return **404 Not Found**, never 403.
 3. **Cascading visibility:** Comments and replies strictly inherit the visibility of their parent post.
-4. **Frictionless guest nudges:** When an anonymous visitor attempts an action (clicking Like, Reply, or Follow), the UI smoothly routes them to `/login` rather than displaying a raw error.
+4. **No guest logic in the app:** components and services assume a signed-in viewer. There are no `signed_in` flags, nullable viewers or login nudges to maintain.
 
 ---
 
@@ -93,7 +105,6 @@ To allow clean platform growth, content delivery is structured into two distinct
 ### 1. Home Feed (`/`)
 
 - **For Logged-in Users:** Personal stream. In MVP, displays visible posts newest-first. Evolves post-MVP to prioritize posts by followed users alongside own posts.
-- **For Anonymous Visitors:** Displays global public posts newest-first with an invitation banner to sign in.
 - **Pagination:** Strict cursor pagination on `(created_at, id)` descending. Prevents duplicate items or skips when new posts are created while scrolling.
 
 ### 2. Explore & Search (`/explore`)
@@ -110,7 +121,7 @@ These are deliberate trade-offs for the expected workload (< 10k users / posts).
 - **People suggestions by interest:** Matches against **all** users in the database (interests are matched in SQL over the stored JSON list), excluding yourself and people you follow, newest accounts first, up to the requested limit (max 50). There is no "latest N users" window. Matching is case-insensitive for ASCII only. It still scans the user table per request; at larger scale, normalise interests into an indexed `user_interest` table.
 - **Trending topics:** Computed from a **sample**: the 500 most recent public posts that contain a `#` within the selected window (`today` / `week` / `month`). Posts without a hashtag don't use up that budget. Once a window holds more than 500 hashtagged posts, tags whose posts fall outside the newest 500 drop out even if still active, and counts are per sampled post rather than exact totals. At larger scale, use a materialized tag-count table or scheduled job.
 - **Post search:** A case-insensitive substring (`LIKE`) scan over visible posts. Cost per request is bounded by the query-length cap, page size and cursor pagination, but grows linearly with the posts table; at larger scale move to SQLite FTS5 or a search service.
-- **No rate limiting or response caching** is applied to these public endpoints in the app. Add edge rules (e.g. Cloudflare rate limiting) before opening to untrusted traffic.
+- **No rate limiting or response caching** is applied to these endpoints in the app. They require a session, so exposure is limited to signed-in accounts, but a signed-in user can still call them in a loop; add edge rules (e.g. Cloudflare rate limiting) before opening sign-up widely.
 
 ---
 
@@ -156,7 +167,7 @@ The frontend implements the visual direction defined in `docs/design/*.png`.
 - **Top Pill Header:**
   - Floats centered at the top of the viewport.
   - Displays current context / page title (e.g., "Home", "Explore", "Activity", "Profile").
-  - Includes a quick-action trigger: "Share a thought…" for authenticated users, or "Sign in" for guests.
+  - Includes a quick-action trigger: "Share a thought…".
 
 ### Post Composer UX
 

@@ -1,7 +1,6 @@
-import { redirect } from '@sveltejs/kit'
+import { require_session_user } from '$lib/server/access'
 import type { PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ locals }) => {
-	if (!locals.user) redirect(302, '/login')
-	return { user: locals.user }
+	return { user: require_session_user(locals) }
 }

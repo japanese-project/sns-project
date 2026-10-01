@@ -423,14 +423,15 @@ describe('ensure_username: conflicts and errors', () => {
 
 describe('discovery limits', () => {
 	it('never returns more than the cap, even for a non-numeric or oversized limit', async () => {
+		const viewer = await make_user(db, 'LimitViewer')
 		for (let i = 0; i < MAX_SUGGESTION_LIMIT + 20; i++) await make_user(db, `Crowd${i}`)
 		// Number('abc') is NaN; drizzle drops LIMIT for NaN, which used to return every user.
-		expect(await get_suggested_users(db, null, Number('abc'))).toHaveLength(5)
-		expect(await get_suggested_users(db, null, 9999)).toHaveLength(MAX_SUGGESTION_LIMIT)
-		expect(await get_suggested_users(db, null, -3)).toHaveLength(1)
-		expect(await get_suggested_users(db, null, 0)).toHaveLength(1)
-		expect((await get_users_by_interests(db, null, [], Number('abc'))).length).toBeLessThanOrEqual(
-			5,
-		)
+		expect(await get_suggested_users(db, viewer, Number('abc'))).toHaveLength(5)
+		expect(await get_suggested_users(db, viewer, 9999)).toHaveLength(MAX_SUGGESTION_LIMIT)
+		expect(await get_suggested_users(db, viewer, -3)).toHaveLength(1)
+		expect(await get_suggested_users(db, viewer, 0)).toHaveLength(1)
+		expect(
+			(await get_users_by_interests(db, viewer, [], Number('abc'))).length,
+		).toBeLessThanOrEqual(5)
 	})
 })

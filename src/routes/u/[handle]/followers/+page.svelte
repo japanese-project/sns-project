@@ -6,5 +6,5 @@
 </script>
 
 <AppShell user={data.user} title="Followers">
-	<UserList owner={data.owner} kind="followers" signed_in={data.user !== null} />
+	<UserList owner={data.owner} kind="followers" />
 </AppShell>

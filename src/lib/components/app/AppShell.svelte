@@ -13,7 +13,6 @@
 	import BellIcon from '@lucide/svelte/icons/bell'
 	import CompassIcon from '@lucide/svelte/icons/compass'
 	import HouseIcon from '@lucide/svelte/icons/house'
-	import LogInIcon from '@lucide/svelte/icons/log-in'
 	import LogOutIcon from '@lucide/svelte/icons/log-out'
 	import PencilIcon from '@lucide/svelte/icons/pencil'
 	import PlusIcon from '@lucide/svelte/icons/plus'
@@ -32,13 +31,13 @@
 		right_sidebar,
 		children,
 	}: {
-		user?: {
+		user: {
 			id: string
 			name: string
 			image?: string | null
 			username?: string | null
 			onboarded?: boolean | null
-		} | null
+		}
 		title: string
 		header_content?: Snippet
 		right_sidebar?: Snippet
@@ -46,12 +45,11 @@
 	} = $props()
 
 	let unread = $state(0)
-	let me_handle = $derived(user ? (user.username ?? user.id) : null)
+	let me_handle = $derived(user.username ?? user.id)
 	let path = $derived(page.url.pathname)
 	let onboarding_dismissed = $state(false)
 
 	async function refresh_unread() {
-		if (!user) return
 		try {
 			const count = (await api<{ unread_count: number }>('/api/notifications/unread-count'))
 				.unread_count
@@ -66,7 +64,6 @@
 	// `notifications:changed` event. Route changes need no refresh of their own: navigating
 	// never changes the count, and a page that does (/notifications) fires the event.
 	onMount(() => {
-		if (!user) return
 		const fresh =
 			unread_cache?.user_id === user.id && Date.now() - unread_cache.fetched_at < unread_poll_ms
 		if (unread_cache?.user_id === user.id) unread = unread_cache.count
@@ -114,17 +111,15 @@
 			<HouseIcon class="size-5" />
 		</a>
 
-		{#if user && me_handle}
-			<button
-				type="button"
-				onclick={() => composer.show()}
-				title="Create post"
-				aria-label="Create post"
-				class="{nav_button} {idle}"
-			>
-				<PlusIcon class="size-5" />
-			</button>
-		{/if}
+		<button
+			type="button"
+			onclick={() => composer.show()}
+			title="Create post"
+			aria-label="Create post"
+			class="{nav_button} {idle}"
+		>
+			<PlusIcon class="size-5" />
+		</button>
 
 		<a
 			href={resolve('/explore')}
@@ -136,51 +131,43 @@
 			<CompassIcon class="size-5" />
 		</a>
 
-		{#if user && me_handle}
-			<a
-				href={resolve('/notifications')}
-				title={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
-				aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
-				aria-current={path.startsWith('/notifications') ? 'page' : undefined}
-				class="{nav_button} {path.startsWith('/notifications') ? active : idle}"
-			>
-				<BellIcon class="size-5" />
-				{#if unread > 0}
-					<span
-						class="absolute top-1.5 right-1.5 flex min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] leading-4 font-bold text-white shadow-xs"
-						data-testid="unread-badge">{unread > 99 ? '99+' : unread}</span
-					>
-				{/if}
-			</a>
+		<a
+			href={resolve('/notifications')}
+			title={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
+			aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
+			aria-current={path.startsWith('/notifications') ? 'page' : undefined}
+			class="{nav_button} {path.startsWith('/notifications') ? active : idle}"
+		>
+			<BellIcon class="size-5" />
+			{#if unread > 0}
+				<span
+					class="absolute top-1.5 right-1.5 flex min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] leading-4 font-bold text-white shadow-xs"
+					data-testid="unread-badge">{unread > 99 ? '99+' : unread}</span
+				>
+			{/if}
+		</a>
 
-			<a
-				href={resolve('/u/[handle]', { handle: me_handle })}
-				title="Profile"
-				aria-label="Profile"
-				aria-current={path.startsWith('/u/') && path.split('/')[2] === me_handle
-					? 'page'
-					: undefined}
-				class="{nav_button} {path.split('/')[2] === me_handle && path.startsWith('/u/')
-					? active
-					: idle}"
-			>
-				<Avatar {user} size={28} />
-			</a>
+		<a
+			href={resolve('/u/[handle]', { handle: me_handle })}
+			title="Profile"
+			aria-label="Profile"
+			aria-current={path.startsWith('/u/') && path.split('/')[2] === me_handle ? 'page' : undefined}
+			class="{nav_button} {path.split('/')[2] === me_handle && path.startsWith('/u/')
+				? active
+				: idle}"
+		>
+			<Avatar {user} size={28} />
+		</a>
 
-			<button
-				type="button"
-				aria-label="Sign out"
-				title="Sign out"
-				onclick={handle_sign_out}
-				class="{nav_button} {idle}"
-			>
-				<LogOutIcon class="size-4" />
-			</button>
-		{:else}
-			<a href={resolve('/login')} title="Sign in" aria-label="Sign in" class="{nav_button} {idle}">
-				<LogInIcon class="size-5" />
-			</a>
-		{/if}
+		<button
+			type="button"
+			aria-label="Sign out"
+			title="Sign out"
+			onclick={handle_sign_out}
+			class="{nav_button} {idle}"
+		>
+			<LogOutIcon class="size-4" />
+		</button>
 	</nav>
 
 	<!-- Mobile Floating Bottom Navigation Pill (< md) -->
@@ -202,71 +189,50 @@
 			<HouseIcon class="size-5" />
 		</a>
 
-		{#if user && me_handle}
-			<button
-				type="button"
-				onclick={() => composer.show()}
-				title="Create post"
-				aria-label="Create post"
-				class="{nav_button} {idle}"
-			>
-				<PlusIcon class="size-5" />
-			</button>
+		<button
+			type="button"
+			onclick={() => composer.show()}
+			title="Create post"
+			aria-label="Create post"
+			class="{nav_button} {idle}"
+		>
+			<PlusIcon class="size-5" />
+		</button>
 
-			<a
-				href={resolve('/explore')}
-				aria-label="Explore"
-				aria-current={path.startsWith('/explore') ? 'page' : undefined}
-				class="{nav_button} {path.startsWith('/explore') ? active : idle}"
-			>
-				<CompassIcon class="size-5" />
-			</a>
+		<a
+			href={resolve('/explore')}
+			aria-label="Explore"
+			aria-current={path.startsWith('/explore') ? 'page' : undefined}
+			class="{nav_button} {path.startsWith('/explore') ? active : idle}"
+		>
+			<CompassIcon class="size-5" />
+		</a>
 
-			<a
-				href={resolve('/notifications')}
-				aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
-				aria-current={path.startsWith('/notifications') ? 'page' : undefined}
-				class="{nav_button} {path.startsWith('/notifications') ? active : idle}"
-			>
-				<BellIcon class="size-5" />
-				{#if unread > 0}
-					<span
-						class="absolute top-1.5 right-1.5 flex min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] leading-4 font-bold text-white shadow-xs"
-						data-testid="unread-badge">{unread > 99 ? '99+' : unread}</span
-					>
-				{/if}
-			</a>
+		<a
+			href={resolve('/notifications')}
+			aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
+			aria-current={path.startsWith('/notifications') ? 'page' : undefined}
+			class="{nav_button} {path.startsWith('/notifications') ? active : idle}"
+		>
+			<BellIcon class="size-5" />
+			{#if unread > 0}
+				<span
+					class="absolute top-1.5 right-1.5 flex min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] leading-4 font-bold text-white shadow-xs"
+					data-testid="unread-badge">{unread > 99 ? '99+' : unread}</span
+				>
+			{/if}
+		</a>
 
-			<a
-				href={resolve('/u/[handle]', { handle: me_handle })}
-				aria-label="Profile"
-				aria-current={path.startsWith('/u/') && path.split('/')[2] === me_handle
-					? 'page'
-					: undefined}
-				class="{nav_button} {path.split('/')[2] === me_handle && path.startsWith('/u/')
-					? active
-					: idle}"
-			>
-				<Avatar {user} size={26} />
-			</a>
-		{:else}
-			<a
-				href={resolve('/explore')}
-				aria-label="Explore"
-				aria-current={path.startsWith('/explore') ? 'page' : undefined}
-				class="{nav_button} {path.startsWith('/explore') ? active : idle}"
-			>
-				<CompassIcon class="size-5" />
-			</a>
-
-			<a
-				href={resolve('/login')}
-				aria-label="Sign in"
-				class="flex size-11 items-center justify-center rounded-2xl text-slate-500 hover:text-slate-900"
-			>
-				<LogInIcon class="size-5" />
-			</a>
-		{/if}
+		<a
+			href={resolve('/u/[handle]', { handle: me_handle })}
+			aria-label="Profile"
+			aria-current={path.startsWith('/u/') && path.split('/')[2] === me_handle ? 'page' : undefined}
+			class="{nav_button} {path.split('/')[2] === me_handle && path.startsWith('/u/')
+				? active
+				: idle}"
+		>
+			<Avatar {user} size={26} />
+		</a>
 	</nav>
 
 	<!-- Content Layout: two-column flex so sidebar starts at the same top as the header -->
@@ -287,24 +253,15 @@
 
 						<span class="h-4 w-px bg-slate-200"></span>
 
-						{#if user}
-							<button
-								type="button"
-								onclick={() => composer.show()}
-								class="flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 sm:px-2.5"
-							>
-								<PencilIcon class="size-3.5" />
-								<span class="hidden sm:inline">Share a thought…</span>
-								<span class="sm:hidden">Post</span>
-							</button>
-						{:else}
-							<a
-								href={resolve('/login')}
-								class="rounded-full px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
-							>
-								Sign in
-							</a>
-						{/if}
+						<button
+							type="button"
+							onclick={() => composer.show()}
+							class="flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 sm:px-2.5"
+						>
+							<PencilIcon class="size-3.5" />
+							<span class="hidden sm:inline">Share a thought…</span>
+							<span class="sm:hidden">Post</span>
+						</button>
 					</div>
 				</header>
 
@@ -323,11 +280,11 @@
 		{/if}
 	</div>
 
-	{#if user && composer.open}
+	{#if composer.open}
 		<Composer {user} />
 	{/if}
 
-	{#if user && user.onboarded === false && !onboarding_dismissed}
+	{#if user.onboarded === false && !onboarding_dismissed}
 		<OnboardingModal {user} on_done={() => (onboarding_dismissed = true)} />
 	{/if}
 </div>

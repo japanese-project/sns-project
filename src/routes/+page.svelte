@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation'
-	import { resolve } from '$app/paths'
 	import GlobeIcon from '@lucide/svelte/icons/globe'
 	import UsersIcon from '@lucide/svelte/icons/users'
 	import AppShell from '$lib/components/app/AppShell.svelte'
@@ -9,15 +7,10 @@
 
 	let { data } = $props()
 
-	let signed_in = $derived(data.user !== null)
 	let tab_override = $state<'following' | 'global' | null>(null)
-	let active_tab = $derived(tab_override ?? (data.user ? 'following' : 'global'))
+	let active_tab = $derived(tab_override ?? 'following')
 
 	function set_tab(tab: 'following' | 'global') {
-		if (tab === 'following' && !signed_in) {
-			void goto(resolve('/login'))
-			return
-		}
 		tab_override = tab
 	}
 
@@ -72,10 +65,9 @@
 		<HomeSidebar
 			suggested_users={data.suggested_users ?? []}
 			trending_topics={data.trending_topics ?? []}
-			{signed_in}
 		/>
 	{/snippet}
 
 	<!-- Primary Feed -->
-	<PostList {endpoint} {signed_in} accepts_new_posts={signed_in} {empty_message} />
+	<PostList {endpoint} accepts_new_posts {empty_message} />
 </AppShell>

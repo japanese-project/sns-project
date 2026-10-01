@@ -4,7 +4,7 @@ import { read_json, require_user_id } from '$lib/server/validation'
 import type { RequestHandler } from './$types'
 
 export const GET: RequestHandler = async ({ locals, params }) => {
-	return json({ items: await list_comments(locals.db, locals.user?.id ?? null, params.id) })
+	return json({ items: await list_comments(locals.db, require_user_id(locals), params.id) })
 }
 
 export const POST: RequestHandler = async ({ locals, params, request }) => {

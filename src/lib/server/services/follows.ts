@@ -34,7 +34,7 @@ async function counts(db: Db, user_id: string) {
 
 export async function build_profile(
 	db: Db,
-	viewer_id: string | null,
+	viewer_id: string,
 	target: {
 		id: string
 		name: string
@@ -47,8 +47,8 @@ export async function build_profile(
 ): Promise<ProfileView> {
 	const [count_data, is_fol, is_fol_by] = await Promise.all([
 		counts(db, target.id),
-		viewer_id && viewer_id !== target.id ? is_following(db, viewer_id, target.id) : false,
-		viewer_id && viewer_id !== target.id ? is_following(db, target.id, viewer_id) : false,
+		viewer_id !== target.id ? is_following(db, viewer_id, target.id) : false,
+		viewer_id !== target.id ? is_following(db, target.id, viewer_id) : false,
 	])
 
 	let interests_list: string[] = []
@@ -104,7 +104,7 @@ export async function unfollow_user(db: Db, follower_id: string, target_id: stri
 
 async function list_related(
 	db: Db,
-	viewer_id: string | null,
+	viewer_id: string,
 	user_id: string,
 	direction: 'followers' | 'following',
 	opts: { cursor?: string | null; limit?: number },
@@ -122,12 +122,8 @@ async function list_related(
 			image: user.image,
 			bio: user.bio,
 			followed_at: follow.createdAt,
-			is_following: viewer_id
-				? sql<number>`exists(select 1 from ${follow} f2 where f2.follower_id = ${viewer_id} and f2.following_id = ${user.id})`
-				: sql<number>`0`,
-			is_followed_by: viewer_id
-				? sql<number>`exists(select 1 from ${follow} f3 where f3.follower_id = ${user.id} and f3.following_id = ${viewer_id})`
-				: sql<number>`0`,
+			is_following: sql<number>`exists(select 1 from ${follow} f2 where f2.follower_id = ${viewer_id} and f2.following_id = ${user.id})`,
+			is_followed_by: sql<number>`exists(select 1 from ${follow} f3 where f3.follower_id = ${user.id} and f3.following_id = ${viewer_id})`,
 		})
 		.from(follow)
 		.innerJoin(user, eq(user.id, other_column))
@@ -161,14 +157,14 @@ async function list_related(
 
 export const list_followers = (
 	db: Db,
-	viewer_id: string | null,
+	viewer_id: string,
 	user_id: string,
 	opts: { cursor?: string | null; limit?: number } = {},
 ) => list_related(db, viewer_id, user_id, 'followers', opts)
 
 export const list_following = (
 	db: Db,
-	viewer_id: string | null,
+	viewer_id: string,
 	user_id: string,
 	opts: { cursor?: string | null; limit?: number } = {},
 ) => list_related(db, viewer_id, user_id, 'following', opts)
