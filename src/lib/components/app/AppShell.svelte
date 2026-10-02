@@ -9,6 +9,7 @@
 
 <script lang="ts">
 	import { page } from '$app/state'
+	import { goto } from '$app/navigation'
 	import { resolve } from '$app/paths'
 	import BellIcon from '@lucide/svelte/icons/bell'
 	import CompassIcon from '@lucide/svelte/icons/compass'
@@ -84,7 +85,7 @@
 
 	async function handle_sign_out() {
 		await sign_out()
-		window.location.href = '/login'
+		await goto(resolve('/login'))
 	}
 </script>
 

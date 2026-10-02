@@ -1,9 +1,14 @@
 import { page } from 'vitest/browser'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render } from 'vitest-browser-svelte'
+import { goto } from '$app/navigation'
 import { api } from '$lib/api'
 import { sign_out } from '$lib/auth-client'
 import AppShellHost from './AppShell.test-host.svelte'
+
+vi.mock('$app/navigation', () => ({
+	goto: vi.fn().mockResolvedValue(undefined),
+}))
 
 vi.mock('./OnboardingModal.svelte', () => ({
 	default: () => null,
@@ -59,5 +64,6 @@ describe('AppShell', () => {
 		await mobile_sign_out.click()
 
 		expect(sign_out).toHaveBeenCalledTimes(1)
+		expect(goto).toHaveBeenCalledWith('/login')
 	})
 })

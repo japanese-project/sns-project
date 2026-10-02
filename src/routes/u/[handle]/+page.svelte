@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation'
 	import { resolve } from '$app/paths'
 	import LogOutIcon from '@lucide/svelte/icons/log-out'
 	import { sign_out } from '$lib/auth-client'
@@ -24,7 +25,7 @@
 
 	async function handle_sign_out() {
 		await sign_out()
-		window.location.href = '/login'
+		await goto(resolve('/login'))
 	}
 </script>
 

@@ -1,10 +1,15 @@
 import { page } from 'vitest/browser'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render } from 'vitest-browser-svelte'
+import { goto } from '$app/navigation'
 import { api } from '$lib/api'
 import { sign_out } from '$lib/auth-client'
 import type { ProfileView } from '$lib/types'
 import ProfilePage from './+page.svelte'
+
+vi.mock('$app/navigation', () => ({
+	goto: vi.fn().mockResolvedValue(undefined),
+}))
 
 vi.mock('$app/paths', () => ({
 	base: '',
@@ -125,6 +130,7 @@ describe('Profile Page Header & Customization', () => {
 
 		await sign_out_btn.click()
 		expect(sign_out).toHaveBeenCalledTimes(1)
+		expect(goto).toHaveBeenCalledWith('/login')
 	})
 
 	it('shows Follow button on other user profile', async () => {
