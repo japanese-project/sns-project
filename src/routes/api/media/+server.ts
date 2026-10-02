@@ -19,7 +19,7 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
 	const key = `${crypto.randomUUID()}.${ext}`
 
 	await platform.env.MEDIA_BUCKET.put(key, file, {
-		httpMetadata: { contentType: file.type }
+		httpMetadata: { contentType: file.type },
 	})
 
 	return json({ url: `/api/media/${key}` }, { status: 201 })
