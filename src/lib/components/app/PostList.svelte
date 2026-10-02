@@ -45,7 +45,7 @@
 		}
 	}
 
-	let last_endpoint = $state('')
+	let last_endpoint = $state(endpoint)
 
 	$effect(() => {
 		if (endpoint !== last_endpoint) {
