@@ -42,6 +42,8 @@ export async function build_profile(
 		image: string | null
 		bio?: string | null
 		interests?: string | null
+		bannerColor?: string | null
+		banner_color?: string | null
 		createdAt: Date
 	},
 ): Promise<ProfileView> {
@@ -69,6 +71,7 @@ export async function build_profile(
 		is_self: viewer_id === target.id,
 		is_following: is_fol,
 		is_followed_by: is_fol_by,
+		banner_color: target.bannerColor ?? target.banner_color ?? null,
 	}
 }
 

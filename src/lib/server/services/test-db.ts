@@ -6,8 +6,14 @@ import { getPlatformProxy } from 'wrangler'
 import { create_db, type Db } from '../db'
 import { user, follow } from '../db/schema'
 
-export async function create_test_db(): Promise<{ db: Db; dispose: () => Promise<void> }> {
-	const proxy = await getPlatformProxy<{ DB: D1Database }>({ persist: false })
+export async function create_test_db(): Promise<{
+	db: Db
+	bucket: R2Bucket
+	dispose: () => Promise<void>
+}> {
+	const proxy = await getPlatformProxy<{ DB: D1Database; MEDIA_BUCKET: R2Bucket }>({
+		persist: false,
+	})
 	const d1 = proxy.env.DB
 	// getPlatformProxy shares one in-memory store per process; start from a clean slate.
 	const dir = path.resolve('src/lib/server/db/migrations')
@@ -27,7 +33,7 @@ export async function create_test_db(): Promise<{ db: Db; dispose: () => Promise
 			if (statement.trim()) await d1.prepare(statement).run()
 		}
 	}
-	return { db: create_db(d1), dispose: () => proxy.dispose() }
+	return { db: create_db(d1), bucket: proxy.env.MEDIA_BUCKET, dispose: () => proxy.dispose() }
 }
 
 export async function make_user(db: Db, name: string) {

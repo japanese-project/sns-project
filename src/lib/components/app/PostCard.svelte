@@ -1,8 +1,11 @@
 <script lang="ts">
+	import CheckIcon from '@lucide/svelte/icons/check'
+	import CopyIcon from '@lucide/svelte/icons/copy'
 	import HeartIcon from '@lucide/svelte/icons/heart'
 	import GlobeIcon from '@lucide/svelte/icons/globe'
 	import LockIcon from '@lucide/svelte/icons/lock'
 	import MessageCircleIcon from '@lucide/svelte/icons/message-circle'
+	import MoreHorizontalIcon from '@lucide/svelte/icons/more-horizontal'
 	import PencilIcon from '@lucide/svelte/icons/pencil'
 	import TrashIcon from '@lucide/svelte/icons/trash'
 	import { goto } from '$app/navigation'
@@ -47,6 +50,47 @@
 	let confirming_delete = $state(false)
 	let deleting = $state(false)
 
+	let menu_open = $state(false)
+	let copied_link = $state(false)
+	let menu_container_el = $state<HTMLElement | null>(null)
+
+	$effect(() => {
+		if (!menu_open) return
+		function handle_doc_click(e: MouseEvent) {
+			if (menu_container_el && !menu_container_el.contains(e.target as Node)) {
+				menu_open = false
+			}
+		}
+		function handle_doc_keydown(e: KeyboardEvent) {
+			if (e.key === 'Escape') {
+				menu_open = false
+			}
+		}
+		window.addEventListener('click', handle_doc_click)
+		window.addEventListener('keydown', handle_doc_keydown)
+		return () => {
+			window.removeEventListener('click', handle_doc_click)
+			window.removeEventListener('keydown', handle_doc_keydown)
+		}
+	})
+
+	async function handle_copy_link(event: MouseEvent) {
+		event.stopPropagation()
+		const post_url = `${window.location.origin}${resolve('/posts/[id]', { id: post.id })}`
+		try {
+			if (navigator?.clipboard?.writeText) {
+				await navigator.clipboard.writeText(post_url)
+			}
+			copied_link = true
+			setTimeout(() => {
+				copied_link = false
+				menu_open = false
+			}, 1000)
+		} catch {
+			menu_open = false
+		}
+	}
+
 	async function toggle_like() {
 		if (like_pending) return
 		const previous = { liked, like_count }
@@ -74,7 +118,8 @@
 
 	async function save_edit(event: SubmitEvent) {
 		event.preventDefault()
-		if (saving || draft.trim().length === 0 || draft.length > MAX_POST_LENGTH) return
+		const is_empty = draft.trim().length === 0 && !active_post.image_url
+		if (saving || is_empty || draft.length > MAX_POST_LENGTH) return
 		saving = true
 		error_message = null
 		try {
@@ -150,14 +195,18 @@
 >
 	<header class="flex items-center gap-3">
 		<a
-			href={resolve('/u/[handle]', { handle: post.author.handle })}
+			href={resolve('/u/[handle]', {
+				handle: post.author.handle || post.author.username || post.author.id || 'user',
+			})}
 			aria-label="{post.author.name}'s profile"
 		>
 			<Avatar user={post.author} size={44} />
 		</a>
 		<div class="min-w-0 flex-1">
 			<a
-				href={resolve('/u/[handle]', { handle: post.author.handle })}
+				href={resolve('/u/[handle]', {
+					handle: post.author.handle || post.author.username || post.author.id || 'user',
+				})}
 				class="block truncate font-semibold text-slate-900 hover:underline">{post.author.name}</a
 			>
 			<p class="flex items-center gap-1.5 text-xs text-slate-500">
@@ -177,26 +226,74 @@
 				{/if}
 			</p>
 		</div>
-		{#if post.is_owner && !editing}
-			<div class="flex gap-1">
+		{#if !editing}
+			<div class="relative" bind:this={menu_container_el}>
 				<button
 					type="button"
-					aria-label="Edit post"
-					onclick={() => {
-						draft = active_post.content
-						draft_visibility = active_post.visibility
-						editing = true
+					aria-label="More options"
+					aria-haspopup="menu"
+					aria-expanded={menu_open}
+					onclick={(e) => {
+						e.stopPropagation()
+						menu_open = !menu_open
 					}}
-					class="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-					><PencilIcon class="size-4" /></button
+					class="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
 				>
-				<button
-					type="button"
-					aria-label="Delete post"
-					onclick={() => (confirming_delete = true)}
-					class="rounded-full p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
-					><TrashIcon class="size-4" /></button
-				>
+					<MoreHorizontalIcon class="size-4" />
+				</button>
+				{#if menu_open}
+					<div
+						role="menu"
+						tabindex="-1"
+						aria-label="Post actions"
+						class="absolute top-full right-0 z-20 mt-1 min-w-[150px] overflow-hidden rounded-xl border border-slate-200/80 bg-white py-1 shadow-lg shadow-slate-900/10 focus:outline-none"
+					>
+						<button
+							type="button"
+							role="menuitem"
+							onclick={handle_copy_link}
+							class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
+						>
+							{#if copied_link}
+								<CheckIcon class="size-4 text-emerald-600" />
+								<span class="text-emerald-600">Copied!</span>
+							{:else}
+								<CopyIcon class="size-4 text-slate-400" />
+								<span>Copy link</span>
+							{/if}
+						</button>
+
+						{#if post.is_owner}
+							<button
+								type="button"
+								role="menuitem"
+								onclick={() => {
+									menu_open = false
+									draft = active_post.content
+									draft_visibility = active_post.visibility
+									editing = true
+								}}
+								class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
+							>
+								<PencilIcon class="size-4 text-slate-400" />
+								<span>Edit post</span>
+							</button>
+
+							<button
+								type="button"
+								role="menuitem"
+								onclick={() => {
+									menu_open = false
+									confirming_delete = true
+								}}
+								class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-rose-600 transition hover:bg-rose-50"
+							>
+								<TrashIcon class="size-4 text-rose-500" />
+								<span>Delete post</span>
+							</button>
+						{/if}
+					</div>
+				{/if}
 			</div>
 		{/if}
 	</header>
@@ -256,7 +353,9 @@
 					>
 					<button
 						type="submit"
-						disabled={saving || draft.trim().length === 0 || draft.length > MAX_POST_LENGTH}
+						disabled={saving ||
+							(draft.trim().length === 0 && !active_post.image_url) ||
+							draft.length > MAX_POST_LENGTH}
 						class="rounded-full bg-slate-900 px-4 py-1.5 font-medium text-white transition hover:bg-slate-800 disabled:opacity-50"
 					>
 						{saving ? 'Saving…' : 'Save changes'}
@@ -265,22 +364,35 @@
 			</div>
 		</form>
 	{:else}
-		<p
-			class="mt-4 text-lg leading-relaxed [overflow-wrap:anywhere] break-words whitespace-pre-wrap text-slate-900"
-		>
-			{#each parse_hashtags(active_post.content) as segment, i (i)}
-				{#if segment.type === 'tag'}
-					<a
-						href="{resolve('/explore')}?q={encodeURIComponent(segment.text)}"
-						class="font-medium text-indigo-600 hover:text-indigo-700 hover:underline"
-					>
+		{#if active_post.content}
+			<p
+				class="mt-4 text-lg leading-relaxed [overflow-wrap:anywhere] break-words whitespace-pre-wrap text-slate-900"
+			>
+				{#each parse_hashtags(active_post.content) as segment, i (i)}
+					{#if segment.type === 'tag'}
+						<a
+							href="{resolve('/explore')}?q={encodeURIComponent(segment.text)}"
+							class="font-medium text-indigo-600 hover:text-indigo-700 hover:underline"
+						>
+							{segment.text}
+						</a>
+					{:else}
 						{segment.text}
-					</a>
-				{:else}
-					{segment.text}
-				{/if}
-			{/each}
-		</p>
+					{/if}
+				{/each}
+			</p>
+		{/if}
+	{/if}
+
+	{#if active_post.image_url}
+		<div class="mt-3 overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-50">
+			<img
+				src={active_post.image_url}
+				alt="Post attachment"
+				class="max-h-[512px] w-full object-cover"
+				loading="lazy"
+			/>
+		</div>
 	{/if}
 
 	{#if confirming_delete}

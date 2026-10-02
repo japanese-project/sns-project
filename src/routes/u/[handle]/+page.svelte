@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { resolve } from '$app/paths'
+	import LogOutIcon from '@lucide/svelte/icons/log-out'
+	import { sign_out } from '$lib/auth-client'
+	import { get_banner_class } from '$lib/banner-themes'
 	import AppShell from '$lib/components/app/AppShell.svelte'
 	import Avatar from '$lib/components/app/Avatar.svelte'
 	import EditProfileModal from '$lib/components/app/EditProfileModal.svelte'
@@ -18,96 +21,30 @@
 		new Date(profile.joined_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
 	)
 	let show_edit_modal = $state(false)
+
+	async function handle_sign_out() {
+		await sign_out()
+		window.location.href = '/login'
+	}
 </script>
 
 <AppShell user={data.user} title={profile.is_self ? 'Profile' : profile.user.name}>
 	<div class="mx-auto w-full max-w-2xl">
-		<section class="border-b border-slate-200/60 px-2 pt-4 pb-6">
-			<div class="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
-				<!-- Left: Avatar & Info -->
-				<div
-					class="flex min-w-0 flex-1 flex-col items-center gap-4 text-center sm:flex-row sm:items-start sm:gap-6 sm:text-left"
-				>
-					<Avatar user={profile.user} size={88} />
-					<div class="min-w-0 flex-1">
-						<div class="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-							<h2 class="text-xl font-bold text-slate-900 sm:text-2xl">{profile.user.name}</h2>
-							{#if !profile.is_self && profile.is_followed_by}
-								<span
-									class="rounded bg-slate-100 px-2 py-0.5 text-[0.68rem] font-semibold text-slate-600"
-								>
-									Follows you
-								</span>
-							{/if}
-						</div>
-						{#if profile.user.username}
-							<p class="text-sm text-slate-500">@{profile.user.username}</p>
-						{/if}
-						<p class="mt-1 text-xs text-slate-400">Joined {joined}</p>
+		<section class="border-b border-slate-200/60 pb-6">
+			<!-- Header Banner -->
+			<div
+				data-testid="profile-banner"
+				class="h-32 w-full rounded-2xl sm:h-44 {get_banner_class(
+					profile.banner_color || profile.user.banner_color,
+				)} shadow-inner"
+			></div>
 
-						{#if profile.bio}
-							<p class="mt-2 text-sm leading-relaxed whitespace-pre-wrap text-slate-700">
-								{profile.bio}
-							</p>
-						{/if}
-
-						{#if profile.interests && profile.interests.length > 0}
-							<div class="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1.5 sm:justify-start">
-								{#each profile.interests as interest (interest)}
-									<a
-										href="{resolve('/explore')}?q={encodeURIComponent('#' + interest)}"
-										class="text-sm text-slate-500 transition hover:text-slate-800 hover:underline"
-									>
-										#{interest}
-									</a>
-								{/each}
-							</div>
-						{:else if profile.is_self}
-							<button
-								type="button"
-								onclick={() => (show_edit_modal = true)}
-								class="mt-3 text-xs text-slate-400 transition hover:text-indigo-600 hover:underline"
-							>
-								+ Add topics you enjoy
-							</button>
-						{/if}
-
-						<dl class="mt-4 flex items-center justify-center gap-6 sm:justify-start">
-							<a
-								href={resolve('/u/[handle]/followers', { handle: profile.user.handle })}
-								class="group flex items-baseline gap-1.5"
-							>
-								<dd
-									class="text-base font-bold text-slate-900 tabular-nums sm:text-lg"
-									data-testid="follower-count"
-								>
-									{follower_count}
-								</dd>
-								<dt
-									class="text-xs font-medium text-slate-500 group-hover:text-slate-900 group-hover:underline"
-								>
-									Followers
-								</dt>
-							</a>
-							<a
-								href={resolve('/u/[handle]/following', { handle: profile.user.handle })}
-								class="group flex items-baseline gap-1.5"
-							>
-								<dd class="text-base font-bold text-slate-900 tabular-nums sm:text-lg">
-									{profile.following_count}
-								</dd>
-								<dt
-									class="text-xs font-medium text-slate-500 group-hover:text-slate-900 group-hover:underline"
-								>
-									Following
-								</dt>
-							</a>
-						</dl>
-					</div>
+			<!-- Avatar and Actions Row -->
+			<div class="relative -mt-11 flex items-end justify-between px-3 sm:-mt-14 sm:px-4">
+				<div class="rounded-full bg-white p-1 shadow-sm">
+					<Avatar user={profile.user} size={84} />
 				</div>
-
-				<!-- Right: Action Button -->
-				<div class="shrink-0 self-center sm:self-start">
+				<div class="mb-1 flex shrink-0 items-center gap-2">
 					{#if !profile.is_self}
 						<FollowButton
 							handle={profile.user.handle}
@@ -119,12 +56,98 @@
 						<button
 							type="button"
 							onclick={() => (show_edit_modal = true)}
-							class="rounded-full bg-black px-5 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800"
+							class="rounded-full bg-black px-4 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800"
 						>
 							Edit Profile
 						</button>
+						<button
+							type="button"
+							onclick={handle_sign_out}
+							aria-label="Sign out"
+							class="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+						>
+							<LogOutIcon class="size-3.5" />
+							<span>Sign out</span>
+						</button>
 					{/if}
 				</div>
+			</div>
+
+			<!-- Profile Info (Left-aligned on mobile and desktop) -->
+			<div class="mt-3 px-3 sm:px-4">
+				<div class="flex flex-wrap items-center gap-2">
+					<h2 class="text-xl font-bold text-slate-900 sm:text-2xl">{profile.user.name}</h2>
+					{#if !profile.is_self && profile.is_followed_by}
+						<span
+							class="rounded bg-slate-100 px-2 py-0.5 text-[0.68rem] font-semibold text-slate-600"
+						>
+							Follows you
+						</span>
+					{/if}
+				</div>
+				{#if profile.user.username}
+					<p class="text-sm text-slate-500">@{profile.user.username}</p>
+				{/if}
+				<p class="mt-1 text-xs text-slate-400">Joined {joined}</p>
+
+				{#if profile.bio}
+					<p class="mt-2 text-sm leading-relaxed whitespace-pre-wrap text-slate-700">
+						{profile.bio}
+					</p>
+				{/if}
+
+				{#if profile.interests && profile.interests.length > 0}
+					<div class="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
+						{#each profile.interests as interest (interest)}
+							<a
+								href="{resolve('/explore')}?q={encodeURIComponent('#' + interest)}"
+								class="text-sm text-slate-500 transition hover:text-slate-800 hover:underline"
+							>
+								#{interest}
+							</a>
+						{/each}
+					</div>
+				{:else if profile.is_self}
+					<button
+						type="button"
+						onclick={() => (show_edit_modal = true)}
+						class="mt-3 text-xs text-slate-400 transition hover:text-indigo-600 hover:underline"
+					>
+						+ Add topics you enjoy
+					</button>
+				{/if}
+
+				<dl class="mt-4 flex items-center gap-6">
+					<a
+						href={resolve('/u/[handle]/followers', { handle: profile.user.handle })}
+						class="group flex items-baseline gap-1.5"
+					>
+						<dd
+							class="text-base font-bold text-slate-900 tabular-nums sm:text-lg"
+							data-testid="follower-count"
+						>
+							{follower_count}
+						</dd>
+						<dt
+							class="text-xs font-medium text-slate-500 group-hover:text-slate-900 group-hover:underline"
+						>
+							Followers
+						</dt>
+					</a>
+					<a
+						href={resolve('/u/[handle]/following', { handle: profile.user.handle })}
+						class="group flex items-baseline gap-1.5"
+					>
+						<dd class="text-base font-bold text-slate-900 tabular-nums sm:text-lg">
+							{profile.following_count}
+						</dd>
+						<dt
+							class="text-xs font-medium text-slate-500 group-hover:text-slate-900 group-hover:underline"
+						>
+							Following
+						</dt>
+					</a>
+				</dl>
 			</div>
 		</section>
 
@@ -139,6 +162,7 @@
 						user: { ...profile.user, ...updated },
 						bio: updated.bio ?? null,
 						interests: updated.interests ?? profile.interests,
+						banner_color: updated.banner_color ?? profile.banner_color,
 					}
 				}}
 			/>

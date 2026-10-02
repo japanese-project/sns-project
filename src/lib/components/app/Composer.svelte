@@ -4,7 +4,7 @@
 	import XIcon from '@lucide/svelte/icons/x'
 	import { api } from '$lib/api'
 	import { composer } from '$lib/composer-state.svelte'
-	import { MAX_POST_LENGTH } from '$lib/limits'
+	import { MAX_POST_LENGTH, MAX_MEDIA_SIZE_BYTES } from '$lib/limits'
 	import type { PostView } from '$lib/types'
 	import Avatar from './Avatar.svelte'
 
@@ -71,6 +71,12 @@
 		const target = e.target as HTMLInputElement
 		const file = target.files?.[0]
 		if (file) {
+			if (file.size > MAX_MEDIA_SIZE_BYTES) {
+				error_message = `Image exceeds maximum size of ${MAX_MEDIA_SIZE_BYTES / (1024 * 1024)}MB`
+				if (image_input) image_input.value = ''
+				return
+			}
+			error_message = null
 			selected_image = file
 			if (image_preview) URL.revokeObjectURL(image_preview)
 			image_preview = URL.createObjectURL(file)
@@ -101,7 +107,8 @@
 					body: form_data,
 				})
 				if (!response.ok) {
-					throw new Error('Failed to upload image')
+					const res_body = (await response.json().catch(() => null)) as { message?: string } | null
+					throw new Error(res_body?.message ?? 'Failed to upload image')
 				}
 				const data = (await response.json()) as { url: string }
 				image_url = data.url
@@ -227,7 +234,7 @@
 					<span class="sr-only">Add image</span>
 					<input
 						type="file"
-						accept="image/*"
+						accept="image/jpeg,image/png,image/webp,image/gif"
 						class="hidden"
 						bind:this={image_input}
 						onchange={handle_image_select}

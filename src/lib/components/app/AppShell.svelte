@@ -233,6 +233,16 @@
 		>
 			<Avatar {user} size={26} />
 		</a>
+
+		<button
+			type="button"
+			aria-label="Sign out"
+			title="Sign out"
+			onclick={handle_sign_out}
+			class="{nav_button} {idle}"
+		>
+			<LogOutIcon class="size-4" />
+		</button>
 	</nav>
 
 	<!-- Content Layout: two-column flex so sidebar starts at the same top as the header -->
