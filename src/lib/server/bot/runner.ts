@@ -1,12 +1,13 @@
 import { desc, gte, sql } from 'drizzle-orm'
 import type { Db } from '../db'
-import { post as post_table } from '../db/schema'
+import { post as post_table, user as user_table } from '../db/schema'
 import { create_post } from '../services/posts'
 import { like_post } from '../services/likes'
-import { BOT_PERSONAS } from './personas'
+import { create_comment } from '../services/comments'
+import { type BotPersona } from './personas'
 import { fetch_feed_items, type FeedItem } from './rss'
-import { generate_post_content } from './llm'
-import { get_bot_config } from './config'
+import { generate_post_content, generate_bot_comment } from './llm'
+import { get_bot_config, get_all_active_personas } from './config'
 
 export interface BotRunOptions {
 	kv?: KVNamespace | null
@@ -25,6 +26,7 @@ export interface BotRunResult {
 	}
 	socialActivity?: {
 		likesAdded: number
+		commentsAdded: number
 	}
 }
 
@@ -52,15 +54,53 @@ export async function run_bot_cycle(
 		}
 	}
 
+	// Load all active personas (built-in + custom + overrides)
+	const personas = await get_all_active_personas(options?.kv)
+	if (personas.length === 0) {
+		return {
+			success: false,
+			message: 'No bot personas available.',
+		}
+	}
+
+	// Fetch up-to-date user records from DB to ensure custom names/usernames are honored
+	const db_users = await db
+		.select({
+			id: user_table.id,
+			name: user_table.name,
+			username: user_table.username,
+			bio: user_table.bio,
+			image: user_table.image,
+		})
+		.from(user_table)
+		.where(sql`instr(${user_table.id}, 'bot_') = 1`)
+
+	const db_user_map = new Map(db_users.map((u) => [u.id, u]))
+
+	// Synchronize persona display names and usernames from DB if available
+	const active_personas = personas.map((p) => {
+		const db_u = db_user_map.get(p.id)
+		if (db_u) {
+			return {
+				...p,
+				name: db_u.name || p.name,
+				username: db_u.username || p.username,
+				bio: db_u.bio || p.bio,
+				image: db_u.image || p.image,
+			}
+		}
+		return p
+	})
+
 	const one_day_ago = new Date(Date.now() - 24 * 60 * 60 * 1000)
 
 	// 1. Candidate selection
-	let chosen_bot = options?.target_bot_id
-		? BOT_PERSONAS.find((b) => b.id === options.target_bot_id)
+	let chosen_bot: BotPersona | null = options?.target_bot_id
+		? (active_personas.find((b) => b.id === options.target_bot_id) ?? null)
 		: null
 
 	if (!chosen_bot) {
-		const bot_ids = BOT_PERSONAS.map((b) => b.id)
+		const bot_ids = active_personas.map((b) => b.id)
 
 		// Fetch post counts and most recent post time for each bot in the last 24h
 		const recent_posts = await db
@@ -91,8 +131,8 @@ export async function run_bot_cycle(
 
 		// Filter candidates: bots with < 3 posts in the last 24 hours (unless bypass_limits is true)
 		const candidates = options?.bypass_limits
-			? [...BOT_PERSONAS]
-			: [...BOT_PERSONAS].filter((bot) => (post_counts[bot.id] ?? 0) < 3)
+			? [...active_personas]
+			: active_personas.filter((bot) => (post_counts[bot.id] ?? 0) < 3)
 
 		if (candidates.length === 0) {
 			return {
@@ -101,15 +141,15 @@ export async function run_bot_cycle(
 			}
 		}
 
-		// Sort candidates by longest time since last post (or random among zero-post bots)
+		// Sort candidates by longest time since last post
 		candidates.sort((a, b) => (last_posted_times[a.id] ?? 0) - (last_posted_times[b.id] ?? 0))
 
-		// Shuffle top 3 candidates to avoid predictable alphabetical/order bias
+		// Shuffle top 3 candidates to avoid predictable order
 		const top_pool = candidates.slice(0, Math.min(3, candidates.length))
 		chosen_bot = top_pool[Math.floor(Math.random() * top_pool.length)]
 	}
 
-	// 2. Fetch feeds for chosen bot
+	// 2. Fetch fresh items from trusted feeds for chosen bot
 	let chosen_item: FeedItem | null = null
 	const shuffled_feeds = [...chosen_bot.feeds].sort(() => Math.random() - 0.5)
 
@@ -150,15 +190,17 @@ export async function run_bot_cycle(
 		visibility: 'public',
 	})
 
-	// 5. Cross-Bot Social Interaction (Simulate organic likes)
+	// 5. Cross-Bot Social Interaction (Simulate organic likes & comments)
 	let likes_added = 0
-	// 60% chance to have 1-3 other bots like this new post or recent bot posts
-	if (Math.random() < 0.6) {
-		const other_bots = BOT_PERSONAS.filter((b) => b.id !== chosen_bot.id).sort(
-			() => Math.random() - 0.5,
-		)
+	let comments_added = 0
 
-		const liker_count = Math.floor(Math.random() * 2) + 1 // 1 to 2 likers
+	const other_bots = active_personas
+		.filter((b) => b.id !== chosen_bot.id)
+		.sort(() => Math.random() - 0.5)
+
+	// 70% chance to have 1-2 bots like this new post
+	if (Math.random() < 0.7 && other_bots.length > 0) {
+		const liker_count = Math.min(other_bots.length, Math.floor(Math.random() * 2) + 1)
 		const likers = other_bots.slice(0, liker_count)
 
 		for (const liker of likers) {
@@ -166,8 +208,58 @@ export async function run_bot_cycle(
 				await like_post(db, liker.id, new_post.id)
 				likes_added++
 			} catch {
-				// Ignore like errors (e.g. unique constraint)
+				// Ignore duplicate likes
 			}
+		}
+	}
+
+	// 60% chance to have another bot leave an organic comment on this new post
+	if (Math.random() < 0.6 && other_bots.length > 0) {
+		const commenter = other_bots[0]
+		try {
+			const comment_text = await generate_bot_comment(commenter, content, env)
+			if (comment_text) {
+				await create_comment(db, commenter.id, new_post.id, {
+					content: comment_text,
+				})
+				comments_added++
+			}
+		} catch (err) {
+			console.warn('[Bot Runner] Failed to add cross-bot comment:', err)
+		}
+	}
+
+	// 30% chance to also comment on a recent post from the last 24h
+	if (Math.random() < 0.3 && other_bots.length > 1) {
+		try {
+			const candidate_posts = await db
+				.select({
+					id: post_table.id,
+					userId: post_table.userId,
+					content: post_table.content,
+				})
+				.from(post_table)
+				.where(gte(post_table.createdAt, one_day_ago))
+				.orderBy(desc(post_table.createdAt))
+				.limit(6)
+
+			// Find a post not authored by other_bots[1]
+			const target_post = candidate_posts.find(
+				(p) => p.id !== new_post.id && p.userId !== other_bots[1].id,
+			)
+
+			if (target_post) {
+				const commenter = other_bots[1]
+				const comment_text = await generate_bot_comment(commenter, target_post.content, env)
+				if (comment_text) {
+					await create_comment(db, commenter.id, target_post.id, {
+						content: comment_text,
+					})
+					comments_added++
+				}
+			}
+		} catch (err) {
+			console.warn('[Bot Runner] Failed to add secondary comment:', err)
 		}
 	}
 
@@ -181,6 +273,7 @@ export async function run_bot_cycle(
 		},
 		socialActivity: {
 			likesAdded: likes_added,
+			commentsAdded: comments_added,
 		},
 	}
 }

@@ -27,7 +27,12 @@ export const BOT_PERSONAS: BotPersona[] = [
 		topics: ['vibecoding', 'ai', 'tools'],
 		tonePrompt:
 			'You are Alex, an enthusiastic developer building with AI tools. Keep your tone casual, fast-paced, and curious. Share a short 1-2 sentence thought on the tool or technique, and ask a snappy question to spark conversation.',
-		feeds: ['https://news.ycombinator.com/rss', 'https://simonwillison.net/atom/everything/'],
+		feeds: [
+			'https://dev.to/feed',
+			'https://techcrunch.com/feed/',
+			'https://simonwillison.net/atom/everything/',
+			'https://news.ycombinator.com/rss',
+		],
 		hashtags: ['#vibecoding', '#tech', '#ai'],
 	},
 	{
@@ -42,7 +47,12 @@ export const BOT_PERSONAS: BotPersona[] = [
 		topics: ['agent', 'ai', 'research'],
 		tonePrompt:
 			'You are Sophia, an AI engineer fascinated by agentic workflows and tool-calling. Be concise, insightful, and highlight practical architectural implications.',
-		feeds: ['https://news.ycombinator.com/rss', 'https://simonwillison.net/atom/everything/'],
+		feeds: [
+			'https://www.theverge.com/rss/index.xml',
+			'https://feeds.arstechnica.com/arstechnica/index',
+			'https://simonwillison.net/atom/everything/',
+			'https://news.ycombinator.com/rss',
+		],
 		hashtags: ['#agents', '#ai', '#engineering'],
 	},
 	{
@@ -57,7 +67,11 @@ export const BOT_PERSONAS: BotPersona[] = [
 		topics: ['opensource', 'devtools', 'coding'],
 		tonePrompt:
 			'You are Marcus, a pragmatic open-source advocate. You appreciate clean architecture, minimal dependencies, and open collaboration. Share what stands out about this repo or project.',
-		feeds: ['https://news.ycombinator.com/rss'],
+		feeds: [
+			'https://feeds.arstechnica.com/arstechnica/index',
+			'https://dev.to/feed',
+			'https://news.ycombinator.com/rss',
+		],
 		hashtags: ['#opensource', '#dev', '#coding'],
 	},
 	{
@@ -72,7 +86,12 @@ export const BOT_PERSONAS: BotPersona[] = [
 		topics: ['ai', 'benchmarks', 'future'],
 		tonePrompt:
 			'You are Nora, a tech journalist and AI researcher. Break down dense updates into clear, high-signal summaries in 1-2 punchy sentences.',
-		feeds: ['https://news.ycombinator.com/rss', 'https://simonwillison.net/atom/everything/'],
+		feeds: [
+			'https://www.theverge.com/rss/index.xml',
+			'https://techcrunch.com/feed/',
+			'https://feeds.arstechnica.com/arstechnica/index',
+			'https://simonwillison.net/atom/everything/',
+		],
 		hashtags: ['#ai', '#tech', '#future'],
 	},
 	{
@@ -87,7 +106,11 @@ export const BOT_PERSONAS: BotPersona[] = [
 		topics: ['learning', 'coding', 'webdev'],
 		tonePrompt:
 			'You are David, a supportive fellow developer who loves learning in public. Frame updates as helpful takeaways or questions for beginners and intermediate coders.',
-		feeds: ['https://news.ycombinator.com/rss'],
+		feeds: [
+			'https://dev.to/feed',
+			'https://news.ycombinator.com/rss',
+			'https://techcrunch.com/feed/',
+		],
 		hashtags: ['#learning', '#webdev', '#code'],
 	},
 
@@ -104,7 +127,10 @@ export const BOT_PERSONAS: BotPersona[] = [
 		topics: ['manga', 'reading'],
 		tonePrompt:
 			'You are Ren, an avid manga reader. Share hype or appreciation for art, plot pacing, or upcoming chapter releases. Keep it authentic and fan-driven.',
-		feeds: ['https://animecorner.me/feed/', 'https://news.ycombinator.com/rss'],
+		feeds: [
+			'https://www.animenewsnetwork.com/all/rss.xml?ann-edition=us',
+			'https://animecorner.me/feed/',
+		],
 		hashtags: ['#manga', '#anime', '#reading'],
 	},
 	{
@@ -119,7 +145,10 @@ export const BOT_PERSONAS: BotPersona[] = [
 		topics: ['anime', 'animation'],
 		tonePrompt:
 			'You are Yuki, a passionate anime fan who loves animation quality and seasonal lineups. Highlight episode reveals, trailers, or studio news.',
-		feeds: ['https://animecorner.me/feed/'],
+		feeds: [
+			'https://www.animenewsnetwork.com/all/rss.xml?ann-edition=us',
+			'https://animecorner.me/feed/',
+		],
 		hashtags: ['#anime', '#animation', '#otaku'],
 	},
 	{
@@ -134,7 +163,10 @@ export const BOT_PERSONAS: BotPersona[] = [
 		topics: ['novel', 'books'],
 		tonePrompt:
 			'You are Elena, a dedicated reader of fantasy and light novels. Share intriguing premises, character tropes, or adaptation announcements.',
-		feeds: ['https://animecorner.me/feed/'],
+		feeds: [
+			'https://www.animenewsnetwork.com/all/rss.xml?ann-edition=us',
+			'https://animecorner.me/feed/',
+		],
 		hashtags: ['#novel', '#books', '#fantasy'],
 	},
 	{
@@ -149,7 +181,10 @@ export const BOT_PERSONAS: BotPersona[] = [
 		topics: ['anime', 'debates'],
 		tonePrompt:
 			'You are Kai, an opinionated anime fan who loves starting friendly debates about arcs, best characters, and classic vs modern shows.',
-		feeds: ['https://animecorner.me/feed/'],
+		feeds: [
+			'https://www.animenewsnetwork.com/all/rss.xml?ann-edition=us',
+			'https://animecorner.me/feed/',
+		],
 		hashtags: ['#anime', '#animetwt', '#otaku'],
 	},
 	{
@@ -164,7 +199,10 @@ export const BOT_PERSONAS: BotPersona[] = [
 		topics: ['anime', 'shonen'],
 		tonePrompt:
 			'You are Leo, full of energy about big battle shonen, new trailer drops, and manga climaxes. Express hype and excitement.',
-		feeds: ['https://animecorner.me/feed/'],
+		feeds: [
+			'https://www.animenewsnetwork.com/all/rss.xml?ann-edition=us',
+			'https://animecorner.me/feed/',
+		],
 		hashtags: ['#shonen', '#anime', '#manga'],
 	},
 
@@ -181,7 +219,7 @@ export const BOT_PERSONAS: BotPersona[] = [
 		topics: ['movie', 'entertainment'],
 		tonePrompt:
 			'You are Julian, a thoughtful film enthusiast. Comment on director vision, trailer aesthetics, casting news, or box office surprises.',
-		feeds: ['https://news.ycombinator.com/rss', 'https://animecorner.me/feed/'],
+		feeds: ['https://collider.com/feed/', 'https://screenrant.com/feed/'],
 		hashtags: ['#movies', '#cinema', '#film'],
 	},
 	{
@@ -196,7 +234,11 @@ export const BOT_PERSONAS: BotPersona[] = [
 		topics: ['streaming', 'tv'],
 		tonePrompt:
 			'You are Chloe, your go-to friend for what to watch next. Provide brief recommendations or reactions to new series drops.',
-		feeds: ['https://news.ycombinator.com/rss'],
+		feeds: [
+			'https://collider.com/feed/',
+			'https://screenrant.com/feed/',
+			'https://www.theverge.com/rss/index.xml',
+		],
 		hashtags: ['#streaming', '#whattowatch', '#tvseries'],
 	},
 	{
@@ -211,7 +253,7 @@ export const BOT_PERSONAS: BotPersona[] = [
 		topics: ['meme', 'humor'],
 		tonePrompt:
 			'You are Samir, curator of relatable tech and life humor. Deliver dry wit or funny commentary in a single sentence.',
-		feeds: ['https://news.ycombinator.com/rss'],
+		feeds: ['https://news.ycombinator.com/rss', 'https://dev.to/feed'],
 		hashtags: ['#meme', '#devlife', '#humor'],
 	},
 	{
@@ -226,7 +268,10 @@ export const BOT_PERSONAS: BotPersona[] = [
 		topics: ['humor', 'life'],
 		tonePrompt:
 			'You are Jordan, cheerful and witty. Post amusing observations or light banter about daily occurrences.',
-		feeds: ['https://news.ycombinator.com/rss'],
+		feeds: [
+			'https://www.theverge.com/rss/index.xml',
+			'https://feeds.arstechnica.com/arstechnica/index',
+		],
 		hashtags: ['#comedy', '#daily', '#laugh'],
 	},
 
@@ -243,7 +288,7 @@ export const BOT_PERSONAS: BotPersona[] = [
 		topics: ['cafe', 'coffee'],
 		tonePrompt:
 			'You are Maya, a specialty coffee barista. Talk about flavor notes, roast profiles, brew ratios, or cafe craftsmanship with genuine warmth.',
-		feeds: ['https://sprudge.com/feed', 'https://perfectdailygrind.com/feed/'],
+		feeds: ['https://sprudge.com/feed'],
 		hashtags: ['#coffee', '#pourover', '#specialtycoffee'],
 	},
 	{
@@ -275,7 +320,10 @@ export const BOT_PERSONAS: BotPersona[] = [
 		topics: ['economic', 'markets'],
 		tonePrompt:
 			'You are Victor, a keen economic observer. Explain market shifts, policy ripple effects, or supply-chain dynamics with sober analysis in 1-2 sentences.',
-		feeds: ['https://feeds.feedburner.com/marginalrevolution', 'https://news.ycombinator.com/rss'],
+		feeds: [
+			'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10000664',
+			'https://www.coindesk.com/arc/outboundfeeds/rss/',
+		],
 		hashtags: ['#economics', '#markets', '#macro'],
 	},
 	{
@@ -290,7 +338,7 @@ export const BOT_PERSONAS: BotPersona[] = [
 		topics: ['learning', 'ideas'],
 		tonePrompt:
 			'You are Liam, a researcher and thinker. Offer an insightful mental model, book takeaway, or question that challenges conventional thinking.',
-		feeds: ['https://fs.blog/feed/', 'https://news.ycombinator.com/rss'],
+		feeds: ['https://www.sciencedaily.com/rss/top/science.xml', 'https://news.ycombinator.com/rss'],
 		hashtags: ['#learning', '#mentalmodels', '#mindset'],
 	},
 	{
@@ -305,7 +353,11 @@ export const BOT_PERSONAS: BotPersona[] = [
 		topics: ['economic', 'startup'],
 		tonePrompt:
 			'You are Tara, a transparent indie builder. Focus on unit economics, retention, customer feedback, and practical business lessons.',
-		feeds: ['https://news.ycombinator.com/rss'],
+		feeds: [
+			'https://techcrunch.com/feed/',
+			'https://dev.to/feed',
+			'https://news.ycombinator.com/rss',
+		],
 		hashtags: ['#indiehackers', '#buildinpublic', '#startup'],
 	},
 	{
@@ -320,7 +372,10 @@ export const BOT_PERSONAS: BotPersona[] = [
 		topics: ['learning', 'science'],
 		tonePrompt:
 			'You are Aria, an enthusiast of science and history trivia. Share an intriguing "did you know?" style fact concisely.',
-		feeds: ['https://news.ycombinator.com/rss'],
+		feeds: [
+			'https://www.sciencedaily.com/rss/top/science.xml',
+			'https://feeds.arstechnica.com/arstechnica/index',
+		],
 		hashtags: ['#todayilearned', '#science', '#knowledge'],
 	},
 ]
