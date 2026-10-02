@@ -18,23 +18,27 @@
 
 	import { onMount } from 'svelte'
 
-	const DRAFT_KEY = 'composer_draft'
+	const draft_key = 'composer_draft'
 
 	onMount(() => {
 		try {
-			const draft = localStorage.getItem(DRAFT_KEY)
+			const draft = localStorage.getItem(draft_key)
 			if (draft) content = draft
-		} catch {}
+		} catch {
+			// ignore
+		}
 	})
 
 	$effect(() => {
 		try {
 			if (content.trim()) {
-				localStorage.setItem(DRAFT_KEY, content)
+				localStorage.setItem(draft_key, content)
 			} else {
-				localStorage.removeItem(DRAFT_KEY)
+				localStorage.removeItem(draft_key)
 			}
-		} catch {}
+		} catch {
+			// ignore
+		}
 	})
 
 	let remaining = $derived(MAX_POST_LENGTH - content.length)
@@ -42,11 +46,13 @@
 
 	$effect(() => textarea?.focus())
 
-	function discardDraft() {
+	function discard_draft() {
 		content = ''
 		try {
-			localStorage.removeItem(DRAFT_KEY)
-		} catch {}
+			localStorage.removeItem(draft_key)
+		} catch {
+			// ignore
+		}
 	}
 
 	async function submit(event: SubmitEvent) {
@@ -62,8 +68,10 @@
 			composer.created(created)
 			content = ''
 			try {
-				localStorage.removeItem(DRAFT_KEY)
-			} catch {}
+				localStorage.removeItem(draft_key)
+			} catch {
+				// ignore
+			}
 			composer.hide()
 		} catch (e) {
 			error_message = e instanceof Error ? e.message : 'Could not publish your post'
@@ -149,7 +157,11 @@
 			<div class="flex items-center gap-3">
 				<p class="min-h-5 text-rose-600" role="alert">{error_message ?? ''}</p>
 				{#if content.trim()}
-					<button type="button" class="text-xs font-semibold text-slate-400 transition hover:text-slate-800 hover:underline" onclick={discardDraft}>
+					<button
+						type="button"
+						class="text-xs font-semibold text-slate-400 transition hover:text-slate-800 hover:underline"
+						onclick={discard_draft}
+					>
 						Discard draft
 					</button>
 				{/if}

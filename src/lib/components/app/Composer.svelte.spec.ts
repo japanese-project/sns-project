@@ -17,7 +17,9 @@ describe('Composer', () => {
 	it('loads saved draft on mount', async () => {
 		localStorage.setItem('composer_draft', 'my saved draft text')
 		render(Composer, { user: mock_user })
-		await expect.element(page.getByPlaceholder('Share your perspective…')).toHaveValue('my saved draft text')
+		await expect
+			.element(page.getByPlaceholder('Share your perspective…'))
+			.toHaveValue('my saved draft text')
 	})
 
 	it('saves draft on input', async () => {
@@ -34,10 +36,10 @@ describe('Composer', () => {
 		render(Composer, { user: mock_user })
 		const input = page.getByPlaceholder('Share your perspective…')
 		await expect.element(input).toHaveValue('some draft')
-		
+
 		const discard_btn = page.getByRole('button', { name: 'Discard draft' })
 		await discard_btn.click()
-		
+
 		await expect.element(input).toHaveValue('')
 		await vi.waitFor(() => {
 			expect(localStorage.getItem('composer_draft')).toBeNull()
@@ -48,10 +50,10 @@ describe('Composer', () => {
 		localStorage.setItem('composer_draft', 'posting this')
 		render(Composer, { user: mock_user })
 		vi.mocked(api).mockResolvedValue({ id: '123' })
-		
+
 		const publish_btn = page.getByRole('button', { name: 'Publish' })
 		await publish_btn.click()
-		
+
 		await vi.waitFor(() => {
 			expect(localStorage.getItem('composer_draft')).toBeNull()
 		})
