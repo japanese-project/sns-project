@@ -67,6 +67,20 @@ describe('PostCard media rendering', () => {
 		await expect.element(image).toBeInTheDocument()
 		await expect.element(image).toHaveAttribute('src', '/api/media/image-only.png')
 	})
+
+	it('renders fallback when attachment image fails to load', async () => {
+		const post = make_post({ image_url: '/api/media/non-existent.jpg' })
+		render(PostCard, { post })
+
+		const image = page.getByRole('img', { name: 'Post attachment' })
+		await expect.element(image).toBeInTheDocument()
+
+		const img_el = image.element()
+		img_el.dispatchEvent(new Event('error'))
+
+		await expect.element(page.getByTestId('broken-image-fallback')).toBeInTheDocument()
+		await expect.element(page.getByText('Media unavailable')).toBeInTheDocument()
+	})
 })
 
 describe('PostCard action menu', () => {

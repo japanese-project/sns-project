@@ -6,6 +6,8 @@ import { follow, post, user } from '$lib/server/db/schema'
 import { make_follow, make_user, create_test_db } from '$lib/server/services/test-db'
 import * as media_api from './media/+server'
 import * as media_key_api from './media/[key]/+server'
+import * as media_stats_api from './media/stats/+server'
+import * as media_cleanup_api from './media/cleanup/+server'
 import * as posts_api from './posts/+server'
 import * as post_id_api from './posts/[id]/+server'
 
@@ -294,6 +296,35 @@ describe('Media API', () => {
 		expect(del.status).toBe(204)
 
 		// Object is removed from R2
+		expect(await bucket.head(key)).toBeNull()
+	})
+
+	it('returns storage usage statistics via GET /api/media/stats', async () => {
+		const form = new FormData()
+		form.append('image', new File([sample_jpeg], 'stats-test.jpg', { type: 'image/jpeg' }))
+		await call(media_api.POST, { as: alice, formData: form })
+
+		const res = await call(media_stats_api.GET, { as: alice })
+		expect(res.status).toBe(200)
+		expect(res.body.total_objects).toBeGreaterThanOrEqual(1)
+		expect(res.body.orphaned_objects).toBeGreaterThanOrEqual(1)
+	})
+
+	it('cleans up orphaned media via POST /api/media/cleanup', async () => {
+		const form = new FormData()
+		form.append('image', new File([sample_jpeg], 'orphan-cleanup.jpg', { type: 'image/jpeg' }))
+		const upload = await call(media_api.POST, { as: alice, formData: form })
+		const key = upload.body.url.replace('/api/media/', '')
+
+		const res = await call(media_cleanup_api.POST, {
+			as: alice,
+			method: 'POST',
+			body: { older_than_ms: 0 },
+		})
+		expect(res.status).toBe(200)
+		expect(res.body.deleted_count).toBeGreaterThanOrEqual(1)
+		expect(res.body.deleted_keys).toContain(key)
+
 		expect(await bucket.head(key)).toBeNull()
 	})
 })

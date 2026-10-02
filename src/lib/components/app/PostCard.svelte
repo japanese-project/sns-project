@@ -3,6 +3,7 @@
 	import CopyIcon from '@lucide/svelte/icons/copy'
 	import HeartIcon from '@lucide/svelte/icons/heart'
 	import GlobeIcon from '@lucide/svelte/icons/globe'
+	import ImageOffIcon from '@lucide/svelte/icons/image-off'
 	import LockIcon from '@lucide/svelte/icons/lock'
 	import MessageCircleIcon from '@lucide/svelte/icons/message-circle'
 	import MoreHorizontalIcon from '@lucide/svelte/icons/more-horizontal'
@@ -33,6 +34,7 @@
 	// request fails. Without an override the values come straight from the post prop.
 	let post_override = $state<PostView | null>(null)
 	let active_post = $derived(post_override ?? post)
+	let image_load_failed = $state(false)
 	let like_override = $state<{ liked: boolean; like_count: number } | null>(null)
 	let comment_override = $state<number | null>(null)
 	let liked = $derived(like_override?.liked ?? active_post.liked_by_me)
@@ -386,12 +388,23 @@
 
 	{#if active_post.image_url}
 		<div class="mt-3 overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-50">
-			<img
-				src={active_post.image_url}
-				alt="Post attachment"
-				class="max-h-[512px] w-full object-cover"
-				loading="lazy"
-			/>
+			{#if image_load_failed}
+				<div
+					data-testid="broken-image-fallback"
+					class="flex items-center justify-center gap-2 p-6 text-xs text-slate-400"
+				>
+					<ImageOffIcon class="size-4 text-slate-400" />
+					<span>Media unavailable</span>
+				</div>
+			{:else}
+				<img
+					src={active_post.image_url}
+					alt="Post attachment"
+					class="max-h-[512px] w-full object-cover"
+					loading="lazy"
+					onerror={() => (image_load_failed = true)}
+				/>
+			{/if}
 		</div>
 	{/if}
 

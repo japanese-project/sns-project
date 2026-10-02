@@ -58,4 +58,33 @@ describe('Composer', () => {
 			expect(localStorage.getItem('composer_draft')).toBeNull()
 		})
 	})
+
+	it('previews selected image and allows removing before publish', async () => {
+		render(Composer, { user: mock_user })
+
+		// Initial state: no image preview
+		await expect
+			.element(page.getByRole('img', { name: 'Selected preview' }))
+			.not.toBeInTheDocument()
+
+		// Select a file
+		const file = new File(['fake content'], 'test.png', { type: 'image/png' })
+		const file_input = document.querySelector('input[type="file"]') as HTMLInputElement
+		expect(file_input).toBeTruthy()
+
+		Object.defineProperty(file_input, 'files', {
+			value: [file],
+			writable: true,
+		})
+		file_input.dispatchEvent(new Event('change', { bubbles: true }))
+
+		const preview = page.getByRole('img', { name: 'Selected preview' })
+		await expect.element(preview).toBeInTheDocument()
+
+		const remove_btn = page.getByRole('button', { name: 'Remove image' })
+		await expect.element(remove_btn).toBeVisible()
+
+		await remove_btn.click()
+		await expect.element(preview).not.toBeInTheDocument()
+	})
 })
