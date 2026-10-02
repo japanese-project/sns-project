@@ -19,6 +19,7 @@ interface Call {
 	method?: string
 	body?: unknown
 	formData?: FormData
+	headers?: Record<string, string>
 }
 interface Result {
 	status: number
@@ -50,17 +51,22 @@ beforeEach(async () => {
 async function call(handler: Handler, opts: Call): Promise<Result> {
 	const url = new URL(`http://localhost/api${opts.query ? `?${opts.query}` : ''}`)
 	let request: Request
+	const custom_headers = new Headers(opts.headers)
 	if (opts.formData) {
 		request = new Request(url, {
 			method: opts.method ?? 'POST',
+			headers: custom_headers,
 			body: opts.formData,
 		})
 	} else {
 		const has_body = opts.body !== undefined
 		const method = opts.method ?? (has_body ? 'POST' : 'GET')
+		if (has_body && !custom_headers.has('content-type')) {
+			custom_headers.set('content-type', 'application/json')
+		}
 		request = new Request(url, {
 			method,
-			headers: has_body ? { 'content-type': 'application/json' } : undefined,
+			headers: custom_headers,
 			body: has_body ? JSON.stringify(opts.body) : undefined,
 		})
 	}
@@ -70,7 +76,14 @@ async function call(handler: Handler, opts: Call): Promise<Result> {
 		params: opts.params ?? {},
 		url,
 		request,
-		platform: { env: { DB: {} as D1Database, AUTH_KV: {} as KVNamespace, MEDIA_BUCKET: bucket } },
+		platform: {
+			env: {
+				DB: {} as D1Database,
+				AUTH_KV: {} as KVNamespace,
+				MEDIA_BUCKET: bucket,
+				ADMIN_SECRET: 'test-admin-secret',
+			},
+		},
 	}
 
 	try {
@@ -310,15 +323,106 @@ describe('Media API', () => {
 		expect(res.body.orphaned_objects).toBeGreaterThanOrEqual(1)
 	})
 
-	it('cleans up orphaned media via POST /api/media/cleanup', async () => {
+	it('enforces imageUrl ownership, uniqueness and safe ordering on post update', async () => {
+		// Alice creates post 1 with image 1
+		const form1 = new FormData()
+		form1.append('image', new File([sample_jpeg], 'post1.jpg', { type: 'image/jpeg' }))
+		const upload1 = await call(media_api.POST, { as: alice, formData: form1 })
+		const post1 = await call(posts_api.POST, {
+			as: alice,
+			body: { content: 'Post 1', imageUrl: upload1.body.url },
+		})
+		expect(post1.status).toBe(201)
+
+		// Alice creates post 2 with text only
+		const post2 = await call(posts_api.POST, {
+			as: alice,
+			body: { content: 'Post 2' },
+		})
+		expect(post2.status).toBe(201)
+
+		// Alice attempts to update post 2 using image 1 (already attached to post 1)
+		const dup_res = await call(post_id_api.PATCH, {
+			as: alice,
+			params: { id: post2.body.id },
+			body: { imageUrl: upload1.body.url },
+		})
+		expect(dup_res.status).toBe(400)
+		expect(dup_res.body.message).toBe('Media is already attached to another post')
+
+		// Bob uploads image 2
+		const form2 = new FormData()
+		form2.append('image', new File([sample_jpeg], 'bob-pic.jpg', { type: 'image/jpeg' }))
+		const upload2 = await call(media_api.POST, { as: bob, formData: form2 })
+
+		// Alice attempts to update post 2 using Bob's image
+		const steal_res = await call(post_id_api.PATCH, {
+			as: alice,
+			params: { id: post2.body.id },
+			body: { imageUrl: upload2.body.url },
+		})
+		expect(steal_res.status).toBe(403)
+
+		// Safe rollback ordering: Alice attempts to replace post 1 image with an invalid empty content
+		const key1 = upload1.body.url.replace('/api/media/', '')
+		const fail_res = await call(post_id_api.PATCH, {
+			as: alice,
+			params: { id: post1.body.id },
+			body: { content: '   ', imageUrl: null },
+		})
+		expect(fail_res.status).toBe(400)
+		// Previous image is NOT deleted because validation/update failed
+		expect(await bucket.head(key1)).not.toBeNull()
+	})
+
+	it('cleans up orphaned media via POST /api/media/cleanup with admin authorization and validates older_than_ms', async () => {
 		const form = new FormData()
 		form.append('image', new File([sample_jpeg], 'orphan-cleanup.jpg', { type: 'image/jpeg' }))
 		const upload = await call(media_api.POST, { as: alice, formData: form })
 		const key = upload.body.url.replace('/api/media/', '')
 
+		// Normal authenticated user without admin secret is rejected with 403 Forbidden
+		const user_res = await call(media_cleanup_api.POST, {
+			as: alice,
+			method: 'POST',
+			body: { older_than_ms: 0 },
+		})
+		expect(user_res.status).toBe(403)
+
+		// Admin with negative older_than_ms is rejected with 400 Bad Request
+		const neg_res = await call(media_cleanup_api.POST, {
+			as: alice,
+			method: 'POST',
+			headers: { 'x-admin-secret': 'test-admin-secret' },
+			body: { older_than_ms: -100 },
+		})
+		expect(neg_res.status).toBe(400)
+
+		// Admin with non-number older_than_ms is rejected with 400 Bad Request
+		const bad_type_res = await call(media_cleanup_api.POST, {
+			as: alice,
+			method: 'POST',
+			headers: { 'x-admin-secret': 'test-admin-secret' },
+			body: { older_than_ms: 'one hour' },
+		})
+		expect(bad_type_res.status).toBe(400)
+
+		// Admin without specifying older_than_ms uses default safe grace period (24 hours), so newly uploaded item is NOT deleted
+		const default_res = await call(media_cleanup_api.POST, {
+			as: alice,
+			method: 'POST',
+			headers: { 'x-admin-secret': 'test-admin-secret' },
+			body: {},
+		})
+		expect(default_res.status).toBe(200)
+		expect(default_res.body.deleted_keys).not.toContain(key)
+		expect(await bucket.head(key)).not.toBeNull()
+
+		// Admin explicitly passing older_than_ms: 0 deletes orphaned objects immediately
 		const res = await call(media_cleanup_api.POST, {
 			as: alice,
 			method: 'POST',
+			headers: { 'x-admin-secret': 'test-admin-secret' },
 			body: { older_than_ms: 0 },
 		})
 		expect(res.status).toBe(200)

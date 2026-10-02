@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lt, or, sql, type SQL } from 'drizzle-orm'
+import { and, desc, eq, gte, lt, ne, or, sql, type SQL } from 'drizzle-orm'
 import { error } from '@sveltejs/kit'
 import type { Db } from '../db'
 import { comment, follow, like, post, user } from '../db/schema'
@@ -292,23 +292,24 @@ export async function update_post(
 					error(403, 'Media does not belong to user')
 				}
 			}
+
+			// Ensure media is not already attached to another post
+			if (trimmed !== owned.imageUrl) {
+				const existing = await db
+					.select({ id: post.id })
+					.from(post)
+					.where(and(eq(post.imageUrl, trimmed), ne(post.id, post_id)))
+					.limit(1)
+				if (existing.length > 0) {
+					error(400, 'Media is already attached to another post')
+				}
+			}
+
 			new_image_url = trimmed
 		} else {
 			error(400, 'imageUrl must be a string')
 		}
 		changes.imageUrl = new_image_url
-
-		// If the image was removed or changed, clean up previous R2 object
-		if (bucket && owned.imageUrl && owned.imageUrl !== new_image_url) {
-			const match = owned.imageUrl.match(/^\/api\/media\/([a-zA-Z0-9_-]+\.[a-z0-9]+)$/)
-			if (match) {
-				try {
-					await bucket.delete(match[1])
-				} catch {
-					// Non-fatal
-				}
-			}
-		}
 	}
 
 	if (input.content !== undefined) {
@@ -324,6 +325,19 @@ export async function update_post(
 
 	if (input.visibility !== undefined) changes.visibility = parse_visibility(input.visibility)
 	await db.update(post).set(changes).where(eq(post.id, post_id))
+
+	// Clean up previous R2 object ONLY AFTER database update succeeds
+	if (bucket && owned.imageUrl && owned.imageUrl !== new_image_url) {
+		const match = owned.imageUrl.match(/^\/api\/media\/([a-zA-Z0-9_-]+\.[a-z0-9]+)$/)
+		if (match) {
+			try {
+				await bucket.delete(match[1])
+			} catch {
+				// Non-fatal
+			}
+		}
+	}
+
 	return await get_post_or_404(db, user_id, post_id)
 }
 
@@ -335,6 +349,9 @@ export async function delete_post(
 	bucket?: R2Bucket,
 ): Promise<void> {
 	const owned = await require_owned_post(db, user_id, post_id)
+	await db.delete(post).where(eq(post.id, post_id))
+
+	// Clean up R2 object ONLY AFTER database deletion succeeds
 	if (bucket && owned.imageUrl) {
 		const match = owned.imageUrl.match(/^\/api\/media\/([a-zA-Z0-9_-]+\.[a-z0-9]+)$/)
 		if (match) {
@@ -345,7 +362,6 @@ export async function delete_post(
 			}
 		}
 	}
-	await db.delete(post).where(eq(post.id, post_id))
 }
 
 /**

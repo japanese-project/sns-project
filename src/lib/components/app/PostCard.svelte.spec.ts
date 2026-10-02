@@ -68,8 +68,17 @@ describe('PostCard media rendering', () => {
 		await expect.element(image).toHaveAttribute('src', '/api/media/image-only.png')
 	})
 
-	it('renders fallback when attachment image fails to load', async () => {
-		const post = make_post({ image_url: '/api/media/non-existent.jpg' })
+	it('renders image within stable aspect-ratio container with object-contain', async () => {
+		const post = make_post({ image_url: '/api/media/test-photo.jpg' })
+		render(PostCard, { post })
+
+		const image = page.getByRole('img', { name: 'Post attachment' })
+		await expect.element(image).toBeInTheDocument()
+		await expect.element(image).toHaveClass(/object-contain/)
+	})
+
+	it('renders fallback when attachment image fails to load with 404 response', async () => {
+		const post = make_post({ image_url: '/api/media/non-existent-404.jpg' })
 		render(PostCard, { post })
 
 		const image = page.getByRole('img', { name: 'Post attachment' })
@@ -77,6 +86,14 @@ describe('PostCard media rendering', () => {
 
 		const img_el = image.element()
 		img_el.dispatchEvent(new Event('error'))
+
+		await expect.element(page.getByTestId('broken-image-fallback')).toBeInTheDocument()
+		await expect.element(page.getByText('Media unavailable')).toBeInTheDocument()
+	})
+
+	it('renders fallback when attachment image fails decoding (corrupted data)', async () => {
+		const post = make_post({ image_url: 'data:image/png;base64,invalid-corrupted-stream' })
+		render(PostCard, { post })
 
 		await expect.element(page.getByTestId('broken-image-fallback')).toBeInTheDocument()
 		await expect.element(page.getByText('Media unavailable')).toBeInTheDocument()
@@ -163,6 +180,85 @@ describe('PostCard action menu', () => {
 
 		expect(write_text).toHaveBeenCalledWith(expect.stringContaining('/posts/p123'))
 		await expect.element(page.getByText('Copied!')).toBeVisible()
+	})
+
+	it('shows error feedback when clipboard copy fails or throws', async () => {
+		vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('Permission denied'))
+		const post = make_post({ id: 'p123' })
+		render(PostCard, { post })
+
+		const menu_btn = page.getByRole('button', { name: 'More options' })
+		await menu_btn.click()
+
+		const copy_btn = page.getByRole('menuitem', { name: 'Copy link' })
+		await copy_btn.click()
+
+		await expect.element(page.getByText('Failed to copy')).toBeVisible()
+		await expect.element(page.getByText('Copied!')).not.toBeInTheDocument()
+	})
+
+	it('shows error feedback when clipboard API is unavailable', async () => {
+		const original_clipboard = navigator.clipboard
+		// @ts-expect-error simulating missing clipboard
+		delete window.navigator.clipboard
+
+		try {
+			const post = make_post({ id: 'p123' })
+			render(PostCard, { post })
+
+			const menu_btn = page.getByRole('button', { name: 'More options' })
+			await menu_btn.click()
+
+			const copy_btn = page.getByRole('menuitem', { name: 'Copy link' })
+			await copy_btn.click()
+
+			await expect.element(page.getByText('Failed to copy')).toBeVisible()
+			await expect.element(page.getByText('Copied!')).not.toBeInTheDocument()
+		} finally {
+			Object.defineProperty(navigator, 'clipboard', {
+				value: original_clipboard,
+				configurable: true,
+			})
+		}
+	})
+
+	it('supports keyboard navigation through menu items and closes on Escape with restored focus', async () => {
+		const post = make_post({ is_owner: true })
+		render(PostCard, { post })
+
+		const menu_btn = page.getByRole('button', { name: 'More options' })
+		menu_btn.element().focus()
+
+		// ArrowDown on trigger button opens menu and focuses first item
+		menu_btn
+			.element()
+			.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+		await expect.element(page.getByRole('menuitem', { name: 'Copy link' })).toBeVisible()
+
+		const menu = page.getByRole('menu', { name: 'Post actions' }).element()
+		const copy_item = page.getByRole('menuitem', { name: 'Copy link' }).element()
+		const edit_item = page.getByRole('menuitem', { name: 'Edit post' }).element()
+		const delete_item = page.getByRole('menuitem', { name: 'Delete post' }).element()
+
+		copy_item.focus()
+		expect(document.activeElement).toBe(copy_item)
+
+		// ArrowDown in menu moves focus to next item
+		menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+		expect(document.activeElement).toBe(edit_item)
+
+		// ArrowDown again moves to delete item
+		menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+		expect(document.activeElement).toBe(delete_item)
+
+		// ArrowUp moves back to edit item
+		menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }))
+		expect(document.activeElement).toBe(edit_item)
+
+		// Escape closes menu and returns focus to menu button
+		menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+		await expect.element(page.getByRole('menuitem', { name: 'Copy link' })).not.toBeInTheDocument()
+		expect(document.activeElement).toBe(menu_btn.element())
 	})
 
 	it('closes menu on Escape key press', async () => {

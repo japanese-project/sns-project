@@ -9,6 +9,7 @@
 	import MoreHorizontalIcon from '@lucide/svelte/icons/more-horizontal'
 	import PencilIcon from '@lucide/svelte/icons/pencil'
 	import TrashIcon from '@lucide/svelte/icons/trash'
+	import XIcon from '@lucide/svelte/icons/x'
 	import { goto } from '$app/navigation'
 	import { resolve } from '$app/paths'
 	import { api } from '$lib/api'
@@ -53,19 +54,105 @@
 	let deleting = $state(false)
 
 	let menu_open = $state(false)
-	let copied_link = $state(false)
+	let copy_status = $state<'idle' | 'copied' | 'failed'>('idle')
 	let menu_container_el = $state<HTMLElement | null>(null)
+	let menu_button_el = $state<HTMLButtonElement | null>(null)
+	let menu_el = $state<HTMLElement | null>(null)
+
+	function close_menu(restore_focus = true) {
+		menu_open = false
+		if (restore_focus) {
+			menu_button_el?.focus()
+		}
+	}
+
+	function open_menu(focus_target: 'first' | 'last' = 'first') {
+		menu_open = true
+		queueMicrotask(() => {
+			if (!menu_el) return
+			const items = Array.from(
+				menu_el.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])'),
+			)
+			if (items.length > 0) {
+				const item = focus_target === 'first' ? items[0] : items[items.length - 1]
+				item?.focus()
+			}
+		})
+	}
+
+	function handle_button_keydown(event: KeyboardEvent) {
+		if (event.key === 'ArrowDown') {
+			event.preventDefault()
+			event.stopPropagation()
+			open_menu('first')
+		} else if (event.key === 'ArrowUp') {
+			event.preventDefault()
+			event.stopPropagation()
+			open_menu('last')
+		}
+	}
+
+	function handle_menu_keydown(event: KeyboardEvent) {
+		if (!menu_open || !menu_el) return
+
+		const items = Array.from(
+			menu_el.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])'),
+		)
+		if (items.length === 0) return
+
+		const current_index = items.findIndex((item) => item === document.activeElement)
+
+		switch (event.key) {
+			case 'ArrowDown': {
+				event.preventDefault()
+				event.stopPropagation()
+				const next_index =
+					current_index === -1 || current_index === items.length - 1 ? 0 : current_index + 1
+				items[next_index]?.focus()
+				break
+			}
+			case 'ArrowUp': {
+				event.preventDefault()
+				event.stopPropagation()
+				const prev_index = current_index <= 0 ? items.length - 1 : current_index - 1
+				items[prev_index]?.focus()
+				break
+			}
+			case 'Home': {
+				event.preventDefault()
+				event.stopPropagation()
+				items[0]?.focus()
+				break
+			}
+			case 'End': {
+				event.preventDefault()
+				event.stopPropagation()
+				items[items.length - 1]?.focus()
+				break
+			}
+			case 'Escape': {
+				event.preventDefault()
+				event.stopPropagation()
+				close_menu(true)
+				break
+			}
+			case 'Tab': {
+				close_menu(false)
+				break
+			}
+		}
+	}
 
 	$effect(() => {
 		if (!menu_open) return
 		function handle_doc_click(e: MouseEvent) {
 			if (menu_container_el && !menu_container_el.contains(e.target as Node)) {
-				menu_open = false
+				close_menu(false)
 			}
 		}
 		function handle_doc_keydown(e: KeyboardEvent) {
 			if (e.key === 'Escape') {
-				menu_open = false
+				close_menu(true)
 			}
 		}
 		window.addEventListener('click', handle_doc_click)
@@ -78,18 +165,26 @@
 
 	async function handle_copy_link(event: MouseEvent) {
 		event.stopPropagation()
+		if (!navigator?.clipboard?.writeText) {
+			copy_status = 'failed'
+			setTimeout(() => {
+				copy_status = 'idle'
+			}, 2000)
+			return
+		}
 		const post_url = `${window.location.origin}${resolve('/posts/[id]', { id: post.id })}`
 		try {
-			if (navigator?.clipboard?.writeText) {
-				await navigator.clipboard.writeText(post_url)
-			}
-			copied_link = true
+			await navigator.clipboard.writeText(post_url)
+			copy_status = 'copied'
 			setTimeout(() => {
-				copied_link = false
-				menu_open = false
+				copy_status = 'idle'
+				close_menu(true)
 			}, 1000)
 		} catch {
-			menu_open = false
+			copy_status = 'failed'
+			setTimeout(() => {
+				copy_status = 'idle'
+			}, 2000)
 		}
 	}
 
@@ -231,34 +326,49 @@
 		{#if !editing}
 			<div class="relative" bind:this={menu_container_el}>
 				<button
+					bind:this={menu_button_el}
 					type="button"
+					id="menu-button-{post.id}"
 					aria-label="More options"
 					aria-haspopup="menu"
 					aria-expanded={menu_open}
+					aria-controls={menu_open ? `menu-${post.id}` : undefined}
 					onclick={(e) => {
 						e.stopPropagation()
-						menu_open = !menu_open
+						if (menu_open) {
+							close_menu(false)
+						} else {
+							open_menu('first')
+						}
 					}}
-					class="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+					onkeydown={handle_button_keydown}
+					class="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus:bg-slate-100 focus:text-slate-700 focus:outline-none"
 				>
 					<MoreHorizontalIcon class="size-4" />
 				</button>
 				{#if menu_open}
 					<div
+						bind:this={menu_el}
+						id="menu-{post.id}"
 						role="menu"
 						tabindex="-1"
 						aria-label="Post actions"
+						onkeydown={handle_menu_keydown}
 						class="absolute top-full right-0 z-20 mt-1 min-w-[150px] overflow-hidden rounded-xl border border-slate-200/80 bg-white py-1 shadow-lg shadow-slate-900/10 focus:outline-none"
 					>
 						<button
 							type="button"
 							role="menuitem"
+							tabindex="-1"
 							onclick={handle_copy_link}
-							class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
+							class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900 focus:bg-slate-50 focus:text-slate-900 focus:outline-none"
 						>
-							{#if copied_link}
+							{#if copy_status === 'copied'}
 								<CheckIcon class="size-4 text-emerald-600" />
 								<span class="text-emerald-600">Copied!</span>
+							{:else if copy_status === 'failed'}
+								<XIcon class="size-4 text-rose-600" />
+								<span class="text-rose-600">Failed to copy</span>
 							{:else}
 								<CopyIcon class="size-4 text-slate-400" />
 								<span>Copy link</span>
@@ -269,13 +379,14 @@
 							<button
 								type="button"
 								role="menuitem"
+								tabindex="-1"
 								onclick={() => {
-									menu_open = false
+									close_menu(false)
 									draft = active_post.content
 									draft_visibility = active_post.visibility
 									editing = true
 								}}
-								class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
+								class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900 focus:bg-slate-50 focus:text-slate-900 focus:outline-none"
 							>
 								<PencilIcon class="size-4 text-slate-400" />
 								<span>Edit post</span>
@@ -284,11 +395,12 @@
 							<button
 								type="button"
 								role="menuitem"
+								tabindex="-1"
 								onclick={() => {
-									menu_open = false
+									close_menu(false)
 									confirming_delete = true
 								}}
-								class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-rose-600 transition hover:bg-rose-50"
+								class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-rose-600 transition hover:bg-rose-50 focus:bg-rose-50 focus:outline-none"
 							>
 								<TrashIcon class="size-4 text-rose-500" />
 								<span>Delete post</span>
@@ -387,20 +499,22 @@
 	{/if}
 
 	{#if active_post.image_url}
-		<div class="mt-3 overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-50">
+		<div
+			class="relative mt-3 flex aspect-[16/9] max-h-[512px] w-full items-center justify-center overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100"
+		>
 			{#if image_load_failed}
 				<div
 					data-testid="broken-image-fallback"
-					class="flex items-center justify-center gap-2 p-6 text-xs text-slate-400"
+					class="flex h-full w-full flex-col items-center justify-center gap-2 p-6 text-slate-400"
 				>
-					<ImageOffIcon class="size-4 text-slate-400" />
-					<span>Media unavailable</span>
+					<ImageOffIcon class="size-8 text-slate-400" />
+					<span class="text-xs font-medium text-slate-500">Media unavailable</span>
 				</div>
 			{:else}
 				<img
 					src={active_post.image_url}
 					alt="Post attachment"
-					class="max-h-[512px] w-full object-cover"
+					class="h-full w-full object-contain"
 					loading="lazy"
 					onerror={() => (image_load_failed = true)}
 				/>
