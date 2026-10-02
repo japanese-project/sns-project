@@ -3,6 +3,7 @@
 	import CopyIcon from '@lucide/svelte/icons/copy'
 	import HeartIcon from '@lucide/svelte/icons/heart'
 	import GlobeIcon from '@lucide/svelte/icons/globe'
+	import ImageIcon from '@lucide/svelte/icons/image'
 	import ImageOffIcon from '@lucide/svelte/icons/image-off'
 	import LockIcon from '@lucide/svelte/icons/lock'
 	import MessageCircleIcon from '@lucide/svelte/icons/message-circle'
@@ -36,6 +37,32 @@
 	let post_override = $state<PostView | null>(null)
 	let active_post = $derived(post_override ?? post)
 	let image_load_failed = $state(false)
+	let image_loaded = $state(false)
+	let natural_aspect_ratio = $state<number | null>(null)
+
+	$effect(() => {
+		// Reset image loading and failure state when the active post image URL changes
+		void active_post.image_url
+		image_load_failed = false
+		image_loaded = false
+		natural_aspect_ratio = null
+	})
+
+	function handle_image_load(event: Event) {
+		const target = event.currentTarget as HTMLImageElement
+		if (target.naturalWidth && target.naturalHeight) {
+			natural_aspect_ratio = target.naturalWidth / target.naturalHeight
+		}
+		image_loaded = true
+		image_load_failed = false
+	}
+
+	function check_image_cached(node: HTMLImageElement) {
+		if (node.complete && node.naturalWidth && node.naturalHeight) {
+			natural_aspect_ratio = node.naturalWidth / node.naturalHeight
+			image_loaded = true
+		}
+	}
 	let like_override = $state<{ liked: boolean; like_count: number } | null>(null)
 	let comment_override = $state<number | null>(null)
 	let liked = $derived(like_override?.liked ?? active_post.liked_by_me)
@@ -342,7 +369,7 @@
 						}
 					}}
 					onkeydown={handle_button_keydown}
-					class="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus:bg-slate-100 focus:text-slate-700 focus:outline-none"
+					class="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus:bg-slate-100 focus:text-slate-700 focus:outline-none active:scale-95"
 				>
 					<MoreHorizontalIcon class="size-4" />
 				</button>
@@ -354,7 +381,7 @@
 						tabindex="-1"
 						aria-label="Post actions"
 						onkeydown={handle_menu_keydown}
-						class="absolute top-full right-0 z-20 mt-1 min-w-[150px] overflow-hidden rounded-xl border border-slate-200/80 bg-white py-1 shadow-lg shadow-slate-900/10 focus:outline-none"
+						class="absolute top-full right-0 z-20 mt-1 min-w-[155px] overflow-hidden rounded-2xl border border-slate-200/90 bg-white/95 py-1.5 shadow-xl shadow-slate-900/10 backdrop-blur-md focus:outline-none"
 					>
 						<button
 							type="button"
@@ -500,23 +527,47 @@
 
 	{#if active_post.image_url}
 		<div
-			class="relative mt-3 flex aspect-[16/9] max-h-[512px] w-full items-center justify-center overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100"
+			data-testid="post-image-container"
+			data-aspect-ratio={natural_aspect_ratio ? natural_aspect_ratio.toFixed(2) : undefined}
+			class="relative mt-3 flex items-center justify-center overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 transition-all duration-300"
+			style={natural_aspect_ratio
+				? `aspect-ratio: ${natural_aspect_ratio}; max-height: 512px; width: fit-content; max-width: 100%;`
+				: 'min-height: 220px; max-height: 512px; width: 100%;'}
 		>
 			{#if image_load_failed}
 				<div
 					data-testid="broken-image-fallback"
-					class="flex h-full w-full flex-col items-center justify-center gap-2 p-6 text-slate-400"
+					class="flex min-h-[220px] w-full flex-col items-center justify-center gap-2.5 p-6 text-slate-400"
 				>
-					<ImageOffIcon class="size-8 text-slate-400" />
+					<div
+						class="flex size-12 items-center justify-center rounded-full bg-slate-200/70 text-slate-400 shadow-inner"
+					>
+						<ImageOffIcon class="size-6 text-slate-400" />
+					</div>
 					<span class="text-xs font-medium text-slate-500">Media unavailable</span>
 				</div>
 			{:else}
+				{#if !image_loaded}
+					<div
+						data-testid="image-loading-skeleton"
+						class="absolute inset-0 flex animate-pulse items-center justify-center bg-slate-100/90 text-slate-300"
+					>
+						<ImageIcon class="size-8 text-slate-300" />
+					</div>
+				{/if}
 				<img
 					src={active_post.image_url}
 					alt="Post attachment"
-					class="h-full w-full object-contain"
+					class="h-auto max-h-[512px] w-auto max-w-full object-contain transition-opacity duration-300 {!image_loaded
+						? 'opacity-0'
+						: 'opacity-100'}"
 					loading="lazy"
-					onerror={() => (image_load_failed = true)}
+					use:check_image_cached
+					onload={handle_image_load}
+					onerror={() => {
+						image_load_failed = true
+						image_loaded = true
+					}}
 				/>
 			{/if}
 		</div>
@@ -552,20 +603,26 @@
 			onclick={toggle_like}
 			aria-pressed={liked}
 			aria-label={liked ? 'Unlike' : 'Like'}
-			class="flex items-center gap-1.5 transition enabled:hover:text-rose-600 {liked
+			class="group flex items-center gap-1.5 transition-colors enabled:hover:text-rose-600 {liked
 				? 'text-rose-600'
-				: ''}"
+				: 'text-slate-500'}"
 		>
-			<HeartIcon class="size-5 {liked ? 'fill-current' : ''}" />
+			<HeartIcon
+				class="size-5 transition-transform duration-200 group-hover:scale-110 group-active:scale-125 {liked
+					? 'fill-current'
+					: ''}"
+			/>
 			<span class="tabular-nums" data-testid="like-count">{like_count}</span>
 		</button>
 		<button
 			type="button"
 			onclick={() => (comments_override = !show_comments)}
 			aria-expanded={show_comments}
-			class="flex items-center gap-1.5 hover:text-slate-900"
+			class="group flex items-center gap-1.5 text-slate-500 transition-colors hover:text-indigo-600"
 		>
-			<MessageCircleIcon class="size-5" />
+			<MessageCircleIcon
+				class="size-5 transition-transform duration-200 group-hover:scale-110 group-active:scale-95"
+			/>
 			<span class="tabular-nums">{comment_count}</span>
 		</button>
 	</footer>

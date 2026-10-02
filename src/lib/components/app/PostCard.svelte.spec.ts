@@ -98,6 +98,71 @@ describe('PostCard media rendering', () => {
 		await expect.element(page.getByTestId('broken-image-fallback')).toBeInTheDocument()
 		await expect.element(page.getByText('Media unavailable')).toBeInTheDocument()
 	})
+
+	it('resets broken-image failure state when post image_url changes', async () => {
+		const initial_post = make_post({ image_url: '/api/media/initial-404.jpg' })
+		const { rerender } = render(PostCard, { post: initial_post })
+
+		const image = page.getByRole('img', { name: 'Post attachment' })
+		image.element().dispatchEvent(new Event('error'))
+
+		await expect.element(page.getByTestId('broken-image-fallback')).toBeInTheDocument()
+
+		// Update post with a valid image URL
+		const updated_post = { ...initial_post, image_url: '/api/media/valid-photo.jpg' }
+		await rerender({ post: updated_post })
+
+		await expect.element(page.getByTestId('broken-image-fallback')).not.toBeInTheDocument()
+		const new_img = page.getByRole('img', { name: 'Post attachment' })
+		await expect.element(new_img).toBeInTheDocument()
+		await expect.element(new_img).toHaveAttribute('src', '/api/media/valid-photo.jpg')
+	})
+
+	it('preserves natural aspect ratio for square, landscape, and portrait images', async () => {
+		const square_svg =
+			'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="400" height="400" fill="blue"/></svg>'
+		const landscape_svg =
+			'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400"><rect width="800" height="400" fill="green"/></svg>'
+		const portrait_svg =
+			'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="800"><rect width="400" height="800" fill="purple"/></svg>'
+
+		// 1. Square image (1:1 aspect ratio)
+		const { rerender } = render(PostCard, { post: make_post({ image_url: square_svg }) })
+		const container = page.getByTestId('post-image-container')
+		await expect.element(container).toBeInTheDocument()
+
+		// Wait for load/aspect ratio calculation
+		await vi.waitFor(() => {
+			const ratio = container.element().getAttribute('data-aspect-ratio')
+			if (!ratio) throw new Error('aspect ratio not yet calculated')
+			expect(Number.parseFloat(ratio)).toBeCloseTo(1.0, 1)
+		})
+		expect(container.element().style.aspectRatio).toMatch(/^1(\s*\/\s*1)?$/)
+		const square_rect = container.element().getBoundingClientRect()
+		expect(Math.abs(square_rect.width - square_rect.height)).toBeLessThanOrEqual(4)
+
+		// 2. Landscape image (2:1 aspect ratio)
+		await rerender({ post: make_post({ image_url: landscape_svg }) })
+		await vi.waitFor(() => {
+			const ratio = container.element().getAttribute('data-aspect-ratio')
+			if (!ratio) throw new Error('aspect ratio not yet calculated')
+			expect(Number.parseFloat(ratio)).toBeCloseTo(2.0, 1)
+		})
+		expect(container.element().style.aspectRatio).toMatch(/^2(\s*\/\s*1)?$/)
+		const landscape_rect = container.element().getBoundingClientRect()
+		expect(landscape_rect.width).toBeGreaterThan(landscape_rect.height)
+
+		// 3. Portrait image (0.5 aspect ratio)
+		await rerender({ post: make_post({ image_url: portrait_svg }) })
+		await vi.waitFor(() => {
+			const ratio = container.element().getAttribute('data-aspect-ratio')
+			if (!ratio) throw new Error('aspect ratio not yet calculated')
+			expect(Number.parseFloat(ratio)).toBeCloseTo(0.5, 1)
+		})
+		expect(container.element().style.aspectRatio).toMatch(/^0\.5(\s*\/\s*1)?$/)
+		const portrait_rect = container.element().getBoundingClientRect()
+		expect(portrait_rect.height).toBeGreaterThan(portrait_rect.width)
+	})
 })
 
 describe('PostCard action menu', () => {

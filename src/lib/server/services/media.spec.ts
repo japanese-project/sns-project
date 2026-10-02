@@ -1,6 +1,11 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import type { Db } from '../db'
-import { cleanup_orphaned_media, get_storage_stats, identify_orphaned_media } from './media'
+import {
+	cleanup_orphaned_media,
+	get_storage_stats,
+	identify_orphaned_media,
+	is_media_referenced,
+} from './media'
 import { create_post } from './posts'
 import { create_test_db, make_user } from './test-db'
 
@@ -99,6 +104,86 @@ describe('Media service and lifecycle', () => {
 
 		// Orphaned object must be deleted
 		const orphan_obj = await bucket.head(orphan_key)
+		expect(orphan_obj).toBeNull()
+	})
+
+	it('checks media reference status accurately', async () => {
+		const key = 'check-ref.jpg'
+		await bucket.put(key, new Uint8Array([1, 2]), {
+			customMetadata: { userId: alice, uploadedAt: Date.now().toString() },
+		})
+		expect(await is_media_referenced(db, key)).toBe(false)
+
+		await create_post(
+			db,
+			alice,
+			{
+				content: 'Post with ref',
+				visibility: 'public',
+				imageUrl: `/api/media/${key}`,
+			},
+			bucket,
+		)
+
+		expect(await is_media_referenced(db, key)).toBe(true)
+	})
+
+	it('prevents race conditions by re-checking reference immediately before deletion', async () => {
+		const raced_key = 'raced-item.jpg'
+		const true_orphan_key = 'true-orphan.jpg'
+
+		await bucket.put(raced_key, new Uint8Array([1, 2, 3]), {
+			customMetadata: { userId: alice, uploadedAt: Date.now().toString() },
+		})
+		await bucket.put(true_orphan_key, new Uint8Array([4, 5]), {
+			customMetadata: { userId: alice, uploadedAt: Date.now().toString() },
+		})
+
+		// Use a proxy wrapper on R2Bucket to simulate concurrent post creation:
+		// Right after orphan candidates are identified (after list() finishes),
+		// a post is created referencing raced_key before deletion happens.
+		let post_created = false
+		const proxy_bucket = new Proxy(bucket, {
+			get(target, prop, receiver) {
+				const value = Reflect.get(target, prop, receiver)
+				if (prop === 'list') {
+					return async (...args: unknown[]) => {
+						const list_fn = value as (...a: unknown[]) => Promise<R2Objects>
+						const res = await list_fn.apply(target, args)
+						if (!post_created) {
+							post_created = true
+							await create_post(
+								db,
+								alice,
+								{
+									content: 'Concurrent attachment during cleanup window',
+									visibility: 'public',
+									imageUrl: `/api/media/${raced_key}`,
+								},
+								bucket,
+							)
+						}
+						return res
+					}
+				}
+				if (typeof value === 'function') {
+					return value.bind(target)
+				}
+				return value
+			},
+		})
+
+		const result = await cleanup_orphaned_media(db, proxy_bucket, 0)
+		// raced_key must NOT be deleted because it became referenced before deletion
+		expect(result.deleted_keys).not.toContain(raced_key)
+		expect(result.deleted_keys).toContain(true_orphan_key)
+
+		// Verify raced_key is still intact in R2
+		const raced_obj = await bucket.head(raced_key)
+		expect(raced_obj).not.toBeNull()
+
+		// Verify true_orphan_key was deleted
+		const orphan_obj = await bucket.head(true_orphan_key)
 		expect(orphan_obj).toBeNull()
 	})
 })

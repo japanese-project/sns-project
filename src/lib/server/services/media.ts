@@ -1,4 +1,4 @@
-import { isNotNull } from 'drizzle-orm'
+import { eq, isNotNull } from 'drizzle-orm'
 import type { Db } from '../db'
 import { post } from '../db/schema'
 
@@ -136,7 +136,22 @@ export async function identify_orphaned_media(
 }
 
 /**
+ * Checks whether an R2 key is currently referenced by any post in the database.
+ */
+export async function is_media_referenced(db: Db, key: string): Promise<boolean> {
+	const image_url = `/api/media/${key}`
+	const rows = await db
+		.select({ id: post.id })
+		.from(post)
+		.where(eq(post.imageUrl, image_url))
+		.limit(1)
+	return rows.length > 0
+}
+
+/**
  * Deletes orphaned media files from R2 storage.
+ * Re-checks post references immediately before deleting each file to prevent races
+ * with posts created or updated concurrently.
  */
 export async function cleanup_orphaned_media(
 	db: Db,
@@ -148,6 +163,12 @@ export async function cleanup_orphaned_media(
 	let reclaimed_bytes = 0
 
 	for (const item of orphaned) {
+		// Re-check reference immediately before deletion to prevent race condition
+		const referenced = await is_media_referenced(db, item.key)
+		if (referenced) {
+			continue
+		}
+
 		await media_bucket.delete(item.key)
 		deleted_keys.push(item.key)
 		reclaimed_bytes += item.size
