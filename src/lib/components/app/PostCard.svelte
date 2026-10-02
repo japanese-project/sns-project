@@ -1,4 +1,5 @@
 <script lang="ts">
+	/* eslint-disable svelte/no-navigation-without-resolve */
 	import CheckIcon from '@lucide/svelte/icons/check'
 	import CopyIcon from '@lucide/svelte/icons/copy'
 	import HeartIcon from '@lucide/svelte/icons/heart'
@@ -17,6 +18,7 @@
 	import { MAX_POST_LENGTH } from '$lib/limits'
 	import { relative_time } from '$lib/time'
 	import type { PostView } from '$lib/types'
+	import { parse_content } from '$lib/content'
 	import Avatar from './Avatar.svelte'
 	import Comments from './Comments.svelte'
 
@@ -327,17 +329,6 @@
 			void goto(resolve('/posts/[id]', { id: post.id }))
 		}
 	}
-
-	function parse_hashtags(text: string) {
-		const regex = /(#[a-zA-Z0-9_\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]+)/g
-		const parts = text.split(regex)
-		return parts.map((part) => {
-			if (part.startsWith('#') && part.length > 1) {
-				return { type: 'tag' as const, text: part }
-			}
-			return { type: 'text' as const, text: part }
-		})
-	}
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -541,11 +532,22 @@
 			<p
 				class="mt-4 text-lg leading-relaxed [overflow-wrap:anywhere] break-words whitespace-pre-wrap text-slate-900"
 			>
-				{#each parse_hashtags(active_post.content) as segment, i (i)}
+				{#each parse_content(active_post.content) as segment, i (i)}
 					{#if segment.type === 'tag'}
 						<a
 							href="{resolve('/explore')}?q={encodeURIComponent(segment.text)}"
 							class="font-medium text-indigo-600 hover:text-indigo-700 hover:underline"
+							onclick={(e) => e.stopPropagation()}
+						>
+							{segment.text}
+						</a>
+					{:else if segment.type === 'link'}
+						<a
+							href={segment.href}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="font-medium [overflow-wrap:anywhere] break-all text-indigo-600 hover:text-indigo-700 hover:underline"
+							onclick={(e) => e.stopPropagation()}
 						>
 							{segment.text}
 						</a>

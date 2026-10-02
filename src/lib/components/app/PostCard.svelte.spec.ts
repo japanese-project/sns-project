@@ -379,4 +379,20 @@ describe('PostCard action menu', () => {
 
 		await expect.element(page.getByRole('menuitem', { name: 'Copy link' })).not.toBeInTheDocument()
 	})
+
+	it('renders URLs in post content as clickable external links', async () => {
+		const post = make_post({
+			content: 'Read more at https://example.com/article and #tech',
+		})
+		render(PostCard, { post })
+
+		const link = page.getByRole('link', { name: 'https://example.com/article' })
+		await expect.element(link).toBeInTheDocument()
+		await expect.element(link).toHaveAttribute('href', 'https://example.com/article')
+		await expect.element(link).toHaveAttribute('target', '_blank')
+		await expect.element(link).toHaveAttribute('rel', 'noopener noreferrer')
+
+		const tag = page.getByRole('link', { name: '#tech' })
+		await expect.element(tag).toBeInTheDocument()
+	})
 })

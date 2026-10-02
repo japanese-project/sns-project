@@ -1,10 +1,12 @@
 <script lang="ts">
+	/* eslint-disable svelte/no-navigation-without-resolve */
 	import { onMount } from 'svelte'
 	import { resolve } from '$app/paths'
 	import { api } from '$lib/api'
 	import { MAX_COMMENT_LENGTH } from '$lib/limits'
 	import { relative_time } from '$lib/time'
 	import type { CommentView, UserSummary } from '$lib/types'
+	import { parse_content } from '$lib/content'
 	import Avatar from './Avatar.svelte'
 
 	let { post_id, on_count }: { post_id: string; on_count: (n: number) => void } = $props()
@@ -68,17 +70,6 @@
 		} finally {
 			submitting = false
 		}
-	}
-
-	function parse_hashtags(text: string) {
-		const regex = /(#[a-zA-Z0-9_\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]+)/g
-		const parts = text.split(regex)
-		return parts.map((part) => {
-			if (part.startsWith('#') && part.length > 1) {
-				return { type: 'tag' as const, text: part }
-			}
-			return { type: 'text' as const, text: part }
-		})
 	}
 	let editing_comment_id = $state<string | null>(null)
 	let edit_draft = $state('')
@@ -202,11 +193,22 @@
 							class="font-medium text-indigo-600 hover:underline">@{target_author.username}</a
 						>&nbsp;
 					{/if}
-					{#each parse_hashtags(comment.content) as segment, i (i)}
+					{#each parse_content(comment.content) as segment, i (i)}
 						{#if segment.type === 'tag'}
 							<a
 								href="{resolve('/explore')}?q={encodeURIComponent(segment.text)}"
 								class="font-medium text-indigo-600 hover:underline"
+								onclick={(e) => e.stopPropagation()}
+							>
+								{segment.text}
+							</a>
+						{:else if segment.type === 'link'}
+							<a
+								href={segment.href}
+								target="_blank"
+								rel="noopener noreferrer"
+								class="font-medium [overflow-wrap:anywhere] break-all text-indigo-600 hover:underline"
+								onclick={(e) => e.stopPropagation()}
 							>
 								{segment.text}
 							</a>

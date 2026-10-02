@@ -1,4 +1,5 @@
 <script lang="ts">
+	/* eslint-disable svelte/no-navigation-without-resolve */
 	import { goto } from '$app/navigation'
 	import { resolve } from '$app/paths'
 	import LogOutIcon from '@lucide/svelte/icons/log-out'
@@ -9,6 +10,7 @@
 	import EditProfileModal from '$lib/components/app/EditProfileModal.svelte'
 	import FollowButton from '$lib/components/app/FollowButton.svelte'
 	import PostList from '$lib/components/app/PostList.svelte'
+	import { parse_content } from '$lib/content'
 	import type { ProfileView } from '$lib/types'
 
 	let { data } = $props()
@@ -93,8 +95,30 @@
 				</div>
 
 				{#if profile.bio}
-					<p class="mt-2.5 text-sm leading-relaxed whitespace-pre-wrap text-slate-700">
-						{profile.bio}
+					<p
+						class="mt-2.5 text-sm leading-relaxed [overflow-wrap:anywhere] break-words whitespace-pre-wrap text-slate-700"
+					>
+						{#each parse_content(profile.bio) as segment, i (i)}
+							{#if segment.type === 'tag'}
+								<a
+									href="{resolve('/explore')}?q={encodeURIComponent(segment.text)}"
+									class="font-medium text-indigo-600 hover:text-indigo-700 hover:underline"
+								>
+									{segment.text}
+								</a>
+							{:else if segment.type === 'link'}
+								<a
+									href={segment.href}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="font-medium [overflow-wrap:anywhere] break-all text-indigo-600 hover:text-indigo-700 hover:underline"
+								>
+									{segment.text}
+								</a>
+							{:else}
+								{segment.text}
+							{/if}
+						{/each}
 					</p>
 				{/if}
 
