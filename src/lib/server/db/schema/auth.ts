@@ -19,6 +19,7 @@ export const user = sqliteTable(
 		username: text('username'),
 		bio: text('bio'),
 		interests: text('interests'),
+		bannerColor: text('banner_color'),
 		onboarded: integer('onboarded', { mode: 'boolean' }).notNull().default(false),
 		createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 		updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),

@@ -3,6 +3,7 @@
 	import { resolve } from '$app/paths'
 	import XIcon from '@lucide/svelte/icons/x'
 	import { api } from '$lib/api'
+	import { BANNER_THEMES, get_banner_class } from '$lib/banner-themes'
 	import { MAX_BIO_LENGTH, MAX_NAME_LENGTH } from '$lib/limits'
 	import type { UserSummary } from '$lib/types'
 
@@ -12,10 +13,16 @@
 		on_close,
 		on_saved,
 	}: {
-		user: UserSummary & { bio?: string | null }
+		user: UserSummary & { bio?: string | null; banner_color?: string | null }
 		current_interests?: string[]
 		on_close: () => void
-		on_saved: (updated: UserSummary & { bio?: string | null; interests?: string[] }) => void
+		on_saved: (
+			updated: UserSummary & {
+				bio?: string | null
+				interests?: string[]
+				banner_color?: string | null
+			},
+		) => void
 	} = $props()
 
 	const available_interests = [
@@ -36,6 +43,7 @@
 	let name = $state('')
 	let username = $state('')
 	let bio = $state('')
+	let banner_color = $state('default')
 	let selected_interests = $state<string[]>([])
 	let saving = $state(false)
 	let error_message = $state<string | null>(null)
@@ -44,6 +52,7 @@
 		name = user.name
 		username = user.username ?? ''
 		bio = user.bio ?? ''
+		banner_color = user.banner_color || 'default'
 		selected_interests = [...current_interests]
 	})
 
@@ -102,18 +111,18 @@
 		error_message = null
 
 		try {
-			const updated = await api<UserSummary & { bio: string | null; interests: string | null }>(
-				'/api/users/me',
-				{
-					method: 'PATCH',
-					body: {
-						name: trimmed_name,
-						username: trimmed_username,
-						bio: trimmed_bio.length > 0 ? trimmed_bio : null,
-						interests: selected_interests,
-					},
+			const updated = await api<
+				UserSummary & { bio: string | null; interests: string | null; banner_color: string | null }
+			>('/api/users/me', {
+				method: 'PATCH',
+				body: {
+					name: trimmed_name,
+					username: trimmed_username,
+					bio: trimmed_bio.length > 0 ? trimmed_bio : null,
+					interests: selected_interests,
+					banner_color: banner_color === 'default' ? null : banner_color,
 				},
-			)
+			})
 			// Parse interests back to array for the caller
 			let parsed_interests: string[] = []
 			if (updated.interests) {
@@ -239,6 +248,40 @@
 					placeholder="Tell people a little bit about yourself…"
 					class="mt-2 w-full resize-none border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 text-sm leading-relaxed text-slate-900 transition outline-none focus:border-slate-900 focus:ring-0 focus:outline-none"
 				></textarea>
+			</div>
+
+			<!-- Header Banner Theme -->
+			<div>
+				<span class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase">
+					Header Banner Theme
+				</span>
+				<p class="mt-0.5 text-[0.68rem] text-slate-400">
+					Choose a color gradient for your profile banner.
+				</p>
+				<div
+					data-testid="banner-preview"
+					class="mt-2 h-14 w-full rounded-xl {get_banner_class(
+						banner_color,
+					)} border border-slate-200/60 shadow-inner"
+				></div>
+				<div class="mt-3 grid grid-cols-4 gap-2">
+					{#each BANNER_THEMES as theme (theme.id)}
+						<button
+							type="button"
+							onclick={() => (banner_color = theme.id)}
+							aria-label="{theme.name} banner theme"
+							class="group relative flex h-9 items-center justify-center rounded-lg border-2 transition {banner_color ===
+							theme.id
+								? 'border-slate-900 ring-2 ring-slate-900/20'
+								: 'border-transparent hover:scale-105'}"
+						>
+							<span class="absolute inset-0.5 rounded-md {theme.preview_class}"></span>
+							{#if banner_color === theme.id}
+								<span class="relative text-xs font-bold text-white drop-shadow">✓</span>
+							{/if}
+						</button>
+					{/each}
+				</div>
 			</div>
 
 			<!-- Interests / Hashtag Topics -->

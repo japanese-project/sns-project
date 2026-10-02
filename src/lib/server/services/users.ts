@@ -19,6 +19,8 @@ export function to_user_summary(row: {
 	username: string | null
 	image: string | null
 	bio?: string | null
+	bannerColor?: string | null
+	banner_color?: string | null
 }): UserSummary {
 	return {
 		id: row.id,
@@ -27,6 +29,7 @@ export function to_user_summary(row: {
 		handle: row.username ?? row.id,
 		image: row.image,
 		bio: row.bio ?? null,
+		banner_color: row.bannerColor ?? row.banner_color ?? null,
 	}
 }
 
@@ -92,6 +95,7 @@ export async function find_user_by_handle(db: Db, handle: string) {
 			image: user.image,
 			bio: user.bio,
 			interests: user.interests,
+			bannerColor: user.bannerColor,
 			onboarded: user.onboarded,
 			createdAt: user.createdAt,
 		})
@@ -121,6 +125,7 @@ async function apply_profile_update(
 		username?: unknown
 		bio?: unknown
 		interests?: unknown
+		banner_color?: unknown
 	},
 	extra: { onboarded?: boolean; interests?: string | null } = {},
 ) {
@@ -175,6 +180,12 @@ async function apply_profile_update(
 	}
 	if (extra.interests !== undefined) next_interests = extra.interests
 
+	let next_banner_color = current.bannerColor
+	if (input.banner_color !== undefined) {
+		const raw_color = input.banner_color === null ? null : String(input.banner_color).trim()
+		next_banner_color = raw_color && raw_color.length > 0 ? raw_color.slice(0, 50) : null
+	}
+
 	const now = new Date()
 	try {
 		await db
@@ -184,6 +195,7 @@ async function apply_profile_update(
 				username: next_username,
 				bio: next_bio,
 				interests: next_interests,
+				bannerColor: next_banner_color,
 				...(extra.onboarded !== undefined ? { onboarded: extra.onboarded } : {}),
 				updatedAt: now,
 			})
@@ -202,6 +214,7 @@ async function apply_profile_update(
 		username: next_username,
 		bio: next_bio,
 		interests: next_interests,
+		banner_color: next_banner_color,
 		image: current.image,
 	}
 }
@@ -214,6 +227,7 @@ export async function update_user_profile(
 		username?: unknown
 		bio?: unknown
 		interests?: unknown
+		banner_color?: unknown
 	},
 ) {
 	const next = await apply_profile_update(db, user_id, input)
@@ -228,6 +242,7 @@ export async function complete_onboarding(
 		username?: unknown
 		bio?: unknown
 		interests?: unknown
+		banner_color?: unknown
 		skip?: boolean
 	},
 ) {
@@ -247,7 +262,12 @@ export async function complete_onboarding(
 	await apply_profile_update(
 		db,
 		user_id,
-		{ name: input.name, username: input.username, bio: input.bio },
+		{
+			name: input.name,
+			username: input.username,
+			bio: input.bio,
+			banner_color: input.banner_color,
+		},
 		{ onboarded: true, interests: interests_json },
 	)
 	return { onboarded: true, interests: interests_json }

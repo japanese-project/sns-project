@@ -9,6 +9,7 @@ export interface UserSummary {
 	handle: string
 	image: string | null
 	bio?: string | null
+	banner_color?: string | null
 }
 
 export interface UserListItem extends UserSummary {
@@ -64,6 +65,7 @@ export interface ProfileView {
 	is_following: boolean
 	is_followed_by: boolean
 	is_self: boolean
+	banner_color?: string | null
 }
 
 export interface Page<T> {

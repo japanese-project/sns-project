@@ -37,6 +37,10 @@ import * as notifications_read_api from './notifications/read/+server'
 import * as notifications_api from './notifications/+server'
 import * as unread_count_api from './notifications/unread-count/+server'
 import * as post_comments_api from './posts/[id]/comments/+server'
+import * as media_api from './media/+server'
+import * as media_key_api from './media/[key]/+server'
+import * as media_stats_api from './media/stats/+server'
+import * as media_cleanup_api from './media/cleanup/+server'
 import * as post_like_api from './posts/[id]/like/+server'
 import * as post_api from './posts/[id]/+server'
 import * as posts_api from './posts/+server'
@@ -149,7 +153,11 @@ describe('requests without a session', () => {
 			['GET /api/users/:handle/following', following_api.GET, { params: { handle: 'alice' } }],
 			['GET /api/notifications', notifications_api.GET, {}],
 			['GET /api/notifications/unread-count', unread_count_api.GET, {}],
+			['GET /api/media/:key', media_key_api.GET, { params: { key: 'test.jpg' } }],
+			['GET /api/media/stats', media_stats_api.GET, {}],
 			// writes
+			['POST /api/media', media_api.POST, { method: 'POST' }],
+			['POST /api/media/cleanup', media_cleanup_api.POST, { method: 'POST' }],
 			['POST /api/posts', posts_api.POST, { method: 'POST', body: { content: 'hi' } }],
 			[
 				'PATCH /api/posts/:id',

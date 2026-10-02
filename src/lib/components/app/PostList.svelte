@@ -45,15 +45,16 @@
 		}
 	}
 
-	let last_endpoint = $state(endpoint)
+	let last_endpoint = $state<string | null>(null)
 
 	$effect(() => {
-		if (endpoint !== last_endpoint) {
-			last_endpoint = endpoint
+		const current = endpoint
+		if (last_endpoint !== null && current !== last_endpoint) {
 			next_cursor = null
 			posts = []
 			void load(true)
 		}
+		last_endpoint = current
 	})
 
 	onMount(() => {

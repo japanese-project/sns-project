@@ -57,6 +57,14 @@ describe('update_user_profile', () => {
 		expect(updated.interests).toBe(JSON.stringify(['Technology', 'Music']))
 	})
 
+	it('updates banner_color when provided', async () => {
+		const id = await make_user(db, 'BannerUser')
+		const updated = await update_user_profile(db, id, {
+			banner_color: 'sunset',
+		})
+		expect(updated.banner_color).toBe('sunset')
+	})
+
 	it('rejects invalid username formats', async () => {
 		const id = await make_user(db, 'ValidUser')
 		// Contains spaces or special characters

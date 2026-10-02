@@ -15,6 +15,7 @@ declare global {
 						bio?: string | null
 						interests?: string | null
 						onboarded?: boolean | null
+						isAdmin?: boolean
 				  })
 				| null
 			session: Session | null
@@ -26,6 +27,13 @@ declare global {
 				DB: D1Database
 				AUTH_KV: KVNamespace
 				MEDIA_BUCKET: R2Bucket
+				BOT_CRON_SECRET?: string
+				GROQ_API_KEY?: string
+				OPENAI_API_KEY?: string
+				ADMIN_EMAILS?: string
+				ADMIN_USERNAMES?: string
+				ADMIN_USER_IDS?: string
+				ADMIN_SECRET?: string
 			}
 		}
 	}

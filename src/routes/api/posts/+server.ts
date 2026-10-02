@@ -16,9 +16,9 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 	return json(page)
 }
 
-export const POST: RequestHandler = async ({ locals, request }) => {
+export const POST: RequestHandler = async ({ locals, request, platform }) => {
 	const user_id = require_user_id(locals)
 	const body = await read_json(request)
-	const created = await create_post(locals.db, user_id, body)
+	const created = await create_post(locals.db, user_id, body, platform?.env?.MEDIA_BUCKET)
 	return json(created, { status: 201 })
 }

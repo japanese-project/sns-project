@@ -62,4 +62,24 @@ describe('EditProfileModal: username change', () => {
 		await expect.element(page.getByRole('alert')).toHaveTextContent('Username is already taken')
 		expect(goto).not.toHaveBeenCalled()
 	})
+
+	it('submits selected banner theme when saved', async () => {
+		vi.mocked(api).mockResolvedValue(saved_user('oldname'))
+		render(EditProfileModal)
+
+		const sunset_button = page.getByRole('button', { name: 'Sunset banner theme' })
+		await sunset_button.click()
+
+		await page.getByRole('button', { name: 'Save' }).click()
+
+		await vi.waitFor(() => expect(api).toHaveBeenCalledTimes(1))
+		expect(api).toHaveBeenCalledWith(
+			'/api/users/me',
+			expect.objectContaining({
+				body: expect.objectContaining({
+					banner_color: 'sunset',
+				}),
+			}),
+		)
+	})
 })

@@ -1,11 +1,11 @@
-import { and, desc, eq, gte, lt, or, sql, type SQL } from 'drizzle-orm'
+import { and, desc, eq, gte, lt, ne, or, sql, type SQL } from 'drizzle-orm'
 import { error } from '@sveltejs/kit'
 import type { Db } from '../db'
 import { comment, follow, like, post, user } from '../db/schema'
 import { MAX_POST_LENGTH, MAX_TRENDING_LIMIT, TRENDING_SCAN_LIMIT } from '$lib/limits'
 import type { Page, PostView, TrendingPeriod } from '$lib/types'
-import { validate_text } from '../validation'
 import { clamp_limit, decode_cursor, encode_cursor, like_pattern, new_id } from './cursor'
+import { with_media_lock } from './media'
 import { to_user_summary } from './users'
 
 export type Visibility = 'public' | 'followers-only'
@@ -107,14 +107,23 @@ export async function create_post(
 	db: Db,
 	user_id: string,
 	input: { content?: unknown; visibility?: unknown; imageUrl?: unknown },
+	bucket?: R2Bucket,
 ): Promise<PostView> {
 	const visibility = parse_visibility(input.visibility)
 
 	let image_url: string | null = null
+	let r2_key: string | null = null
 	if (input.imageUrl !== undefined && input.imageUrl !== null) {
 		if (typeof input.imageUrl !== 'string') error(400, 'imageUrl must be a string')
-		image_url = input.imageUrl.trim()
-		if (image_url.length === 0) image_url = null
+		const trimmed = input.imageUrl.trim()
+		if (trimmed.length > 0) {
+			const match = trimmed.match(/^\/api\/media\/([a-zA-Z0-9_-]+\.[a-z0-9]+)(?:\?.*)?$/)
+			if (!match) {
+				error(400, 'Invalid imageUrl')
+			}
+			r2_key = match[1]
+			image_url = trimmed
+		}
 	}
 
 	let content = ''
@@ -130,15 +139,71 @@ export async function create_post(
 
 	const id = new_id()
 	const now = new Date()
-	await db.insert(post).values({
-		id,
-		userId: user_id,
-		content,
-		visibility,
-		imageUrl: image_url,
-		createdAt: now,
-		updatedAt: now,
-	})
+
+	const execute_create = async () => {
+		if (r2_key) {
+			if (bucket) {
+				const head = await bucket.head(r2_key)
+				if (!head) {
+					error(400, 'Media not found')
+				}
+				if (head.customMetadata?.userId && head.customMetadata.userId !== user_id) {
+					error(403, 'Media does not belong to user')
+				}
+			}
+
+			// Ensure media key is not already attached to another post
+			const query_prefix = `/api/media/${r2_key}?`
+			const existing = await db
+				.select({ id: post.id })
+				.from(post)
+				.where(
+					or(
+						eq(post.imageUrl, `/api/media/${r2_key}`),
+						sql`instr(${post.imageUrl}, ${query_prefix}) = 1`,
+					),
+				)
+				.limit(1)
+			if (existing.length > 0) {
+				error(400, 'Media is already attached to another post')
+			}
+		}
+
+		try {
+			await db.insert(post).values({
+				id,
+				userId: user_id,
+				content,
+				visibility,
+				imageUrl: image_url,
+				createdAt: now,
+				updatedAt: now,
+			})
+
+			if (bucket && r2_key) {
+				const head = await bucket.head(r2_key)
+				if (!head) {
+					await db.delete(post).where(eq(post.id, id))
+					error(400, 'Media not found')
+				}
+			}
+		} catch (err) {
+			if (bucket && r2_key) {
+				try {
+					await bucket.delete(r2_key)
+				} catch {
+					// Non-fatal cleanup failure
+				}
+			}
+			throw err
+		}
+	}
+
+	if (r2_key) {
+		await with_media_lock(db, r2_key, execute_create)
+	} else {
+		await execute_create()
+	}
 	return await get_post_or_404(db, user_id, id)
 }
 
@@ -204,7 +269,13 @@ export async function get_post_or_404(db: Db, viewer_id: string, post_id: string
 
 async function require_owned_post(db: Db, user_id: string, post_id: string) {
 	const row = await db
-		.select({ id: post.id, userId: post.userId, visibility: post.visibility })
+		.select({
+			id: post.id,
+			userId: post.userId,
+			visibility: post.visibility,
+			imageUrl: post.imageUrl,
+			content: post.content,
+		})
 		.from(post)
 		.where(eq(post.id, post_id))
 		.get()
@@ -222,20 +293,122 @@ export async function update_post(
 	db: Db,
 	user_id: string,
 	post_id: string,
-	input: { content?: unknown; visibility?: unknown },
+	input: { content?: unknown; visibility?: unknown; imageUrl?: unknown },
+	bucket?: R2Bucket,
 ): Promise<PostView> {
-	await require_owned_post(db, user_id, post_id)
-	const content = validate_text(input.content, MAX_POST_LENGTH, 'Post')
-	const changes: Partial<typeof post.$inferInsert> = { content, updatedAt: new Date() }
+	const owned = await require_owned_post(db, user_id, post_id)
+	const changes: Partial<typeof post.$inferInsert> = { updatedAt: new Date() }
+
+	let new_image_url = owned.imageUrl
+	let new_r2_key: string | null = null
+	let previous_r2_key: string | null = null
+	if (owned.imageUrl) {
+		const match = owned.imageUrl.match(/^\/api\/media\/([a-zA-Z0-9_-]+\.[a-z0-9]+)(?:\?.*)?$/)
+		if (match) previous_r2_key = match[1]
+	}
+
+	if (input.imageUrl !== undefined) {
+		if (input.imageUrl === null || input.imageUrl === '') {
+			new_image_url = null
+		} else if (typeof input.imageUrl === 'string') {
+			const trimmed = input.imageUrl.trim()
+			const match = trimmed.match(/^\/api\/media\/([a-zA-Z0-9_-]+\.[a-z0-9]+)(?:\?.*)?$/)
+			if (!match) error(400, 'Invalid imageUrl')
+			new_r2_key = match[1]
+			new_image_url = trimmed
+		} else {
+			error(400, 'imageUrl must be a string')
+		}
+		changes.imageUrl = new_image_url
+	}
+
+	if (input.content !== undefined) {
+		const text = typeof input.content === 'string' ? input.content.trim() : ''
+		if (text.length > MAX_POST_LENGTH) {
+			error(400, `Post must be at most ${MAX_POST_LENGTH} characters`)
+		}
+		if (text.length === 0 && !new_image_url) {
+			error(400, 'Post must not be empty')
+		}
+		changes.content = text
+	}
+
 	if (input.visibility !== undefined) changes.visibility = parse_visibility(input.visibility)
-	await db.update(post).set(changes).where(eq(post.id, post_id))
+
+	const execute_update = async () => {
+		if (new_r2_key) {
+			if (bucket) {
+				const head = await bucket.head(new_r2_key)
+				if (!head) error(400, 'Media not found')
+				if (head.customMetadata?.userId && head.customMetadata.userId !== user_id) {
+					error(403, 'Media does not belong to user')
+				}
+			}
+
+			// Ensure media is not already attached to another post
+			if (new_r2_key !== previous_r2_key) {
+				const query_prefix = `/api/media/${new_r2_key}?`
+				const existing = await db
+					.select({ id: post.id })
+					.from(post)
+					.where(
+						and(
+							or(
+								eq(post.imageUrl, `/api/media/${new_r2_key}`),
+								sql`instr(${post.imageUrl}, ${query_prefix}) = 1`,
+							),
+							ne(post.id, post_id),
+						),
+					)
+					.limit(1)
+				if (existing.length > 0) {
+					error(400, 'Media is already attached to another post')
+				}
+			}
+		}
+
+		await db.update(post).set(changes).where(eq(post.id, post_id))
+
+		// Clean up previous R2 object ONLY AFTER database update succeeds
+		if (bucket && previous_r2_key && previous_r2_key !== new_r2_key) {
+			try {
+				await bucket.delete(previous_r2_key)
+			} catch {
+				// Non-fatal
+			}
+		}
+	}
+
+	if (new_r2_key) {
+		await with_media_lock(db, new_r2_key, execute_update)
+	} else {
+		await execute_update()
+	}
+
 	return await get_post_or_404(db, user_id, post_id)
 }
 
 /** Likes, comments and notifications are removed by ON DELETE CASCADE, not app code. */
-export async function delete_post(db: Db, user_id: string, post_id: string): Promise<void> {
-	await require_owned_post(db, user_id, post_id)
+export async function delete_post(
+	db: Db,
+	user_id: string,
+	post_id: string,
+	bucket?: R2Bucket,
+): Promise<void> {
+	const owned = await require_owned_post(db, user_id, post_id)
 	await db.delete(post).where(eq(post.id, post_id))
+
+	// Clean up R2 object ONLY AFTER database deletion succeeds
+	if (bucket && owned.imageUrl) {
+		const match = owned.imageUrl.match(/^\/api\/media\/([a-zA-Z0-9_-]+\.[a-z0-9]+)(?:\?.*)?$/)
+		if (match) {
+			try {
+				await bucket.delete(match[1])
+			} catch {
+				// Non-fatal
+			}
+		}
+	}
 }
 
 /**

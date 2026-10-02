@@ -9,8 +9,10 @@
 
 <script lang="ts">
 	import { page } from '$app/state'
+	import { goto } from '$app/navigation'
 	import { resolve } from '$app/paths'
 	import BellIcon from '@lucide/svelte/icons/bell'
+	import BotIcon from '@lucide/svelte/icons/bot'
 	import CompassIcon from '@lucide/svelte/icons/compass'
 	import HouseIcon from '@lucide/svelte/icons/house'
 	import LogOutIcon from '@lucide/svelte/icons/log-out'
@@ -37,6 +39,7 @@
 			image?: string | null
 			username?: string | null
 			onboarded?: boolean | null
+			isAdmin?: boolean
 		}
 		title: string
 		header_content?: Snippet
@@ -78,13 +81,13 @@
 	})
 
 	const nav_button =
-		'relative flex size-11 items-center justify-center rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900'
+		'relative flex size-11 items-center justify-center rounded-full transition-all duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900'
 	const active = 'bg-black text-white shadow-xs'
 	const idle = 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
 
 	async function handle_sign_out() {
 		await sign_out()
-		window.location.href = '/login'
+		await goto(resolve('/login'))
 	}
 </script>
 
@@ -158,6 +161,18 @@
 		>
 			<Avatar {user} size={28} />
 		</a>
+
+		{#if user.isAdmin}
+			<a
+				href={resolve('/admin/bots')}
+				title="Bot Control Center"
+				aria-label="Bot Control Center"
+				aria-current={path.startsWith('/admin') ? 'page' : undefined}
+				class="{nav_button} {path.startsWith('/admin') ? active : idle}"
+			>
+				<BotIcon class="size-5" />
+			</a>
+		{/if}
 
 		<button
 			type="button"
@@ -233,43 +248,64 @@
 		>
 			<Avatar {user} size={26} />
 		</a>
+
+		{#if user.isAdmin}
+			<a
+				href={resolve('/admin/bots')}
+				aria-label="Bot Control Center"
+				aria-current={path.startsWith('/admin') ? 'page' : undefined}
+				class="{nav_button} {path.startsWith('/admin') ? active : idle}"
+			>
+				<BotIcon class="size-5" />
+			</a>
+		{/if}
+
+		<button
+			type="button"
+			aria-label="Sign out"
+			title="Sign out"
+			onclick={handle_sign_out}
+			class="{nav_button} {idle}"
+		>
+			<LogOutIcon class="size-4" />
+		</button>
 	</nav>
 
 	<!-- Content Layout: two-column flex so sidebar starts at the same top as the header -->
-	<div class="flex min-h-screen w-full items-start px-3 sm:px-4 md:pr-6 md:pl-20 lg:pr-8 lg:pl-24">
-		<!-- Left column: header + main content, centered with max width -->
-		<div class="relative min-w-0 flex-1">
-			<div class="mx-auto w-full max-w-4xl">
-				<!-- Centered Header Pill -->
-				<header class="flex justify-center pt-4 pb-2">
-					<div
-						class="inline-flex items-center gap-3 rounded-full border border-slate-200/80 bg-white/90 p-1.5 shadow-sm shadow-slate-900/5 backdrop-blur-md sm:gap-3.5 sm:px-5 sm:py-2"
+	<div
+		class="flex min-h-screen w-full items-start justify-center px-3 sm:px-4 md:pr-6 md:pl-20 lg:pr-8 lg:pl-24"
+	>
+		<!-- Center column: header + main content, consistently sized and aligned across feeds and posts -->
+		<div class="relative w-full max-w-2xl min-w-0">
+			<!-- Centered Header Pill -->
+			<header class="flex justify-center pt-4 pb-2">
+				<div
+					class="inline-flex items-center gap-3 rounded-full border border-slate-200/80 bg-white/90 p-1.5 shadow-sm shadow-slate-900/5 backdrop-blur-md sm:gap-3.5 sm:px-5 sm:py-2"
+				>
+					{#if header_content}
+						{@render header_content()}
+					{:else}
+						<h1 class="px-2 text-sm font-bold tracking-tight text-slate-900">{title}</h1>
+					{/if}
+
+					<span class="h-4 w-px bg-slate-200"></span>
+
+					<button
+						type="button"
+						onclick={() => composer.show()}
+						class="flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold text-slate-500 transition-all duration-150 hover:bg-slate-100 hover:text-slate-900 active:scale-95 sm:px-2.5"
 					>
-						{#if header_content}
-							{@render header_content()}
-						{:else}
-							<h1 class="px-2 text-sm font-bold tracking-tight text-slate-900">{title}</h1>
-						{/if}
+						<PencilIcon class="size-3.5" />
+						<span class="hidden sm:inline">Share a thought…</span>
+						<span class="sm:hidden">Post</span>
+					</button>
+				</div>
+			</header>
 
-						<span class="h-4 w-px bg-slate-200"></span>
-
-						<button
-							type="button"
-							onclick={() => composer.show()}
-							class="flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 sm:px-2.5"
-						>
-							<PencilIcon class="size-3.5" />
-							<span class="hidden sm:inline">Share a thought…</span>
-							<span class="sm:hidden">Post</span>
-						</button>
-					</div>
-				</header>
-
-				<!-- Main Page Content -->
-				<main class="w-full pt-2 pb-24 md:pb-12">
-					{@render children()}
-				</main>
-			</div>
+			<!-- Main Page Content -->
+			<main class="w-full pt-2 pb-24 md:pb-12">
+				{@render children()}
+			</main>
 		</div>
 
 		<!-- Right column: sidebar — starts at the very top of the page, sticks at header-pill level (top-4 = 16px = pt-4) -->
