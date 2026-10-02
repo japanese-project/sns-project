@@ -16,15 +16,15 @@ describe('PostList', () => {
 		vi.mocked(api).mockImplementation(() => new Promise(() => {}))
 		render(PostList, { endpoint: '/api/posts' })
 
-		await expect.element(page.getByLabelText('Loading posts')).toBeVisible()
+		await expect.element(page.getByLabelText('Loading posts')).toBeInTheDocument()
 	})
 
 	it('shows empty state when no posts', async () => {
 		vi.mocked(api).mockResolvedValue({ items: [], next_cursor: null })
 		render(PostList, { endpoint: '/api/posts', empty_message: 'Custom empty' })
 
-		await vi.waitFor(() => {
-			expect.element(page.getByText('Custom empty')).toBeVisible()
+		await vi.waitFor(async () => {
+			await expect.element(page.getByText('Custom empty')).toBeVisible()
 		})
 	})
 
@@ -32,8 +32,8 @@ describe('PostList', () => {
 		vi.mocked(api).mockRejectedValue(new Error('Network Error'))
 		render(PostList, { endpoint: '/api/posts' })
 
-		await vi.waitFor(() => {
-			expect.element(page.getByRole('alert')).toHaveTextContent('Network Error')
+		await vi.waitFor(async () => {
+			await expect.element(page.getByRole('alert')).toHaveTextContent('Network Error')
 		})
 
 		const retry_btn = page.getByRole('button', { name: 'Try again' })
@@ -43,9 +43,9 @@ describe('PostList', () => {
 		vi.mocked(api).mockResolvedValue({ items: [], next_cursor: null })
 		await retry_btn.click()
 
-		await vi.waitFor(() => {
+		await vi.waitFor(async () => {
 			expect(api).toHaveBeenCalledTimes(2)
-			expect.element(page.getByRole('alert')).not.toBeInTheDocument()
+			await expect.element(page.getByRole('alert')).not.toBeInTheDocument()
 		})
 	})
 })
