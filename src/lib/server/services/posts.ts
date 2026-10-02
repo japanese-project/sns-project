@@ -5,7 +5,7 @@ import { comment, follow, like, post, user } from '../db/schema'
 import { MAX_POST_LENGTH, MAX_TRENDING_LIMIT, TRENDING_SCAN_LIMIT } from '$lib/limits'
 import type { Page, PostView, TrendingPeriod } from '$lib/types'
 import { clamp_limit, decode_cursor, encode_cursor, like_pattern, new_id } from './cursor'
-import { media_lock } from './media'
+import { with_media_lock } from './media'
 import { to_user_summary } from './users'
 
 export type Visibility = 'public' | 'followers-only'
@@ -178,6 +178,14 @@ export async function create_post(
 				createdAt: now,
 				updatedAt: now,
 			})
+
+			if (bucket && r2_key) {
+				const head = await bucket.head(r2_key)
+				if (!head) {
+					await db.delete(post).where(eq(post.id, id))
+					error(400, 'Media not found')
+				}
+			}
 		} catch (err) {
 			if (bucket && r2_key) {
 				try {
@@ -191,7 +199,7 @@ export async function create_post(
 	}
 
 	if (r2_key) {
-		await media_lock.run(r2_key, execute_create)
+		await with_media_lock(db, r2_key, execute_create)
 	} else {
 		await execute_create()
 	}
@@ -370,7 +378,7 @@ export async function update_post(
 	}
 
 	if (new_r2_key) {
-		await media_lock.run(new_r2_key, execute_update)
+		await with_media_lock(db, new_r2_key, execute_update)
 	} else {
 		await execute_update()
 	}

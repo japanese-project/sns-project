@@ -1,13 +1,21 @@
 <script lang="ts">
 	import { resolve } from '$app/paths'
 	import AppShell from '$lib/components/app/AppShell.svelte'
+	import HomeSidebar from '$lib/components/app/HomeSidebar.svelte'
 	import PostCard from '$lib/components/app/PostCard.svelte'
 
 	let { data } = $props()
 </script>
 
 <AppShell user={data.user} title="Post">
-	<div class="mx-auto w-full max-w-2xl">
+	{#snippet right_sidebar()}
+		<HomeSidebar
+			suggested_users={data.suggested_users ?? []}
+			trending_topics={data.trending_topics ?? []}
+		/>
+	{/snippet}
+
+	<div class="w-full">
 		<div class="mb-4">
 			<a
 				href={resolve('/')}

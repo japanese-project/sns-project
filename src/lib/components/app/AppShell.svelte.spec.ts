@@ -66,4 +66,17 @@ describe('AppShell', () => {
 		expect(sign_out).toHaveBeenCalledTimes(1)
 		expect(goto).toHaveBeenCalledWith('/login')
 	})
+
+	it('uses consistent content width max-w-2xl and centered alignment', async () => {
+		render(AppShellHost, { user: mock_user })
+
+		const main = page.getByRole('main')
+		await expect.element(main).toBeInTheDocument()
+
+		// Center container must enforce consistent max-w-2xl width across all page types
+		const container = main.element().closest('.max-w-2xl')
+		expect(container).not.toBeNull()
+		expect(container?.className).toContain('w-full')
+		expect(container?.className).toContain('max-w-2xl')
+	})
 })

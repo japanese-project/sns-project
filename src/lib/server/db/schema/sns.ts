@@ -131,3 +131,9 @@ export const notification = sqliteTable(
 		uniqueIndex('notification_dedupe_key_unique').on(table.dedupeKey),
 	],
 )
+
+export const media_cleanup_lock = sqliteTable('media_cleanup_lock', {
+	key: text('key').primaryKey(),
+	lockedAt: integer('locked_at').notNull(),
+	owner: text('owner').notNull(),
+})

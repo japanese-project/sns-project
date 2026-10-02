@@ -161,4 +161,23 @@ describe('Profile Page Header & Customization', () => {
 		await expect.element(page.getByText('This is my bio')).toBeVisible()
 		await expect.element(page.getByTestId('follower-count')).toHaveTextContent('42')
 	})
+
+	it('arranges avatar and actions in a compact horizontal top bar for mobile responsiveness', async () => {
+		render(ProfilePage, {
+			data: {
+				session: null,
+				user: current_user,
+				profile: mock_self_profile,
+			},
+		})
+
+		const edit_btn = page.getByRole('button', { name: 'Edit Profile' })
+		await expect.element(edit_btn).toBeVisible()
+
+		// Edit button and avatar should be co-located in the top action row
+		const action_bar = edit_btn.element().closest('.flex.items-center.justify-between')
+		expect(action_bar).not.toBeNull()
+		// Action bar uses available horizontal space between avatar and actions
+		expect(action_bar?.className).toContain('justify-between')
+	})
 })

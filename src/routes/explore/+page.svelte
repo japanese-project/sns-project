@@ -3,6 +3,7 @@
 	import SearchIcon from '@lucide/svelte/icons/search'
 	import SparklesIcon from '@lucide/svelte/icons/sparkles'
 	import TrendingUpIcon from '@lucide/svelte/icons/trending-up'
+	import XIcon from '@lucide/svelte/icons/x'
 	import { goto } from '$app/navigation'
 	import { resolve } from '$app/paths'
 	import AppShell from '$lib/components/app/AppShell.svelte'
@@ -84,7 +85,7 @@
 		<div class="relative">
 			<form onsubmit={submit} role="search" class="relative">
 				<SearchIcon
-					class="pointer-events-none absolute top-1/2 left-4 size-4.5 -translate-y-1/2 text-slate-400"
+					class="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-slate-400"
 				/>
 				<input
 					type="search"
@@ -93,8 +94,23 @@
 					maxlength={MAX_SEARCH_LENGTH}
 					placeholder="Search people or posts…"
 					aria-label="Search"
-					class="w-full rounded-2xl border border-slate-200/80 bg-white py-3 pr-4 pl-11 text-sm text-slate-900 shadow-xs transition outline-none placeholder:text-slate-400 focus:border-black focus:ring-1 focus:ring-black"
+					class="w-full rounded-2xl border border-slate-200/80 bg-white py-2.5 pr-9 pl-10 text-sm text-slate-900 shadow-xs transition outline-none placeholder:text-slate-400 focus:border-black focus:ring-1 focus:ring-black"
 				/>
+				{#if input}
+					<button
+						type="button"
+						aria-label="Clear search"
+						onclick={() => {
+							input = ''
+							if (data.results) {
+								search_for('')
+							}
+						}}
+						class="absolute top-1/2 right-3 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+					>
+						<XIcon class="size-3.5" />
+					</button>
+				{/if}
 			</form>
 
 			{#if is_focused}
@@ -157,14 +173,14 @@
 							No trending topics found for {period_labels[data.period ?? 'week'].toLowerCase()}.
 						</p>
 					{:else}
-						<div class="flex flex-wrap gap-x-5 gap-y-2">
+						<div class="flex flex-wrap gap-2">
 							{#each data.discovery.topics as item (typeof item === 'string' ? item : item.tag)}
 								{@const tag_name = typeof item === 'string' ? item : item.tag}
 								{@const post_count = typeof item === 'string' ? null : item.count}
 								<button
 									type="button"
 									onclick={() => search_for(`#${tag_name}`)}
-									class="group flex items-baseline gap-1.5 text-sm font-semibold text-indigo-600 transition hover:text-indigo-800 hover:underline"
+									class="group flex items-baseline gap-1.5 rounded-full border border-slate-200/80 bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-xs transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
 								>
 									<span>#{tag_name}</span>
 									{#if post_count && post_count > 1}

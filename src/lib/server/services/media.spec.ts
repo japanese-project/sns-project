@@ -186,4 +186,69 @@ describe('Media service and lifecycle', () => {
 		const orphan_obj = await bucket.head(true_orphan_key)
 		expect(orphan_obj).toBeNull()
 	})
+
+	it('synchronizes distributed cleanup and attachment across isolated instances via D1 lock', async () => {
+		const distributed_key = 'distributed-test.jpg'
+		await bucket.put(distributed_key, new Uint8Array([7, 8, 9]), {
+			customMetadata: { userId: alice, uploadedAt: Date.now().toString() },
+		})
+
+		// Simulate two separate worker instances:
+		// Instance 1 (Cleanup) acquires lock in DB for distributed_key
+		// Instance 2 (Post creation) attempts to attach distributed_key
+		// Because Instance 1 holds the DB lock, Instance 2 must wait until cleanup finishes.
+		// When cleanup finishes and deletes the object, Instance 2 discovers the object is gone and fails cleanly with 400.
+		let cleanup_started = false
+		let post_error: unknown = null
+
+		const cleanup_promise = cleanup_orphaned_media(
+			db,
+			new Proxy(bucket, {
+				get(target, prop, receiver) {
+					if (prop === 'delete') {
+						return async (...args: unknown[]) => {
+							cleanup_started = true
+							// Give post creation a window to attempt execution concurrently
+							await new Promise((r) => setTimeout(r, 100))
+							const del_fn = Reflect.get(target, prop, receiver) as (
+								...a: unknown[]
+							) => Promise<void>
+							return await del_fn.apply(target, args)
+						}
+					}
+					const val = Reflect.get(target, prop, receiver)
+					return typeof val === 'function' ? val.bind(target) : val
+				},
+			}),
+			0,
+		)
+
+		// Wait until cleanup has entered the delete phase
+		while (!cleanup_started) {
+			await new Promise((r) => setTimeout(r, 10))
+		}
+
+		// Instance 2 attempts to create post concurrently
+		try {
+			await create_post(
+				db,
+				alice,
+				{
+					content: 'Concurrent cross-instance post',
+					visibility: 'public',
+					imageUrl: `/api/media/${distributed_key}`,
+				},
+				bucket,
+			)
+		} catch (err) {
+			post_error = err
+		}
+
+		await cleanup_promise
+
+		// Since cleanup deleted the object under lock, the concurrent post creation safely aborted
+		expect(post_error).toBeDefined()
+		// And DB is clean - no dangling post exists referencing the deleted object
+		expect(await is_media_referenced(db, distributed_key)).toBe(false)
+	})
 })

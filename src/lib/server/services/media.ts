@@ -1,6 +1,6 @@
-import { eq, isNotNull, like, or } from 'drizzle-orm'
+import { and, eq, isNotNull, like, or } from 'drizzle-orm'
 import type { Db } from '../db'
-import { post } from '../db/schema'
+import { media_cleanup_lock, post } from '../db/schema'
 
 export interface MediaStorageStats {
 	total_objects: number
@@ -166,6 +166,68 @@ class KeyedMutex {
 
 export const media_lock = new KeyedMutex()
 
+const lock_ttl_ms = 30_000
+const max_lock_wait_ms = 3_000
+
+/**
+ * Distributed media lock that coordinates orphan cleanup and post creation/updates
+ * across multiple worker instances and server processes using D1 database-level locking,
+ * backed by an in-memory KeyedMutex for local efficiency.
+ */
+export async function with_media_lock<T>(db: Db, key: string, fn: () => Promise<T>): Promise<T> {
+	return await media_lock.run(key, async () => {
+		const owner = crypto.randomUUID()
+		const start_time = Date.now()
+
+		// Acquire distributed DB lock
+		while (true) {
+			const now = Date.now()
+			try {
+				await db.insert(media_cleanup_lock).values({
+					key,
+					lockedAt: now,
+					owner,
+				})
+				break
+			} catch {
+				// Lock entry exists; check if it has expired (stale lock recovery)
+				const [existing] = await db
+					.select()
+					.from(media_cleanup_lock)
+					.where(eq(media_cleanup_lock.key, key))
+					.limit(1)
+
+				if (existing && now - existing.lockedAt > lock_ttl_ms) {
+					// Steal stale lock
+					await db
+						.update(media_cleanup_lock)
+						.set({ lockedAt: now, owner })
+						.where(eq(media_cleanup_lock.key, key))
+					break
+				}
+
+				if (Date.now() - start_time > max_lock_wait_ms) {
+					throw new Error(`Timeout waiting for media lock on ${key}`)
+				}
+
+				await new Promise((resolve) => setTimeout(resolve, 30))
+			}
+		}
+
+		try {
+			return await fn()
+		} finally {
+			try {
+				await db
+					.delete(media_cleanup_lock)
+					.where(and(eq(media_cleanup_lock.key, key), eq(media_cleanup_lock.owner, owner)))
+			} catch {
+				// Non-fatal cleanup
+			}
+		}
+	})
+}
+
 /**
  * Checks whether an R2 key is currently referenced by any post in the database.
  */
@@ -195,7 +257,7 @@ export async function cleanup_orphaned_media(
 	let reclaimed_bytes = 0
 
 	for (const item of orphaned) {
-		await media_lock.run(item.key, async () => {
+		await with_media_lock(db, item.key, async () => {
 			// Re-check reference immediately before deletion under the lock to prevent TOCTOU races
 			const referenced = await is_media_referenced(db, item.key)
 			if (referenced) {
