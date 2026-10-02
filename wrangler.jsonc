@@ -33,7 +33,7 @@
 	"r2_buckets": [
 		{
 			"binding": "MEDIA_BUCKET",
-			"bucket_name": "sns-project-media",
+			"bucket_name": "sns-media",
 		},
 	],
 
@@ -56,7 +56,7 @@
 			"r2_buckets": [
 				{
 					"binding": "MEDIA_BUCKET",
-					"bucket_name": "sns-project-preview-media",
+					"bucket_name": "sns-media-preview",
 				},
 			],
 		},
