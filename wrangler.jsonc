@@ -30,6 +30,13 @@
 		},
 	],
 
+	"r2_buckets": [
+		{
+			"binding": "MEDIA_BUCKET",
+			"bucket_name": "sns-project-media",
+		},
+	],
+
 	"env": {
 		"preview": {
 			"d1_databases": [
@@ -44,6 +51,12 @@
 				{
 					"binding": "AUTH_KV",
 					"id": "289d3352dd844e0cb11b16c95ef1575d",
+				},
+			],
+			"r2_buckets": [
+				{
+					"binding": "MEDIA_BUCKET",
+					"bucket_name": "sns-project-preview-media",
 				},
 			],
 		},
