@@ -100,7 +100,12 @@ jobs:
         run: |
           PREVIEW_URL="${{ steps.deploy.outputs.preview_url }}"
           echo "Verifying preview health at $PREVIEW_URL/api/health..."
-          RESPONSE=$(curl --fail --silent --show-error --retry 5 --retry-delay 3 --retry-all-errors "$PREVIEW_URL/api/health")
+
+          # Allow some time for the worker and its newly set secrets to fully propagate
+          sleep 10
+
+          # Retry up to 10 times with 5s delay, as Cloudflare can take some time to route to the new worker correctly
+          RESPONSE=$(curl --fail --silent --show-error --retry 10 --retry-delay 5 --retry-all-errors "$PREVIEW_URL/api/health")
           echo "Health response: $RESPONSE"
           if ! echo "$RESPONSE" | grep -q '"status":"healthy"'; then
             echo "Health check failed: expected 'healthy', received: $RESPONSE"

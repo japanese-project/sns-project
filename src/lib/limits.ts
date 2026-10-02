@@ -1,0 +1,16 @@
+// Shared (client + server) content limits. The server is the source of truth;
+// the client uses the same numbers for character counters and disabled states.
+export const MAX_POST_LENGTH = 500
+export const MAX_MEDIA_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB
+export const MAX_COMMENT_LENGTH = 500
+export const MAX_SEARCH_LENGTH = 100
+export const MAX_BIO_LENGTH = 160
+export const MAX_NAME_LENGTH = 50
+export const MAX_INTEREST_LENGTH = 50
+export const MAX_INTERESTS_COUNT = 10
+export const DEFAULT_PAGE_SIZE = 20
+export const MAX_PAGE_SIZE = 50
+export const MAX_SUGGESTION_LIMIT = 50
+export const MAX_TRENDING_LIMIT = 25
+// Most recent public, hashtagged posts (within the chosen window) that trending analyses.
+export const TRENDING_SCAN_LIMIT = 500

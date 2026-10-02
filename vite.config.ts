@@ -13,6 +13,19 @@ export default defineConfig({
 		projects: [
 			{
 				extends: './vite.config.ts',
+				// Pre-bundle deps that component tests import, so vite doesn't discover them mid-run
+				// and reload (which loads a second Svelte copy and breaks the first run on a cold cache).
+				optimizeDeps: {
+					include: [
+						'@lucide/svelte/icons/x',
+						'@lucide/svelte/icons/image',
+						'@lucide/svelte/icons/more-horizontal',
+						'@lucide/svelte/icons/copy',
+						'@lucide/svelte/icons/check',
+						'@lucide/svelte/icons/log-out',
+						'@lucide/svelte/icons/bot',
+					],
+				},
 				test: {
 					name: 'client',
 					browser: {

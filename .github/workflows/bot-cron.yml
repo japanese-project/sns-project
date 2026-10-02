@@ -1,0 +1,39 @@
+name: Automated Bot Content Seeder
+
+on:
+  schedule:
+    # Runs every 3 hours
+    - cron: '0 */3 * * *'
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: 'Target Application URL'
+        required: false
+        default: 'https://sns-project.sreng087.workers.dev'
+
+jobs:
+  seed-content:
+    name: Run Bot Feed Cycle
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Bot Cron
+        run: |
+          TARGET="${{ inputs.target_url || vars.PRODUCTION_URL || 'https://sns-project.sreng087.workers.dev' }}"
+          echo "Triggering bot cron cycle at $TARGET/api/internal/bot-cron..."
+
+          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST "$TARGET/api/internal/bot-cron" \
+            -H "Authorization: Bearer ${{ secrets.BOT_CRON_SECRET }}" \
+            -H "Content-Type: application/json")
+
+          HTTP_BODY=$(echo "$RESPONSE" | sed -e '$d')
+          HTTP_STATUS=$(echo "$RESPONSE" | tail -n1 | cut -d':' -f2)
+
+          echo "Status: $HTTP_STATUS"
+          echo "Response: $HTTP_BODY"
+
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "❌ Bot cycle failed with HTTP status $HTTP_STATUS"
+            exit 1
+          fi
+
+          echo "✅ Bot cycle completed successfully!"

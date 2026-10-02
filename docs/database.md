@@ -4,7 +4,7 @@ The MVP uses a relational database for application data: Cloudflare D1 (SQLite) 
 
 The schema is defined in `src/lib/server/db/schema/` (`auth.ts` for Better Auth's core tables, `sns.ts` for application tables) and the initial migration lives in `src/lib/server/db/migrations/`. Run `pnpm run db:generate` after schema changes, then `pnpm run db:migrate:local` (or `:remote`) to apply.
 
-The `notification` table described below is planned for Phase 5 and is not yet part of the schema.
+The `notification` table and `user.username` were added in migration `0001`.
 
 ## Core entities
 
@@ -39,6 +39,10 @@ erDiagram
         string name
         string email UK
         string image
+        string username UK
+        string bio
+        string interests
+        boolean onboarded
         datetime created_at
     }
 
@@ -80,6 +84,7 @@ erDiagram
         string type
         string post_id FK
         string comment_id FK
+        string dedupe_key UK
         boolean read
         datetime created_at
     }
@@ -95,6 +100,19 @@ erDiagram
 - Deleting a post cascades to its likes and comments at the database level.
 - Comments/replies inherit the visibility of their parent post.
 - Better Auth's generated core tables remain authoritative for auth-specific fields; app-specific profile fields should not duplicate auth data without a reason.
+
+## Usernames
+
+`user.username` is a nullable, unique, lowercase handle used in `/u/:username`. It is nullable so the column could be added without a backfill (Expand phase). It is assigned lazily by `ensure_username` (derived from the email, with a numeric suffix on collision) the first time a signed-in user makes a request. Users that somehow have no username are still reachable at `/u/<user id>`.
+
+## Notification de-duplication policy
+
+- **like**: at most one notification per (actor, post). Unliking deletes it, so like → unlike → like produces exactly one again.
+- **follow**: at most one notification per (actor, recipient). Unfollowing deletes it.
+- **comment**: one notification per comment, sent to the post author and, for replies, the parent comment's author.
+- Nobody is notified about their own actions.
+
+Like/follow de-duplication is enforced by the unique `notification.dedupe_key` (`like:<actor>:<post>` / `follow:<actor>:<recipient>`); comment notifications leave it NULL.
 
 ## Migration plan
 

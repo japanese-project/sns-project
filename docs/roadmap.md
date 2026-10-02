@@ -1,199 +1,201 @@
-# Roadmap
+# Roadmap & Product Specification
 
-A small social app — users register, post text updates, follow each other, and interact via likes and comments.
+A social networking service (SNS) where users share updates, follow people, discover content, and engage through likes and comments.
 
-## Scope
+This document serves as the single source of truth for both **backend business logic/authorization** and **expected frontend UX behavior**.
 
-| Area             | Status                 |
-| ---------------- | ---------------------- |
-| Phases 1–5 below | **MVP must-have**      |
-| Post-MVP section | **Later / out of MVP** |
+---
 
-The five MVP phases go in order, each starting once the previous phase is merged to `main`. A feature is not considered complete until its backend authorization rules and the relevant tests are covered.
+## 1. Product Scope & Phase Breakdown
 
-## Authorization rules
+| Phase        | Milestone                | Scope                                                                                                                                                                    | Status      |
+| ------------ | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
+| **Phase 1**  | Foundation               | Scaffolding, Drizzle relational schema, migrations, Google OAuth with Cloudflare KV session cache.                                                                       | Complete    |
+| **Phase 2**  | Posts & Global Feed      | Text posts (500 chars), public vs. followers-only visibility, cursor-paginated feed.                                                                                     | Implemented |
+| **Phase 3**  | Social Engagement        | Likes (idempotent toggle, optimistic UI), comments with 1-level nested replies.                                                                                          | Implemented |
+| **Phase 4**  | Social Graph             | Follow / unfollow with instant feedback, relationship-based visibility unlocks.                                                                                          | Implemented |
+| **Phase 5**  | Completeness & Discovery | Post ownership controls (edit & cascade delete), user profiles (`/u/:username`), follower/following lists, search (`/explore`), in-app notifications (`/notifications`). | Implemented |
+| **Phase 5B** | Media / Image Upload     | Single image attachment per post, served via Cloudflare R2 / Images with CDN caching. _(Split into dedicated issue/PR #19)_                                              | Next        |
+| **Post-MVP** | Advanced Social          | Direct messaging, hashtags/mentions, bookmarks/reposts, private accounts, block/mute, push notifications.                                                                | Later       |
 
-These rules apply to the MVP unless a phase explicitly says otherwise:
+> **Note on Image Upload (#19):**  
+> Image upload is separated from the core Phase 5 PR into a dedicated follow-up. Storing binary assets requires configuring Cloudflare R2 buckets, presigned upload URLs, client-side resizing/compression, CDN caching, and cleanup hooks on post deletion. Isolating this prevents storage plumbing from holding up core social interactions.
 
-| Resource / action            | Public visitor | Authenticated user                | Author / owner | Follower |
-| ---------------------------- | -------------- | --------------------------------- | -------------- | -------- |
-| Read public post             | Yes            | Yes                               | Yes            | Yes      |
-| Read followers-only post     | No             | No, unless they follow the author | Yes            | Yes      |
-| Create post                  | No             | Yes                               | —              | —        |
-| Edit/delete post             | No             | No                                | Yes            | No       |
-| Like/unlike visible post     | No             | Yes                               | Yes            | Yes      |
-| Read/comment on visible post | No             | Yes                               | Yes            | Yes      |
-| Follow/unfollow user         | No             | Yes                               | —              | —        |
+---
 
-**Visibility rule:** followers-only access is based on the relationship between the viewer and the post author. The author can always see their own post.
+## 2. Access Model: Signed-In Users Only
 
-**Comment rule:** comments and replies inherit the visibility of their parent post. A followers-only post must never expose its comments or replies to a viewer who cannot read the post itself.
+The app is for signed-in users only. There is no guest mode: no guest sessions, no signed-out views and no "sign in to continue" prompts inside the app. A request without a session can reach only three things; every other route rejects it itself.
 
-**Public means public:** public posts and their comments are readable without following the author. Mutating actions still require authentication.
+### What a request without a session can reach
 
-**Phase 2 pre-follow behavior:** until Phase 4 creates real follow relationships, a followers-only post is visible only to its author.
+| Path           | Purpose                                                                                                 | Behavior without a session                               |
+| -------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `/login`       | Google sign-in page. Signed-in users are redirected to `/`.                                             | ✅ Reachable                                             |
+| `/api/auth/*`  | Better Auth endpoints the sign-in flow calls (OAuth start/callback, session lookup).                    | ✅ Reachable                                             |
+| `/api/health`  | Deployment health probe used by the preview/production workflows. Returns binding status, no user data. | ✅ Reachable                                             |
+| Any other page | `/`, `/explore`, `/u/*`, `/posts/*`, `/notifications`, `/profile`, ...                                  | ❌ Redirect (302) to `/login`                            |
+| Any other API  | `/api/posts`, `/api/search`, `/api/trending`, `/api/users/*`, `/api/notifications/*`, ...               | ❌ `401` JSON `{ "message": "Authentication required" }` |
 
-### Authorization tests
+There is no central allowlist or guest handling. Every API handler checks the session itself (`require_user_id` → `401`) and every page load does too (`require_session_user` → redirect to `/login`, which also works for client-side navigations), so a session that expires mid-visit lands on `/login` at the next navigation. The only routes without that check are the three above.
 
-At minimum, the implementation must cover:
+`src/routes/route-guards.spec.ts` keeps this from regressing: it discovers every API handler and page load, calls each one with no session, and fails if any does not reject first (before touching the database) or if a page has no server load, with no exceptions. A newly added route that forgets its check therefore fails CI instead of becoming public.
 
-1. Anonymous users can read public posts.
-2. Anonymous users cannot read followers-only posts.
-3. A post author can read their own followers-only post.
-4. A follower can read the followed author's followers-only post.
-5. A non-follower cannot read another user's followers-only post.
-6. A non-follower cannot read comments/replies belonging to a followers-only post.
-7. Only the post owner can edit/delete a post.
-8. A user cannot follow themselves.
-9. Unauthenticated users cannot create, like, comment, follow, edit, or delete.
+### Route Behavior (signed in)
 
-## Phase 1 — Foundation · MVP must-have
+| Route                                   | Behavior                                                                                                                            |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `/` (Home Feed)                         | Following / Global feed. Nav includes Home, Create post, Explore, Notifications, Profile and Sign out. "Share a thought…" composer. |
+| `/explore`                              | Search and discovery; can follow users directly from search results.                                                                |
+| `/u/:username`                          | Profile view. Shows followers-only posts if following. Shows "Follow" / "Unfollow" button (or Edit Profile if own profile).         |
+| `/u/:username/followers` & `/following` | Reads lists and follows/unfollows individuals directly.                                                                             |
+| `/posts/:id` (Permalink)                | Views post, likes, comments, or deletes (if owner).                                                                                 |
+| `/notifications`                        | Views in-app activity, marks items read, views unread badge.                                                                        |
+| `/profile`                              | Redirects (302) to the user's canonical handle `/u/:username`.                                                                      |
 
-**Deliver:** repo scaffold with CI green, full DB schema migrated, and working Google OAuth login (sign in, session persists on reload, logout, protected routes redirect when logged out).
+### Action Authorization Matrix
 
-### Project setup
+| Action                       | Non-follower       | Follower           | Author / Owner          |
+| ---------------------------- | ------------------ | ------------------ | ----------------------- |
+| **Read public post**         | ✅ Allowed         | ✅ Allowed         | ✅ Allowed              |
+| **Read followers-only post** | ❌ 404 (Hidden)    | ✅ Allowed         | ✅ Allowed              |
+| **Create post**              | ✅ Allowed         | —                  | —                       |
+| **Edit own post**            | ❌ 403 Forbidden   | ❌ 403 Forbidden   | ✅ Allowed              |
+| **Delete own post**          | ❌ 403 Forbidden   | ❌ 403 Forbidden   | ✅ Allowed (Cascades)   |
+| **Like / unlike post**       | ✅ If post visible | ✅ If post visible | ✅ Allowed              |
+| **Comment / reply**          | ✅ If post visible | ✅ If post visible | ✅ Allowed              |
+| **Follow / unfollow user**   | ✅ Allowed         | ✅ Allowed         | ❌ 400 (No self-follow) |
+| **View notifications**       | ✅ Own only        | ✅ Own only        | ✅ Own only             |
 
-- Repo scaffold, env vars, DB connection, CI passing
-- **Backend:** Drizzle schema + migrations wired to the relational database; schema covers the core app entities in [database.md](./database.md)
-- **Frontend:** base layout, routing skeleton
+**Key Authorization Principles:**
 
-### Auth (Login with Google)
+1. **Signed-in only:** every feature, including reading public posts, profiles and follower lists, requires a session. Post visibility (`public` vs. `followers-only`) is a rule between signed-in users, not between signed-in users and visitors.
+2. **Never leak existence:** If a user requests a post or profile they are not authorized to see (e.g. a followers-only post requested by a non-follower), the API and page MUST return **404 Not Found**, never 403.
+3. **Cascading visibility:** Comments and replies strictly inherit the visibility of their parent post.
+4. **No guest logic in the app:** components and services assume a signed-in viewer. There are no `signed_in` flags, nullable viewers or login nudges to maintain.
 
-- Sign in with Google OAuth — no separate register form, first login creates the account
-- Session persists on reload, logout
-- **Backend:** Better Auth Google OAuth provider (client ID/secret), session endpoints
-- **Frontend:** "Sign in with Google" button, OAuth redirect handling, protected routes redirect to login when logged out
+---
 
-**Watch for:**
+## 3. Profile Model & Lifecycle
 
-- Cloudflare KV is required as Better Auth's `secondaryStorage`: session/verification/rate-limit data is kept there, not just in the database. This must be wired up explicitly in the auth configuration before Phase 1 is complete. KV is not the source of truth for posts, likes, comments, follows, or profiles.
-- Google OAuth client ID/secret need both a local `.env` and a `wrangler secret put` for the deployed Worker. Add an `.env.example` with variable names before implementation lands.
-- The DB schema is being designed for all 5 phases up front. A later requirements change means a migration, not an undocumented schema edit.
+A user's profile is how they appear to other signed-in users.
 
-## Phase 2 — Posts · MVP must-have
+### Data Attributes
 
-**Deliver:** logged-in users can create a text post (public or followers-only), and a paginated global feed shows posts newest-first, honoring visibility.
+- **ID (`id`):** System unique identifier (UUID/CUID).
+- **Display Name (`name`):** Human-friendly name (e.g. "Ada Lovelace"). Non-unique, editable.
+- **Username / Handle (`username`):** URL slug (e.g. `@ada`). Unique, lowercase alphanumeric characters plus underscores (`^[a-z0-9_]{3,30}$`).
+  - _Bootstrap Rule:_ Automatically generated on first login from email prefix. If taken, a numerical suffix is appended.
+  - _Fallback Rule:_ If a user somehow lacks a handle, routes fall back to `/u/<user_id>` gracefully.
+  - _Change Rule (MVP limitation):_ Users may change their username. The old handle is **not** kept as an alias or redirect, so existing links and bookmarks to `/u/<old>` stop resolving. `/u/<user_id>` always resolves and is the stable permalink. The edit form warns about this, and after a successful change the app navigates to the new `/u/<new>` URL (replacing the old history entry) so the address bar matches the profile. _Post-MVP:_ a username-history table plus a reservation policy would allow old handles to redirect.
+- **Bio (`bio`):** Short user bio (max 160 characters), plaintext. Optional; set during onboarding, editable from Edit Profile, and shown on the profile page.
+- **Avatar (`image`):** Profile picture URL. When null, UI renders an accessible initials-based avatar chip.
+- **Joined Date (`created_at`):** Displayed formatted as "Joined Month Year" (e.g., "Joined October 2026").
+- **Stats:** Live counts of Followers, Following, and Posts.
 
-### Create post
+### Future Profile Enhancements (Post-MVP)
 
-- Text only, required, max length (e.g. 500 chars), must be logged in
-- Visibility, chosen at creation: **public** (default) or **followers-only**
-- **Backend:** create-post endpoint — validate non-empty + max length + visibility enum, attach author + timestamp
-- **Frontend:** composer with character counter, public/followers-only toggle, disabled submit when invalid
+- **Account Privacy:** Toggle between an open profile (any signed-in user can view it) and an approval-required private profile.
+- **Moderation:** Block and mute lists to protect users from unwanted interactions.
 
-### Feed
+---
 
-- Global — shows posts from all users, newest first, paginated (not filtered to who you follow)
-- Followers-only posts are hidden from everyone except the author and their followers
-- Each post shows author name + timestamp
-- **Backend:** list-posts endpoint, filtered to `visibility = public OR author = viewer OR viewer follows author`, paginated, joins author
-- **Frontend:** feed list, loading + empty states, "load more" / infinite scroll
+## 4. Feed & Discovery Models
 
-**Watch for:**
+To allow clean platform growth, content delivery is structured into two distinct concepts:
 
-- The visibility filter depends on the `follows` table. Write the anonymous/non-follower/author visibility tests now, then repeat the follower case after Phase 4.
-- Pick a pagination strategy now: cursor-based (`created_at`, `id`) is recommended over offset.
+### 1. Home Feed (`/`)
 
-## Phase 3 — Engagement · MVP must-have
+- **Personal stream:** In MVP, displays visible posts newest-first. Evolves post-MVP to prioritize posts by followed users alongside own posts.
+- **Pagination:** Strict cursor pagination on `(created_at, id)` descending. Prevents duplicate items or skips when new posts are created while scrolling.
 
-**Deliver:** users can like/unlike a post with a visible count, and comment on posts with one level of nested replies.
+### 2. Explore & Search (`/explore`)
 
-### Like
+- **Discovery Engine:** Global discovery space for finding new voices and topics.
+- **People Search:** Case-insensitive prefix/sub-string search on `@username` and display name.
+- **Post Search:** Full-text substring search across visible posts with SQL wildcard escaping (`%` and `_`).
+- **Follow directly:** Users can follow people directly from search result rows with immediate optimistic UI feedback.
 
-- One like per user per post (toggle, not stack), visible count, must be logged in
-- **Backend:** `likes` table with unique (user, post), toggle endpoint, count
-- **Frontend:** like button reflects current state, optimistic update on click
+### 3. Discovery Behavior & Known Limitations (MVP)
 
-### Comment
+These are deliberate trade-offs for the expected workload (< 10k users / posts). Each is bounded per request.
 
-- Text required, max length, must be logged in
-- Two levels: top-level comments (oldest-first under the post) and one-level replies to a comment (oldest-first under their parent)
-- Replying to a reply attaches to that reply's top-level parent — no deeper nesting
-- **Backend:** `comments` table with nullable `parent_comment_id` (self-referencing), create/list endpoints, attach author + timestamp, validation rejects a `parent_comment_id` that already has a parent
-- **Frontend:** comment list with replies nested one level under their parent, "Reply" button on top-level comments only
+- **People suggestions by interest:** Matches against **all** users in the database (interests are matched in SQL over the stored JSON list), excluding yourself and people you follow, newest accounts first, up to the requested limit (max 50). There is no "latest N users" window. Matching is case-insensitive for ASCII only. It still scans the user table per request; at larger scale, normalise interests into an indexed `user_interest` table.
+- **Trending topics:** Computed from a **sample**: the 500 most recent public posts that contain a `#` within the selected window (`today` / `week` / `month`). Posts without a hashtag don't use up that budget. Once a window holds more than 500 hashtagged posts, tags whose posts fall outside the newest 500 drop out even if still active, and counts are per sampled post rather than exact totals. At larger scale, use a materialized tag-count table or scheduled job.
+- **Post search:** A case-insensitive substring (`LIKE`) scan over visible posts. Cost per request is bounded by the query-length cap, page size and cursor pagination, but grows linearly with the posts table; at larger scale move to SQLite FTS5 or a search service.
+- **No rate limiting or response caching** is applied to these endpoints in the app. They require a session, so exposure is limited to signed-in accounts, but a signed-in user can still call them in a loop; add edge rules (e.g. Cloudflare rate limiting) before opening sign-up widely.
 
-**Watch for:**
+---
 
-- Like toggle needs an upsert (`ON CONFLICT`), not just a unique constraint.
-- Optimistic like/comment UI needs a rollback path when the request fails.
-- Comments inherit the parent post's visibility. Both comment-list and comment-create endpoints must enforce the same authorization check as reading the post.
+## 5. In-App Notifications Specification
 
-## Phase 4 — Social graph · MVP must-have
+Notifications inform users of social feedback without overwhelming them.
 
-**Deliver:** users can follow/unfollow another user from their profile, with state reflected immediately — and Phase 2's followers-only visibility now works against real follow relationships.
+### Trigger Matrix & De-duplication
 
-### Follow
+| Trigger Event        | Recipient             | Deduplication Policy                                                                         | Reversal on Undo                                                       |
+| -------------------- | --------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| **Like Post**        | Post author           | Deduplicated per `(actor, post)`. Key: `like:<actor>:<post>`.                                | Unliking permanently removes the notification. Re-liking recreates it. |
+| **New Follower**     | Followed user         | Deduplicated per `(actor, recipient)`. Key: `follow:<actor>:<recipient>`.                    | Unfollowing removes the notification.                                  |
+| **Comment on Post**  | Post author           | NOT deduplicated. Each unique comment produces a notification.                               | Deleting comment cascades delete to notification.                      |
+| **Reply to Comment** | Parent comment author | NOT deduplicated. Each reply notifies the parent comment author.                             | Deleting comment cascades delete to notification.                      |
+| **Self-Action**      | —                     | **Suppressed:** Users never receive notifications for their own likes, comments, or replies. | —                                                                      |
 
-- Can't follow yourself, toggle follow/unfollow, state reflected immediately
-- **Backend:** `follows` table with unique (follower, followee), self-follow guard, follow/unfollow endpoints
-- **Frontend:** follow/unfollow button on profile, reflects current state
+### Deep Linking & Navigation UX
 
-**Watch for:**
+Notifications must take users directly to the referenced content:
 
-- Regression-test followers-only visibility with real follow data.
-- Follow/unfollow needs the same optimistic-update rollback as Like.
-- Follower/following lists are public in MVP; private accounts are post-MVP.
+- **Like / Comment / Reply:** Deep-links directly to the post permalink (`/posts/:id`).
+- **Follow:** Links to the follower's profile (`/u/:username`).
+- **Mark-as-Read:** Clicking any notification marks it read immediately (optimistic UI), decrementing the unread badge. The request is sent with `keepalive`, so it still completes if the click triggers a full-page navigation; navigation itself is never delayed waiting for it.
+- **Mark All as Read:** Header action clears all unread indicators at once.
+- **Unread Badge Refresh:** The nav badge refreshes when the shell mounts (only if the last count is older than 60 seconds), every 60 seconds, and immediately when notifications change (mark read). It deliberately does not refresh on every route change; navigating doesn't alter the count.
 
-## Phase 5 — Completeness · MVP must-have
+---
 
-**Deliver:** post owners can edit/delete their posts; profile pages, followers/following lists, username/post search, in-app notifications, and image upload on posts all ship.
+## 6. Frontend UX & Design Guidelines
 
-### Edit / Delete post
+The frontend implements the visual direction defined in `docs/design/*.png`.
 
-- Owner-only, delete removes its likes/comments too
-- **Backend:** update/delete endpoints, ownership check, DB-level cascade delete
-- **Frontend:** edit/delete controls shown only on own posts
+### Navigation Architecture
 
-### Profile page
+- **Desktop (`md:` breakpoint and above):**
+  - Left-docked floating pill nav (`fixed left-6 top-1/2 -translate-y-1/2`).
+  - Contains icon buttons: Home, Explore, Notifications (with unread badge), Profile Avatar, and Sign Out.
+  - Active route displays with high-contrast active background (`bg-white shadow-sm`); idle items have subtle hover states.
+- **Mobile (`< md`):**
+  - Bottom-docked floating pill nav (`fixed bottom-4 left-1/2 -translate-x-1/2`).
+  - Touch-friendly icon targets (minimum 44×44px hit area).
+- **Top Pill Header:**
+  - Floats centered at the top of the viewport.
+  - Displays current context / page title (e.g., "Home", "Explore", "Activity", "Profile").
+  - Includes a quick-action trigger: "Share a thought…".
 
-- Shows a user's posts + basic info (name, joined date)
-- **Backend:** list-posts-by-user endpoint
-- **Frontend:** profile page route (`/u/:username`)
+### Post Composer UX
 
-### Followers / Following list
+- **Modal Presentation:** Clean rounded dialog modal with backdrop blur. Pressing `Escape` or clicking the backdrop cancels with no state loss.
+- **Character Counter:** Real-time remaining count (starts at 500). Shifts to warning/rose styling when exceeded.
+- **Visibility Toggle:** Clear pill selector between `Public` (globe icon) and `Followers` (lock icon).
+- **Submission:**
+  - Publish button is disabled when empty or exceeding limits.
+  - On submit, button transitions to loading state (`Publishing…`).
+  - Upon success, modal closes smoothly and the newly created post is prepended to the top of the feed without requiring a page reload.
 
-- Paginated list of usernames
-- **Backend:** list-followers / list-following endpoints
-- **Frontend:** list pages linked from profile
+### Interaction States & Micro-interactions
 
-### Search
+- **Optimistic Likes:** Heart icon fills red and counter increments instantly upon click. If the backend fails, the change is rolled back with a non-intrusive error notice.
+- **Inline Comments:** Expanding comments opens an inline thread without page navigation. Replying to another user shows an active "Replying to @user" tag.
+- **Follow Buttons:** High-contrast toggle ("Follow" in dark pill vs. "Following" in light outline). Updates follower counts live.
 
-- Search by username or post text, case-insensitive
-- **Backend:** simple match endpoint, no ranking needed for MVP
-- **Frontend:** search bar + results page
+### Resilient State Handling
 
-### Notifications (in-app)
+- **Loading Skeletons:** Animated pulsating placeholder cards matching the exact dimensions of post cards to prevent Cumulative Layout Shift (CLS).
+- **Empty States:** Clear, centered icon and friendly copy guiding the user (e.g. "No posts yet. Be the first to share something.").
+- **Error States:** Informative error cards with an explicit "Try again" retry button.
+- **Deleted Content:** If a post is deleted by its author, it transitions out of feed lists gracefully. Accessing a permalink to a deleted post serves an informative 404 page with a "Back to feed" link.
 
-- One entry per like/comment/follow, mark-as-read, unread count
-- **Backend:** `notifications` table, written on like/comment/follow, list + mark-read endpoints
-- **Frontend:** notification bell with unread badge, list dropdown/page
+### Design Tokens & Consistency
 
-### Upload image
-
-- One image per post, size/type limit, served from object storage
-- **Backend:** object storage (see [tech-stack](./tech-stack.md)), image URL on post, size/type validation
-- **Frontend:** image picker + preview in composer
-
-**Watch for:**
-
-- Cascade delete should be a DB-level `ON DELETE CASCADE`, not app-level cleanup code.
-- Decide notification de-duplication before implementation.
-- Search is intentionally a simple unranked match at MVP scale; treat indexing/ranking as a later optimization.
-- Pick the object-storage service before Phase 5 starts.
-
-## Post-MVP · later
-
-These are explicitly deferred and are **not required for the MVP**:
-
-- Direct messages / real-time chat
-- Real-time notifications (push, email)
-- Online / offline status
-- Hashtags / mentions
-- Share / repost, save / bookmark
-- Account settings, private accounts, block / mute, report
-- Two-factor auth
-- Explore / trending, recommendations
-- Moderation
-- Performance optimization
-- Monitoring
-- Scaling
+- **Border Radii:** Consistent soft curves — cards use `rounded-[2rem]`, buttons use `rounded-full`, form inputs use `rounded-2xl`.
+- **Color Palette:** Slate neutrals with subtle indigo ambient gradients (`from-slate-50 via-indigo-50/60 to-slate-100`). Rose accent for likes/warnings.
+- **Typography:** System sans-serif font stack with tabular figures (`tabular-nums`) for counters and timestamps.

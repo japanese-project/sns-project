@@ -1,6 +1,14 @@
 // Application (SNS) tables: post, comment, like, follow.
 // See docs/database.md for the ERD and constraints this schema implements.
-import { sqliteTable, text, integer, primaryKey, index, check } from 'drizzle-orm/sqlite-core'
+import {
+	sqliteTable,
+	text,
+	integer,
+	primaryKey,
+	index,
+	uniqueIndex,
+	check,
+} from 'drizzle-orm/sqlite-core'
 import { sql } from 'drizzle-orm'
 import { user } from './auth'
 
@@ -95,3 +103,37 @@ export const follow = sqliteTable(
 		check('follow_no_self_follow', sql`${table.followerId} != ${table.followingId}`),
 	],
 )
+
+export const notification = sqliteTable(
+	'notification',
+	{
+		id: text('id').primaryKey(),
+		recipientId: text('recipient_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		actorId: text('actor_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		type: text('type', { enum: ['like', 'comment', 'follow'] }).notNull(),
+		postId: text('post_id').references(() => post.id, { onDelete: 'cascade' }),
+		commentId: text('comment_id').references(() => comment.id, { onDelete: 'cascade' }),
+		// De-duplication policy (docs/database.md): like and follow notifications carry a
+		// key of `<type>:<actor>:<target>` so repeating the action never creates a second
+		// entry. Comment notifications have a NULL key (every comment notifies).
+		dedupeKey: text('dedupe_key'),
+		read: integer('read', { mode: 'boolean' }).notNull().default(false),
+		createdAt: integer('created_at', { mode: 'timestamp' })
+			.notNull()
+			.default(sql`(unixepoch())`),
+	},
+	(table) => [
+		index('notification_recipient_created_idx').on(table.recipientId, table.createdAt),
+		uniqueIndex('notification_dedupe_key_unique').on(table.dedupeKey),
+	],
+)
+
+export const media_cleanup_lock = sqliteTable('media_cleanup_lock', {
+	key: text('key').primaryKey(),
+	lockedAt: integer('locked_at').notNull(),
+	owner: text('owner').notNull(),
+})
