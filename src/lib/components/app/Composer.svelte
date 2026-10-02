@@ -16,10 +16,38 @@
 	let error_message = $state<string | null>(null)
 	let textarea: HTMLTextAreaElement | undefined = $state()
 
+	import { onMount } from 'svelte'
+
+	const DRAFT_KEY = 'composer_draft'
+
+	onMount(() => {
+		try {
+			const draft = localStorage.getItem(DRAFT_KEY)
+			if (draft) content = draft
+		} catch {}
+	})
+
+	$effect(() => {
+		try {
+			if (content.trim()) {
+				localStorage.setItem(DRAFT_KEY, content)
+			} else {
+				localStorage.removeItem(DRAFT_KEY)
+			}
+		} catch {}
+	})
+
 	let remaining = $derived(MAX_POST_LENGTH - content.length)
 	let invalid = $derived(content.trim().length === 0 || content.length > MAX_POST_LENGTH)
 
 	$effect(() => textarea?.focus())
+
+	function discardDraft() {
+		content = ''
+		try {
+			localStorage.removeItem(DRAFT_KEY)
+		} catch {}
+	}
 
 	async function submit(event: SubmitEvent) {
 		event.preventDefault()
@@ -32,6 +60,10 @@
 				body: { content, visibility },
 			})
 			composer.created(created)
+			content = ''
+			try {
+				localStorage.removeItem(DRAFT_KEY)
+			} catch {}
 			composer.hide()
 		} catch (e) {
 			error_message = e instanceof Error ? e.message : 'Could not publish your post'
@@ -114,7 +146,14 @@
 		</div>
 
 		<div class="mt-4 flex items-center justify-between border-t border-slate-200 pt-4 text-sm">
-			<p class="min-h-5 text-rose-600" role="alert">{error_message ?? ''}</p>
+			<div class="flex items-center gap-3">
+				<p class="min-h-5 text-rose-600" role="alert">{error_message ?? ''}</p>
+				{#if content.trim()}
+					<button type="button" class="text-xs font-semibold text-slate-400 transition hover:text-slate-800 hover:underline" onclick={discardDraft}>
+						Discard draft
+					</button>
+				{/if}
+			</div>
 			<span
 				class="tabular-nums {remaining < 0
 					? 'text-rose-600'
