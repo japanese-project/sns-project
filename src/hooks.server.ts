@@ -37,6 +37,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 		return resolve(event)
 	}
 
+	// Skip auth for healthcheck to avoid dependency on secrets which might not be fully propagated during deployment
+	if (event.url.pathname === '/api/health') {
+		event.locals.user = null
+		event.locals.session = null
+		return resolve(event)
+	}
+
 	const { DB: db, AUTH_KV: auth_kv } = platform_env
 	const auth = create_auth(db, auth_kv)
 
