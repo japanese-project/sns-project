@@ -1,4 +1,4 @@
-import { desc, gte, like as sql_like } from 'drizzle-orm'
+import { desc, gte, sql } from 'drizzle-orm'
 import type { Db } from '../db'
 import { post as post_table } from '../db/schema'
 import { create_post } from '../services/posts'
@@ -122,7 +122,7 @@ export async function run_bot_cycle(
 			const existing = await db
 				.select({ id: post_table.id })
 				.from(post_table)
-				.where(sql_like(post_table.content, `%${item.link}%`))
+				.where(sql`instr(${post_table.content}, ${item.link}) > 0`)
 				.limit(1)
 
 			if (existing.length === 0) {

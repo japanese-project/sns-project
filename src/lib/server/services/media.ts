@@ -1,4 +1,4 @@
-import { and, eq, isNotNull, like, lt, or } from 'drizzle-orm'
+import { and, eq, isNotNull, lt, or, sql } from 'drizzle-orm'
 import type { Db } from '../db'
 import { media_cleanup_lock, post } from '../db/schema'
 
@@ -284,7 +284,7 @@ export async function is_media_referenced(db: Db, key: string): Promise<boolean>
 	const rows = await db
 		.select({ id: post.id })
 		.from(post)
-		.where(or(eq(post.imageUrl, exact_url), like(post.imageUrl, `${prefix}%`)))
+		.where(or(eq(post.imageUrl, exact_url), sql`instr(${post.imageUrl}, ${prefix}) = 1`))
 		.limit(1)
 	return rows.length > 0
 }

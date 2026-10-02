@@ -1,7 +1,7 @@
 import { dev } from '$app/environment'
 import { env } from '$env/dynamic/private'
 import { fail, redirect } from '@sveltejs/kit'
-import { desc, eq, like as sql_like } from 'drizzle-orm'
+import { desc, eq, sql } from 'drizzle-orm'
 import { post as post_table, user as user_table } from '$lib/server/db/schema'
 import { is_admin_user } from '$lib/server/admin'
 import { BOT_PERSONAS } from '$lib/server/bot/personas'
@@ -51,7 +51,7 @@ export const load: PageServerLoad = async ({ locals, platform, cookies }) => {
 			created_at: post_table.createdAt,
 		})
 		.from(post_table)
-		.where(sql_like(post_table.userId, 'bot_%'))
+		.where(sql`instr(${post_table.userId}, 'bot_') = 1`)
 		.orderBy(desc(post_table.createdAt))
 
 	const total_counts: Record<string, number> = {}
@@ -103,7 +103,7 @@ export const load: PageServerLoad = async ({ locals, platform, cookies }) => {
 		})
 		.from(post_table)
 		.innerJoin(user_table, eq(post_table.userId, user_table.id))
-		.where(sql_like(post_table.userId, 'bot_%'))
+		.where(sql`instr(${post_table.userId}, 'bot_') = 1`)
 		.orderBy(desc(post_table.createdAt))
 		.limit(15)
 

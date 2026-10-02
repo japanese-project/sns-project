@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, like as sql_like, lt, ne, or, sql, type SQL } from 'drizzle-orm'
+import { and, desc, eq, gte, lt, ne, or, sql, type SQL } from 'drizzle-orm'
 import { error } from '@sveltejs/kit'
 import type { Db } from '../db'
 import { comment, follow, like, post, user } from '../db/schema'
@@ -153,13 +153,14 @@ export async function create_post(
 			}
 
 			// Ensure media key is not already attached to another post
+			const query_prefix = `/api/media/${r2_key}?`
 			const existing = await db
 				.select({ id: post.id })
 				.from(post)
 				.where(
 					or(
 						eq(post.imageUrl, `/api/media/${r2_key}`),
-						sql_like(post.imageUrl, `/api/media/${r2_key}?%`),
+						sql`instr(${post.imageUrl}, ${query_prefix}) = 1`,
 					),
 				)
 				.limit(1)
@@ -346,6 +347,7 @@ export async function update_post(
 
 			// Ensure media is not already attached to another post
 			if (new_r2_key !== previous_r2_key) {
+				const query_prefix = `/api/media/${new_r2_key}?`
 				const existing = await db
 					.select({ id: post.id })
 					.from(post)
@@ -353,7 +355,7 @@ export async function update_post(
 						and(
 							or(
 								eq(post.imageUrl, `/api/media/${new_r2_key}`),
-								sql_like(post.imageUrl, `/api/media/${new_r2_key}?%`),
+								sql`instr(${post.imageUrl}, ${query_prefix}) = 1`,
 							),
 							ne(post.id, post_id),
 						),

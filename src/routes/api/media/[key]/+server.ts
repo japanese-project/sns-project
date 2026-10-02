@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit'
-import { and, eq, like, or } from 'drizzle-orm'
+import { and, eq, or, sql } from 'drizzle-orm'
 import { post } from '$lib/server/db/schema'
 import { visible_to } from '$lib/server/services/posts'
 import { require_user_id } from '$lib/server/validation'
@@ -20,12 +20,13 @@ export const GET: RequestHandler = async ({ params, locals, platform }) => {
 	// Media access follows post visibility rules:
 	// The media is only accessible if there is an associated post visible to the viewer.
 	const image_url = `/api/media/${key}`
+	const query_prefix = `/api/media/${key}?`
 	const rows = await locals.db
 		.select({ id: post.id })
 		.from(post)
 		.where(
 			and(
-				or(eq(post.imageUrl, image_url), like(post.imageUrl, `${image_url}?%`)),
+				or(eq(post.imageUrl, image_url), sql`instr(${post.imageUrl}, ${query_prefix}) = 1`),
 				visible_to(viewer_id),
 			),
 		)
