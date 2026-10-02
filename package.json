@@ -22,7 +22,10 @@
 		"db:migrate:preview": "wrangler d1 migrations apply sns-project-preview-db --remote --env preview",
 		"db:migrate:remote": "wrangler d1 migrations apply sns-project-db --remote",
 		"db:validate": "node --experimental-strip-types scripts/validate-migrations.ts",
-		"db:studio": "drizzle-kit studio"
+		"db:studio": "drizzle-kit studio",
+		"bot:seed": "node --experimental-strip-types scripts/seed-bots.ts",
+		"bot:seed:local": "pnpm bot:seed && wrangler d1 execute sns-project-db --local --file=scripts/seed-bots.sql",
+		"bot:seed:remote": "pnpm bot:seed && wrangler d1 execute sns-project-db --remote --file=scripts/seed-bots.sql"
 	},
 	"devDependencies": {
 		"@cloudflare/workers-types": "^5.20260922.1",

@@ -12,6 +12,7 @@
 	import { goto } from '$app/navigation'
 	import { resolve } from '$app/paths'
 	import BellIcon from '@lucide/svelte/icons/bell'
+	import BotIcon from '@lucide/svelte/icons/bot'
 	import CompassIcon from '@lucide/svelte/icons/compass'
 	import HouseIcon from '@lucide/svelte/icons/house'
 	import LogOutIcon from '@lucide/svelte/icons/log-out'
@@ -38,6 +39,7 @@
 			image?: string | null
 			username?: string | null
 			onboarded?: boolean | null
+			isAdmin?: boolean
 		}
 		title: string
 		header_content?: Snippet
@@ -160,6 +162,18 @@
 			<Avatar {user} size={28} />
 		</a>
 
+		{#if user.isAdmin}
+			<a
+				href={resolve('/admin/bots')}
+				title="Bot Control Center"
+				aria-label="Bot Control Center"
+				aria-current={path.startsWith('/admin') ? 'page' : undefined}
+				class="{nav_button} {path.startsWith('/admin') ? active : idle}"
+			>
+				<BotIcon class="size-5" />
+			</a>
+		{/if}
+
 		<button
 			type="button"
 			aria-label="Sign out"
@@ -234,6 +248,17 @@
 		>
 			<Avatar {user} size={26} />
 		</a>
+
+		{#if user.isAdmin}
+			<a
+				href={resolve('/admin/bots')}
+				aria-label="Bot Control Center"
+				aria-current={path.startsWith('/admin') ? 'page' : undefined}
+				class="{nav_button} {path.startsWith('/admin') ? active : idle}"
+			>
+				<BotIcon class="size-5" />
+			</a>
+		{/if}
 
 		<button
 			type="button"

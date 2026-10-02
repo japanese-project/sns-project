@@ -23,6 +23,7 @@ export default defineConfig({
 						'@lucide/svelte/icons/copy',
 						'@lucide/svelte/icons/check',
 						'@lucide/svelte/icons/log-out',
+						'@lucide/svelte/icons/bot',
 					],
 				},
 				test: {

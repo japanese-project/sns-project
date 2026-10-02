@@ -9,6 +9,7 @@ import { create_auth } from '$lib/server/auth'
 import { create_db } from '$lib/server/db'
 import { user as user_table } from '$lib/server/db/schema'
 import { ensure_username } from '$lib/server/services/users'
+import { is_admin_user } from '$lib/server/admin'
 import { eq } from 'drizzle-orm'
 import type { Handle } from '@sveltejs/kit'
 
@@ -80,6 +81,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 			// not be silent either (e.g. ensure_username propagates unexpected DB errors).
 			console.error('Failed to enrich session user from the database', err)
 		}
+
+		const cookie_admin_secret = event.cookies.get('admin_secret')
+		event.locals.user.isAdmin = is_admin_user(
+			event.locals.user,
+			event.platform?.env as Record<string, unknown> | undefined,
+			cookie_admin_secret,
+		)
 	}
 
 	return resolve(event)
