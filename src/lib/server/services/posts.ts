@@ -106,10 +106,28 @@ async function paginate(
 export async function create_post(
 	db: Db,
 	user_id: string,
-	input: { content?: unknown; visibility?: unknown },
+	input: { content?: unknown; visibility?: unknown; imageUrl?: unknown },
 ): Promise<PostView> {
-	const content = validate_text(input.content, MAX_POST_LENGTH, 'Post')
 	const visibility = parse_visibility(input.visibility)
+
+	let image_url: string | null = null
+	if (input.imageUrl !== undefined && input.imageUrl !== null) {
+		if (typeof input.imageUrl !== 'string') error(400, 'imageUrl must be a string')
+		image_url = input.imageUrl.trim()
+		if (image_url.length === 0) image_url = null
+	}
+
+	let content = ''
+	if (typeof input.content === 'string') {
+		content = input.content.trim()
+	}
+	if (content.length > MAX_POST_LENGTH) {
+		error(400, `Post must be at most ${MAX_POST_LENGTH} characters`)
+	}
+	if (content.length === 0 && !image_url) {
+		error(400, 'Post must not be empty')
+	}
+
 	const id = new_id()
 	const now = new Date()
 	await db.insert(post).values({
@@ -117,6 +135,7 @@ export async function create_post(
 		userId: user_id,
 		content,
 		visibility,
+		imageUrl: image_url,
 		createdAt: now,
 		updatedAt: now,
 	})

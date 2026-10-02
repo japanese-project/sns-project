@@ -25,6 +25,7 @@ declare global {
 			env: {
 				DB: D1Database
 				AUTH_KV: KVNamespace
+				MEDIA_BUCKET: R2Bucket
 			}
 		}
 	}

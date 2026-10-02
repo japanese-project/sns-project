@@ -21,6 +21,7 @@ const modules = import.meta.glob<Record<string, unknown>>(
 		'!./api/auth/**', // sign-in flow
 		'!./api/health/**', // deployment health probe
 		'!./login/**', // sign-in page
+		'!./api/media/[key]/**', // public media assets
 	],
 	{ eager: true },
 )

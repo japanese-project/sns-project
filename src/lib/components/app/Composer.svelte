@@ -16,9 +16,14 @@
 	let error_message = $state<string | null>(null)
 	let textarea: HTMLTextAreaElement | undefined = $state()
 
-	import { onMount } from 'svelte'
+	import { onMount, onDestroy } from 'svelte'
+	import ImageIcon from '@lucide/svelte/icons/image'
 
 	const draft_key = 'composer_draft'
+
+	let selected_image = $state<File | null>(null)
+	let image_preview = $state<string | null>(null)
+	let image_input: HTMLInputElement | undefined = $state()
 
 	onMount(() => {
 		try {
@@ -27,6 +32,10 @@
 		} catch {
 			// ignore
 		}
+	})
+
+	onDestroy(() => {
+		if (image_preview) URL.revokeObjectURL(image_preview)
 	})
 
 	$effect(() => {
@@ -42,17 +51,37 @@
 	})
 
 	let remaining = $derived(MAX_POST_LENGTH - content.length)
-	let invalid = $derived(content.trim().length === 0 || content.length > MAX_POST_LENGTH)
+	let invalid = $derived(
+		(content.trim().length === 0 && !selected_image) || content.length > MAX_POST_LENGTH,
+	)
 
 	$effect(() => textarea?.focus())
 
 	function discard_draft() {
 		content = ''
+		remove_image()
 		try {
 			localStorage.removeItem(draft_key)
 		} catch {
 			// ignore
 		}
+	}
+
+	function handle_image_select(e: Event) {
+		const target = e.target as HTMLInputElement
+		const file = target.files?.[0]
+		if (file) {
+			selected_image = file
+			if (image_preview) URL.revokeObjectURL(image_preview)
+			image_preview = URL.createObjectURL(file)
+		}
+	}
+
+	function remove_image() {
+		selected_image = null
+		if (image_preview) URL.revokeObjectURL(image_preview)
+		image_preview = null
+		if (image_input) image_input.value = ''
 	}
 
 	async function submit(event: SubmitEvent) {
@@ -61,12 +90,30 @@
 		submitting = true
 		error_message = null
 		try {
+			let image_url: string | undefined
+
+			if (selected_image) {
+				const form_data = new FormData()
+				form_data.append('image', selected_image)
+
+				const response = await fetch('/api/media', {
+					method: 'POST',
+					body: form_data,
+				})
+				if (!response.ok) {
+					throw new Error('Failed to upload image')
+				}
+				const data = (await response.json()) as { url: string }
+				image_url = data.url
+			}
+
 			const created = await api<PostView>('/api/posts', {
 				method: 'POST',
-				body: { content, visibility },
+				body: { content, visibility, imageUrl: image_url },
 			})
 			composer.created(created)
 			content = ''
+			remove_image()
 			try {
 				localStorage.removeItem(draft_key)
 			} catch {
@@ -153,10 +200,41 @@
 			></textarea>
 		</div>
 
+		{#if image_preview}
+			<div class="relative mt-4 ml-16">
+				<img
+					src={image_preview}
+					alt="Selected preview"
+					class="max-h-[300px] rounded-lg object-cover"
+				/>
+				<button
+					type="button"
+					onclick={remove_image}
+					class="absolute top-2 right-2 flex size-8 items-center justify-center rounded-full bg-slate-900/70 text-white hover:bg-slate-900"
+					aria-label="Remove image"
+				>
+					<XIcon class="size-4" />
+				</button>
+			</div>
+		{/if}
+
 		<div class="mt-4 flex items-center justify-between border-t border-slate-200 pt-4 text-sm">
 			<div class="flex items-center gap-3">
+				<label
+					class="-ml-2 flex cursor-pointer items-center justify-center rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-800"
+				>
+					<ImageIcon class="size-5" />
+					<span class="sr-only">Add image</span>
+					<input
+						type="file"
+						accept="image/*"
+						class="hidden"
+						bind:this={image_input}
+						onchange={handle_image_select}
+					/>
+				</label>
 				<p class="min-h-5 text-rose-600" role="alert">{error_message ?? ''}</p>
-				{#if content.trim()}
+				{#if content.trim() || selected_image}
 					<button
 						type="button"
 						class="text-xs font-semibold text-slate-400 transition hover:text-slate-800 hover:underline"
