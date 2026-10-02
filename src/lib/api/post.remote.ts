@@ -53,7 +53,7 @@ export const create_post = form(post, async ({ content, visibility, image }) => 
 		userId: locals.user.id,
 		content,
 		visibility,
-		imageUrl: image_url, 
+		imageUrl: image_url,
 	})
 
 	return { success: true, id, image_url }
