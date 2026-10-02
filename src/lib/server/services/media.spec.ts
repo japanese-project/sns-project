@@ -1,11 +1,14 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { and, eq, lt } from 'drizzle-orm'
 import type { Db } from '../db'
 import {
 	cleanup_orphaned_media,
 	get_storage_stats,
 	identify_orphaned_media,
 	is_media_referenced,
+	with_media_lock,
 } from './media'
+import { media_cleanup_lock } from '../db/schema'
 import { create_post } from './posts'
 import { create_test_db, make_user } from './test-db'
 
@@ -250,5 +253,86 @@ describe('Media service and lifecycle', () => {
 		expect(post_error).toBeDefined()
 		// And DB is clean - no dangling post exists referencing the deleted object
 		expect(await is_media_referenced(db, distributed_key)).toBe(false)
+	})
+
+	it('safely recovers truly stale abandoned locks via atomic CAS', async () => {
+		const stale_key = 'stale-abandoned.jpg'
+		const abandoned_owner = 'crashed-worker-uuid'
+		const ancient_time = Date.now() - 45_000 // older than 30s TTL
+
+		await db.insert(media_cleanup_lock).values({
+			key: stale_key,
+			lockedAt: ancient_time,
+			owner: abandoned_owner,
+		})
+
+		let executed = false
+		await with_media_lock(db, stale_key, async ({ is_valid }) => {
+			expect(await is_valid()).toBe(true)
+			executed = true
+		})
+
+		expect(executed).toBe(true)
+		// Lock is deleted upon release
+		const [remaining] = await db
+			.select()
+			.from(media_cleanup_lock)
+			.where(eq(media_cleanup_lock.key, stale_key))
+			.limit(1)
+		expect(remaining).toBeUndefined()
+	})
+
+	it('heartbeat continuously renews active lock so concurrent workers cannot steal it', async () => {
+		const busy_key = 'busy-long-running.jpg'
+
+		let worker_a_running = true
+
+		// Worker A starts an operation
+		const worker_a_promise = with_media_lock(db, busy_key, async () => {
+			while (worker_a_running) {
+				await new Promise((r) => setTimeout(r, 20))
+			}
+		})
+
+		// Give Worker A time to acquire lock
+		await new Promise((r) => setTimeout(r, 60))
+
+		// Check the DB lock table: Worker A holds the lock
+		const [entry] = await db
+			.select()
+			.from(media_cleanup_lock)
+			.where(eq(media_cleanup_lock.key, busy_key))
+			.limit(1)
+
+		expect(entry).toBeDefined()
+		expect(Date.now() - entry.lockedAt).toBeLessThan(30_000)
+
+		// Attempting atomic CAS steal from Worker B fails because lock is active
+		const cas_steal = await db
+			.update(media_cleanup_lock)
+			.set({ lockedAt: Date.now(), owner: 'worker-b' })
+			.where(
+				and(
+					eq(media_cleanup_lock.key, busy_key),
+					eq(media_cleanup_lock.owner, entry.owner),
+					eq(media_cleanup_lock.lockedAt, entry.lockedAt),
+					lt(media_cleanup_lock.lockedAt, Date.now() - 30_000),
+				),
+			)
+			.returning()
+
+		// CAS steal was rejected
+		expect(cas_steal).toHaveLength(0)
+
+		worker_a_running = false
+		await worker_a_promise
+
+		// After Worker A finishes, lock is cleanly removed
+		const [after] = await db
+			.select()
+			.from(media_cleanup_lock)
+			.where(eq(media_cleanup_lock.key, busy_key))
+			.limit(1)
+		expect(after).toBeUndefined()
 	})
 })

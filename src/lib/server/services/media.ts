@@ -1,4 +1,4 @@
-import { and, eq, isNotNull, like, or } from 'drizzle-orm'
+import { and, eq, isNotNull, like, lt, or } from 'drizzle-orm'
 import type { Db } from '../db'
 import { media_cleanup_lock, post } from '../db/schema'
 
@@ -167,14 +167,26 @@ class KeyedMutex {
 export const media_lock = new KeyedMutex()
 
 const lock_ttl_ms = 30_000
-const max_lock_wait_ms = 3_000
+const heartbeat_interval_ms = 5_000
+const max_lock_wait_ms = 4_000
+
+export interface MediaLockContext {
+	is_valid: () => Promise<boolean>
+}
 
 /**
  * Distributed media lock that coordinates orphan cleanup and post creation/updates
  * across multiple worker instances and server processes using D1 database-level locking,
  * backed by an in-memory KeyedMutex for local efficiency.
+ *
+ * Implements atomic CAS stale-lock takeover and periodic heartbeat renewals to guarantee
+ * active cleanup operations cannot be preempted even if running longer than the TTL.
  */
-export async function with_media_lock<T>(db: Db, key: string, fn: () => Promise<T>): Promise<T> {
+export async function with_media_lock<T>(
+	db: Db,
+	key: string,
+	fn: (ctx: MediaLockContext) => Promise<T>,
+): Promise<T> {
 	return await media_lock.run(key, async () => {
 		const owner = crypto.randomUUID()
 		const start_time = Date.now()
@@ -198,12 +210,24 @@ export async function with_media_lock<T>(db: Db, key: string, fn: () => Promise<
 					.limit(1)
 
 				if (existing && now - existing.lockedAt > lock_ttl_ms) {
-					// Steal stale lock
-					await db
+					// Atomic CAS stale-lock takeover: update ONLY if key, owner, and lockedAt
+					// match the observed stale state and lockedAt is strictly older than lock_ttl_ms
+					const updated = await db
 						.update(media_cleanup_lock)
 						.set({ lockedAt: now, owner })
-						.where(eq(media_cleanup_lock.key, key))
-					break
+						.where(
+							and(
+								eq(media_cleanup_lock.key, key),
+								eq(media_cleanup_lock.owner, existing.owner),
+								eq(media_cleanup_lock.lockedAt, existing.lockedAt),
+								lt(media_cleanup_lock.lockedAt, now - lock_ttl_ms),
+							),
+						)
+						.returning()
+
+					if (updated.length > 0) {
+						break // Atomic CAS takeover succeeded
+					}
 				}
 
 				if (Date.now() - start_time > max_lock_wait_ms) {
@@ -214,9 +238,32 @@ export async function with_media_lock<T>(db: Db, key: string, fn: () => Promise<
 			}
 		}
 
+		// Active lease keep-alive heartbeat: periodically renew lockedAt
+		// so active long-running operations are never misidentified as stale
+		const heartbeat_timer = setInterval(async () => {
+			try {
+				await db
+					.update(media_cleanup_lock)
+					.set({ lockedAt: Date.now() })
+					.where(and(eq(media_cleanup_lock.key, key), eq(media_cleanup_lock.owner, owner)))
+			} catch {
+				// Ignore transient heartbeat error
+			}
+		}, heartbeat_interval_ms)
+
+		const is_valid = async () => {
+			const [current] = await db
+				.select({ owner: media_cleanup_lock.owner })
+				.from(media_cleanup_lock)
+				.where(eq(media_cleanup_lock.key, key))
+				.limit(1)
+			return current?.owner === owner
+		}
+
 		try {
-			return await fn()
+			return await fn({ is_valid })
 		} finally {
+			clearInterval(heartbeat_timer)
 			try {
 				await db
 					.delete(media_cleanup_lock)
@@ -257,10 +304,15 @@ export async function cleanup_orphaned_media(
 	let reclaimed_bytes = 0
 
 	for (const item of orphaned) {
-		await with_media_lock(db, item.key, async () => {
+		await with_media_lock(db, item.key, async ({ is_valid }) => {
 			// Re-check reference immediately before deletion under the lock to prevent TOCTOU races
 			const referenced = await is_media_referenced(db, item.key)
 			if (referenced) {
+				return
+			}
+
+			// Verify lock ownership is still valid before executing permanent R2 deletion
+			if (!(await is_valid())) {
 				return
 			}
 
