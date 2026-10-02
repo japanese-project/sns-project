@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, like, or } from 'drizzle-orm'
 import { post } from '$lib/server/db/schema'
 import { visible_to } from '$lib/server/services/posts'
 import { require_user_id } from '$lib/server/validation'
@@ -23,7 +23,12 @@ export const GET: RequestHandler = async ({ params, locals, platform }) => {
 	const rows = await locals.db
 		.select({ id: post.id })
 		.from(post)
-		.where(and(eq(post.imageUrl, image_url), visible_to(viewer_id)))
+		.where(
+			and(
+				or(eq(post.imageUrl, image_url), like(post.imageUrl, `${image_url}?%`)),
+				visible_to(viewer_id),
+			),
+		)
 		.limit(1)
 
 	if (rows.length === 0) {

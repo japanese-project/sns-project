@@ -138,8 +138,14 @@ describe('PostCard media rendering', () => {
 			expect(Number.parseFloat(ratio)).toBeCloseTo(1.0, 1)
 		})
 		expect(container.element().style.aspectRatio).toMatch(/^1(\s*\/\s*1)?$/)
-		const square_rect = container.element().getBoundingClientRect()
-		expect(Math.abs(square_rect.width - square_rect.height)).toBeLessThanOrEqual(4)
+		await vi.waitFor(() => {
+			const square_rect = container.element().getBoundingClientRect()
+			if (Math.abs(square_rect.width - square_rect.height) > 4) {
+				throw new Error(
+					`Square dimensions not yet stabilized: ${square_rect.width}x${square_rect.height}`,
+				)
+			}
+		})
 
 		// 2. Landscape image (2:1 aspect ratio)
 		await rerender({ post: make_post({ image_url: landscape_svg }) })
@@ -149,8 +155,12 @@ describe('PostCard media rendering', () => {
 			expect(Number.parseFloat(ratio)).toBeCloseTo(2.0, 1)
 		})
 		expect(container.element().style.aspectRatio).toMatch(/^2(\s*\/\s*1)?$/)
-		const landscape_rect = container.element().getBoundingClientRect()
-		expect(landscape_rect.width).toBeGreaterThan(landscape_rect.height)
+		await vi.waitFor(() => {
+			const landscape_rect = container.element().getBoundingClientRect()
+			if (landscape_rect.width <= landscape_rect.height) {
+				throw new Error('Landscape dimensions not yet stabilized')
+			}
+		})
 
 		// 3. Portrait image (0.5 aspect ratio)
 		await rerender({ post: make_post({ image_url: portrait_svg }) })
@@ -160,8 +170,26 @@ describe('PostCard media rendering', () => {
 			expect(Number.parseFloat(ratio)).toBeCloseTo(0.5, 1)
 		})
 		expect(container.element().style.aspectRatio).toMatch(/^0\.5(\s*\/\s*1)?$/)
-		const portrait_rect = container.element().getBoundingClientRect()
-		expect(portrait_rect.height).toBeGreaterThan(portrait_rect.width)
+		await vi.waitFor(() => {
+			const portrait_rect = container.element().getBoundingClientRect()
+			if (portrait_rect.height <= portrait_rect.width) {
+				throw new Error('Portrait dimensions not yet stabilized')
+			}
+		})
+	})
+
+	it('reserves final aspect ratio immediately when dimension hints are provided in url', async () => {
+		// Provide an image URL with dimension hints (e.g. ?w=1600&h=900)
+		const post = make_post({ image_url: '/api/media/photo.jpg?w=1600&h=900' })
+		render(PostCard, { post })
+
+		const container = page.getByTestId('post-image-container')
+		await expect.element(container).toBeInTheDocument()
+
+		// The container immediately reserves the 16:9 (1.78) ratio before the network request finishes
+		const ratio = container.element().getAttribute('data-aspect-ratio')
+		expect(ratio).not.toBeNull()
+		expect(Number.parseFloat(ratio!)).toBeCloseTo(1600 / 900, 1)
 	})
 })
 

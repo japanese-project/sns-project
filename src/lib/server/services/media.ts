@@ -1,4 +1,4 @@
-import { eq, isNotNull } from 'drizzle-orm'
+import { eq, isNotNull, like, or } from 'drizzle-orm'
 import type { Db } from '../db'
 import { post } from '../db/schema'
 
@@ -24,7 +24,11 @@ export interface CleanupResult {
 
 export function get_r2_key_from_url(url: string): string | null {
 	if (url.startsWith('/api/media/')) {
-		const key = url.slice('/api/media/'.length)
+		let key = url.slice('/api/media/'.length)
+		const query_idx = key.indexOf('?')
+		if (query_idx !== -1) {
+			key = key.slice(0, query_idx)
+		}
 		return key.includes('/') ? null : key
 	}
 	return null
@@ -136,22 +140,50 @@ export async function identify_orphaned_media(
 }
 
 /**
+ * Per-key async mutex to eliminate TOCTOU races between concurrent post attachment
+ * and media cleanup deletions.
+ */
+class KeyedMutex {
+	private locks = new Map<string, Promise<void>>()
+
+	async run<T>(key: string, fn: () => Promise<T>): Promise<T> {
+		while (this.locks.has(key)) {
+			await this.locks.get(key)
+		}
+		let resolve!: () => void
+		const promise = new Promise<void>((r) => {
+			resolve = r
+		})
+		this.locks.set(key, promise)
+		try {
+			return await fn()
+		} finally {
+			this.locks.delete(key)
+			resolve()
+		}
+	}
+}
+
+export const media_lock = new KeyedMutex()
+
+/**
  * Checks whether an R2 key is currently referenced by any post in the database.
  */
 export async function is_media_referenced(db: Db, key: string): Promise<boolean> {
-	const image_url = `/api/media/${key}`
+	const exact_url = `/api/media/${key}`
+	const prefix = `/api/media/${key}?`
 	const rows = await db
 		.select({ id: post.id })
 		.from(post)
-		.where(eq(post.imageUrl, image_url))
+		.where(or(eq(post.imageUrl, exact_url), like(post.imageUrl, `${prefix}%`)))
 		.limit(1)
 	return rows.length > 0
 }
 
 /**
  * Deletes orphaned media files from R2 storage.
- * Re-checks post references immediately before deleting each file to prevent races
- * with posts created or updated concurrently.
+ * Synchronizes with post creation/update using `media_lock` and re-checks post references
+ * under the lock immediately before deletion to prevent TOCTOU races.
  */
 export async function cleanup_orphaned_media(
 	db: Db,
@@ -163,15 +195,17 @@ export async function cleanup_orphaned_media(
 	let reclaimed_bytes = 0
 
 	for (const item of orphaned) {
-		// Re-check reference immediately before deletion to prevent race condition
-		const referenced = await is_media_referenced(db, item.key)
-		if (referenced) {
-			continue
-		}
+		await media_lock.run(item.key, async () => {
+			// Re-check reference immediately before deletion under the lock to prevent TOCTOU races
+			const referenced = await is_media_referenced(db, item.key)
+			if (referenced) {
+				return
+			}
 
-		await media_bucket.delete(item.key)
-		deleted_keys.push(item.key)
-		reclaimed_bytes += item.size
+			await media_bucket.delete(item.key)
+			deleted_keys.push(item.key)
+			reclaimed_bytes += item.size
+		})
 	}
 
 	return {

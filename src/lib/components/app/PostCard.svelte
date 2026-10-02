@@ -32,13 +32,45 @@
 		on_updated?: (post: PostView) => void
 	} = $props()
 
+	function extract_aspect_ratio_hint(url: string | null | undefined): number | null {
+		if (!url) return null
+		try {
+			const parsed = new URL(url, 'http://localhost')
+			const w = Number(parsed.searchParams.get('w'))
+			const h = Number(parsed.searchParams.get('h'))
+			if (w > 0 && h > 0) return w / h
+			const aspect = Number(parsed.searchParams.get('aspect'))
+			if (aspect > 0) return aspect
+		} catch {
+			// ignore
+		}
+		if (url.startsWith('data:image/svg+xml')) {
+			const w_match = url.match(/width=["']?(\d+)/)
+			const h_match = url.match(/height=["']?(\d+)/)
+			if (w_match && h_match) {
+				const w = Number(w_match[1])
+				const h = Number(h_match[1])
+				if (w > 0 && h > 0) return w / h
+			}
+			const vb_match = url.match(/viewBox=["']?[\d.]+\s+[\d.]+\s+([\d.]+)\s+([\d.]+)/)
+			if (vb_match) {
+				const w = Number(vb_match[1])
+				const h = Number(vb_match[2])
+				if (w > 0 && h > 0) return w / h
+			}
+		}
+		return null
+	}
+
 	// Optimistic like state: an override applied immediately and cleared (rolled back) if the
 	// request fails. Without an override the values come straight from the post prop.
 	let post_override = $state<PostView | null>(null)
 	let active_post = $derived(post_override ?? post)
 	let image_load_failed = $state(false)
 	let image_loaded = $state(false)
+	let aspect_ratio_hint = $derived(extract_aspect_ratio_hint(active_post.image_url))
 	let natural_aspect_ratio = $state<number | null>(null)
+	let effective_aspect_ratio = $derived(natural_aspect_ratio ?? aspect_ratio_hint)
 
 	$effect(() => {
 		// Reset image loading and failure state when the active post image URL changes
@@ -528,10 +560,10 @@
 	{#if active_post.image_url}
 		<div
 			data-testid="post-image-container"
-			data-aspect-ratio={natural_aspect_ratio ? natural_aspect_ratio.toFixed(2) : undefined}
+			data-aspect-ratio={effective_aspect_ratio ? effective_aspect_ratio.toFixed(2) : undefined}
 			class="relative mt-3 flex items-center justify-center overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 transition-all duration-300"
-			style={natural_aspect_ratio
-				? `aspect-ratio: ${natural_aspect_ratio}; max-height: 512px; width: fit-content; max-width: 100%;`
+			style={effective_aspect_ratio
+				? `aspect-ratio: ${effective_aspect_ratio}; max-height: 512px; width: fit-content; max-width: 100%;`
 				: 'min-height: 220px; max-height: 512px; width: 100%;'}
 		>
 			{#if image_load_failed}

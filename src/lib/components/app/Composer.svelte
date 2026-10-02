@@ -23,6 +23,7 @@
 
 	let selected_image = $state<File | null>(null)
 	let image_preview = $state<string | null>(null)
+	let image_dims = $state<{ width: number; height: number } | null>(null)
 	let image_input: HTMLInputElement | undefined = $state()
 
 	onMount(() => {
@@ -80,11 +81,22 @@
 			selected_image = file
 			if (image_preview) URL.revokeObjectURL(image_preview)
 			image_preview = URL.createObjectURL(file)
+			image_dims = null
+
+			// Pre-calculate image dimensions to provide aspect-ratio hint and prevent feed layout shifts
+			const img = new Image()
+			img.onload = () => {
+				if (img.naturalWidth && img.naturalHeight) {
+					image_dims = { width: img.naturalWidth, height: img.naturalHeight }
+				}
+			}
+			img.src = image_preview
 		}
 	}
 
 	function remove_image() {
 		selected_image = null
+		image_dims = null
 		if (image_preview) URL.revokeObjectURL(image_preview)
 		image_preview = null
 		if (image_input) image_input.value = ''
@@ -111,7 +123,11 @@
 					throw new Error(res_body?.message ?? 'Failed to upload image')
 				}
 				const data = (await response.json()) as { url: string }
-				image_url = data.url
+				if (image_dims) {
+					image_url = `${data.url}?w=${image_dims.width}&h=${image_dims.height}`
+				} else {
+					image_url = data.url
+				}
 			}
 
 			const created = await api<PostView>('/api/posts', {

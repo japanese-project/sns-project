@@ -79,7 +79,7 @@
 	})
 
 	const nav_button =
-		'relative flex size-11 items-center justify-center rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900'
+		'relative flex size-11 items-center justify-center rounded-full transition-all duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900'
 	const active = 'bg-black text-white shadow-xs'
 	const idle = 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
 
@@ -267,7 +267,7 @@
 						<button
 							type="button"
 							onclick={() => composer.show()}
-							class="flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 sm:px-2.5"
+							class="flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold text-slate-500 transition-all duration-150 hover:bg-slate-100 hover:text-slate-900 active:scale-95 sm:px-2.5"
 						>
 							<PencilIcon class="size-3.5" />
 							<span class="hidden sm:inline">Share a thought…</span>
