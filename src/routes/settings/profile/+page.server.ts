@@ -5,8 +5,8 @@ import { MAX_BIO_LENGTH, MAX_NAME_LENGTH } from '$lib/limits'
 import { require_session_user } from '$lib/server/validation'
 import type { PageServerLoad, Actions } from './$types'
 
-export const load: PageServerLoad = async ({ parent }) => {
-	const { user } = await parent()
+export const load: PageServerLoad = async ({ locals }) => {
+	const user = require_session_user(locals)
 	return { user }
 }
 

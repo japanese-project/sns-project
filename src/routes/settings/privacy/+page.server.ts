@@ -2,8 +2,8 @@ import { get_user_settings, update_user_settings } from '$lib/server/services/us
 import { require_session_user } from '$lib/server/validation'
 import type { PageServerLoad, Actions } from './$types'
 
-export const load: PageServerLoad = async ({ parent, locals }) => {
-	const { user } = await parent()
+export const load: PageServerLoad = async ({ locals }) => {
+	const user = require_session_user(locals)
 	const settings = await get_user_settings(locals.db, user.id)
 	return { settings }
 }

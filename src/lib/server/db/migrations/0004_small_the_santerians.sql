@@ -8,12 +8,7 @@ CREATE TABLE `follow_request` (
 	CONSTRAINT "follow_request_no_self_follow" CHECK("follow_request"."follower_id" != "follow_request"."following_id")
 );
 --> statement-breakpoint
-CREATE INDEX `follow_request_following_id_idx` ON `follow_request` (`following_id`);--> statement-breakpoint
-CREATE TABLE `media_cleanup_lock` (
-	`key` text PRIMARY KEY NOT NULL,
-	`locked_at` integer NOT NULL,
-	`owner` text NOT NULL
-);
+CREATE INDEX `follow_request_following_id_idx` ON `follow_request` (`following_id`);
 --> statement-breakpoint
 CREATE TABLE `user_settings` (
 	`user_id` text PRIMARY KEY NOT NULL,
