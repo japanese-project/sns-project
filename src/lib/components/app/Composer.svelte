@@ -2,6 +2,8 @@
 	import GlobeIcon from '@lucide/svelte/icons/globe'
 	import LockIcon from '@lucide/svelte/icons/lock'
 	import XIcon from '@lucide/svelte/icons/x'
+	import ImageIcon from '@lucide/svelte/icons/image'
+	import { onMount, onDestroy } from 'svelte'
 	import { api } from '$lib/api'
 	import { composer } from '$lib/composer-state.svelte'
 	import { MAX_POST_LENGTH, MAX_MEDIA_SIZE_BYTES } from '$lib/limits'
@@ -15,9 +17,6 @@
 	let submitting = $state(false)
 	let error_message = $state<string | null>(null)
 	let textarea: HTMLTextAreaElement | undefined = $state()
-
-	import { onMount, onDestroy } from 'svelte'
-	import ImageIcon from '@lucide/svelte/icons/image'
 
 	const draft_key = 'composer_draft'
 
@@ -65,6 +64,17 @@
 			localStorage.removeItem(draft_key)
 		} catch {
 			// ignore
+		}
+	}
+
+	function request_close() {
+		if (selected_image || (content.trim() && content.trim() !== localStorage.getItem(draft_key))) {
+			if (confirm('You have unsaved changes. Are you sure you want to discard them?')) {
+				remove_image()
+				composer.hide()
+			}
+		} else {
+			composer.hide()
 		}
 	}
 
@@ -149,132 +159,158 @@
 			submitting = false
 		}
 	}
+
+	function adjust_textarea_height() {
+		if (textarea) {
+			textarea.style.height = 'auto'
+			textarea.style.height = textarea.scrollHeight + 'px'
+		}
+	}
 </script>
 
-<svelte:window onkeydown={(e) => e.key === 'Escape' && composer.hide()} />
+<svelte:window onkeydown={(e) => e.key === 'Escape' && request_close()} />
 
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
-	class="fixed inset-0 z-40 flex items-start justify-center bg-slate-900/20 p-4 pt-[15vh] backdrop-blur-md"
+	class="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 backdrop-blur-sm sm:items-start sm:p-4 sm:pt-[10vh]"
 	role="presentation"
-	onclick={(e) => e.target === e.currentTarget && composer.hide()}
+	onclick={(e) => e.target === e.currentTarget && request_close()}
 >
 	<form
 		onsubmit={submit}
 		aria-label="New post"
-		class="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl sm:p-6"
+		class="flex max-h-[90vh] w-full max-w-[600px] flex-col overflow-hidden rounded-t-[2rem] bg-white shadow-2xl transition-transform sm:max-h-[85vh] sm:rounded-3xl"
 	>
-		<div class="flex items-center justify-between gap-3">
+		<!-- Header -->
+		<div
+			class="flex shrink-0 items-center justify-between border-b border-slate-100 bg-white/80 px-4 py-3 backdrop-blur-md sm:px-6"
+		>
 			<button
 				type="button"
-				aria-label="Close"
-				onclick={() => composer.hide()}
-				class="flex size-10 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm ring-1 ring-slate-200 hover:text-slate-900"
+				aria-label="Cancel"
+				onclick={request_close}
+				class="text-[15px] font-medium text-slate-500 transition hover:text-slate-900"
 			>
-				<XIcon class="size-4" />
+				Cancel
 			</button>
 
-			<div
-				class="flex rounded-full bg-slate-100 p-1 text-xs font-medium"
-				role="radiogroup"
-				aria-label="Who can see this post"
-			>
-				<button
-					type="button"
-					role="radio"
-					aria-checked={visibility === 'public'}
-					onclick={() => (visibility = 'public')}
-					class="flex items-center gap-1.5 rounded-full px-3 py-1.5 {visibility === 'public'
-						? 'bg-white text-slate-900 shadow-sm'
-						: 'text-slate-500'}"
-				>
-					<GlobeIcon class="size-3.5" /> Public
-				</button>
-				<button
-					type="button"
-					role="radio"
-					aria-checked={visibility === 'followers-only'}
-					onclick={() => (visibility = 'followers-only')}
-					class="flex items-center gap-1.5 rounded-full px-3 py-1.5 {visibility === 'followers-only'
-						? 'bg-white text-slate-900 shadow-sm'
-						: 'text-slate-500'}"
-				>
-					<LockIcon class="size-3.5" /> Followers
-				</button>
-			</div>
+			<h2 class="text-[15px] font-bold tracking-tight text-slate-900">New Post</h2>
 
 			<button
 				type="submit"
 				disabled={invalid || submitting}
-				class="rounded-full bg-black px-5 py-2 text-sm font-medium text-white transition enabled:hover:bg-slate-800 disabled:bg-slate-400"
+				class="rounded-full bg-slate-900 px-5 py-1.5 text-sm font-bold text-white shadow-sm transition enabled:hover:bg-black enabled:active:scale-95 disabled:bg-slate-200 disabled:text-slate-400"
 			>
-				{submitting ? 'Publishing…' : 'Publish'}
+				{submitting ? 'Posting…' : 'Post'}
 			</button>
 		</div>
 
-		<div class="mt-5 flex gap-4">
-			<Avatar {user} size={48} />
-			<textarea
-				bind:this={textarea}
-				bind:value={content}
-				rows="5"
-				placeholder="Share your perspective…"
-				aria-label="Post text"
-				class="w-full resize-none border-0 bg-transparent p-0 text-lg text-slate-900 placeholder:text-slate-300 focus:ring-0"
-			></textarea>
+		<!-- Main Content Area -->
+		<div class="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
+			<div class="flex gap-3 sm:gap-4">
+				<div class="shrink-0 pt-1">
+					<Avatar {user} size={44} />
+				</div>
+				<div class="flex min-w-0 flex-1 flex-col">
+					<!-- Visibility Toggle -->
+					<div class="mb-2">
+						<button
+							type="button"
+							onclick={() => (visibility = visibility === 'public' ? 'followers-only' : 'public')}
+							class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600 shadow-xs transition hover:bg-slate-50 hover:text-slate-900 active:scale-95"
+						>
+							{#if visibility === 'public'}
+								<GlobeIcon class="size-3.5 text-indigo-500" />
+								<span>Everyone</span>
+							{:else}
+								<LockIcon class="size-3.5 text-amber-500" />
+								<span>Followers only</span>
+							{/if}
+						</button>
+					</div>
+
+					<textarea
+						bind:this={textarea}
+						bind:value={content}
+						oninput={adjust_textarea_height}
+						rows="4"
+						placeholder="What's on your mind?"
+						aria-label="Post text"
+						class="w-full resize-none border-0 bg-transparent p-0 text-[17px] leading-relaxed text-slate-900 placeholder:text-slate-400 focus:ring-0"
+					></textarea>
+
+					<!-- Image Preview -->
+					{#if image_preview}
+						<div class="group relative mt-3 w-fit">
+							<img
+								src={image_preview}
+								alt="Attached media"
+								class="max-h-[320px] max-w-full rounded-2xl border border-slate-100 object-contain shadow-xs"
+							/>
+							<button
+								type="button"
+								onclick={remove_image}
+								class="absolute top-2 right-2 flex size-8 items-center justify-center rounded-full bg-slate-900/60 text-white backdrop-blur-md transition hover:bg-slate-900 active:scale-95"
+								aria-label="Remove image"
+							>
+								<XIcon class="size-4" />
+							</button>
+						</div>
+					{/if}
+				</div>
+			</div>
 		</div>
 
-		{#if image_preview}
-			<div class="relative mt-4 ml-16">
-				<img
-					src={image_preview}
-					alt="Selected preview"
-					class="max-h-[300px] rounded-lg object-cover"
-				/>
-				<button
-					type="button"
-					onclick={remove_image}
-					class="absolute top-2 right-2 flex size-8 items-center justify-center rounded-full bg-slate-900/70 text-white hover:bg-slate-900"
-					aria-label="Remove image"
-				>
-					<XIcon class="size-4" />
-				</button>
-			</div>
-		{/if}
-
-		<div class="mt-4 flex items-center justify-between border-t border-slate-200 pt-4 text-sm">
-			<div class="flex items-center gap-3">
-				<label
-					class="-ml-2 flex cursor-pointer items-center justify-center rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-800"
-				>
-					<ImageIcon class="size-5" />
-					<span class="sr-only">Add image</span>
-					<input
-						type="file"
-						accept="image/jpeg,image/png,image/webp,image/gif"
-						class="hidden"
-						bind:this={image_input}
-						onchange={handle_image_select}
-					/>
-				</label>
-				<p class="min-h-5 text-rose-600" role="alert">{error_message ?? ''}</p>
-				{#if content.trim() || selected_image}
-					<button
-						type="button"
-						class="text-xs font-semibold text-slate-400 transition hover:text-slate-800 hover:underline"
-						onclick={discard_draft}
+		<!-- Bottom Action Bar -->
+		<div class="shrink-0 border-t border-slate-100 bg-slate-50/50 px-4 py-3 sm:px-6">
+			<div class="flex items-center justify-between">
+				<div class="flex items-center gap-2">
+					<label
+						class="flex size-9 cursor-pointer items-center justify-center rounded-full text-indigo-500 transition hover:bg-indigo-50 hover:text-indigo-600 active:scale-95"
 					>
-						Discard draft
-					</button>
-				{/if}
+						<ImageIcon class="size-[22px]" />
+						<span class="sr-only">Add image</span>
+						<input
+							type="file"
+							accept="image/jpeg,image/png,image/webp,image/gif"
+							class="hidden"
+							bind:this={image_input}
+							onchange={handle_image_select}
+						/>
+					</label>
+
+					{#if error_message}
+						<p class="ml-2 text-sm font-medium text-rose-600" role="alert">{error_message}</p>
+					{:else if content.trim() || selected_image}
+						<button
+							type="button"
+							class="ml-2 text-[13px] font-semibold text-slate-400 transition hover:text-rose-600"
+							onclick={() => {
+								if (confirm('Are you sure you want to discard this draft?')) {
+									discard_draft()
+								}
+							}}
+						>
+							Discard
+						</button>
+					{/if}
+				</div>
+
+				<div class="flex items-center gap-3">
+					<div
+						class="flex size-8 items-center justify-center rounded-full bg-white text-[11px] font-bold shadow-xs ring-1 ring-slate-200 {remaining <
+						0
+							? 'text-rose-600 ring-rose-200'
+							: remaining <= 50
+								? 'text-amber-500 ring-amber-200'
+								: 'text-slate-400'}"
+						aria-live="polite"
+					>
+						{remaining}
+					</div>
+				</div>
 			</div>
-			<span
-				class="tabular-nums {remaining < 0
-					? 'text-rose-600'
-					: remaining <= 50
-						? 'text-amber-600'
-						: 'text-slate-400'}"
-				aria-live="polite">{remaining}</span
-			>
 		</div>
 	</form>
 </div>

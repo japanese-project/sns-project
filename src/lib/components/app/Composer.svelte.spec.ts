@@ -18,13 +18,13 @@ describe('Composer', () => {
 		localStorage.setItem('composer_draft', 'my saved draft text')
 		render(Composer, { user: mock_user })
 		await expect
-			.element(page.getByPlaceholder('Share your perspective…'))
+			.element(page.getByPlaceholder("What's on your mind?"))
 			.toHaveValue('my saved draft text')
 	})
 
 	it('saves draft on input', async () => {
 		render(Composer, { user: mock_user })
-		const input = page.getByPlaceholder('Share your perspective…')
+		const input = page.getByPlaceholder("What's on your mind?")
 		await input.fill('new draft')
 		await vi.waitFor(() => {
 			expect(localStorage.getItem('composer_draft')).toBe('new draft')
@@ -33,17 +33,24 @@ describe('Composer', () => {
 
 	it('discards draft when discard button is clicked', async () => {
 		localStorage.setItem('composer_draft', 'some draft')
+
+		// Mock window.confirm to return true automatically
+		const confirm_mock = vi.fn(() => true)
+		vi.stubGlobal('confirm', confirm_mock)
+
 		render(Composer, { user: mock_user })
-		const input = page.getByPlaceholder('Share your perspective…')
+		const input = page.getByPlaceholder("What's on your mind?")
 		await expect.element(input).toHaveValue('some draft')
 
-		const discard_btn = page.getByRole('button', { name: 'Discard draft' })
+		const discard_btn = page.getByRole('button', { name: 'Discard' })
 		await discard_btn.click()
 
 		await expect.element(input).toHaveValue('')
 		await vi.waitFor(() => {
 			expect(localStorage.getItem('composer_draft')).toBeNull()
 		})
+
+		vi.unstubAllGlobals()
 	})
 
 	it('clears draft after successful publish', async () => {
@@ -51,7 +58,7 @@ describe('Composer', () => {
 		render(Composer, { user: mock_user })
 		vi.mocked(api).mockResolvedValue({ id: '123' })
 
-		const publish_btn = page.getByRole('button', { name: 'Publish' })
+		const publish_btn = page.getByRole('button', { name: 'Post' })
 		await publish_btn.click()
 
 		await vi.waitFor(() => {
@@ -63,9 +70,7 @@ describe('Composer', () => {
 		render(Composer, { user: mock_user })
 
 		// Initial state: no image preview
-		await expect
-			.element(page.getByRole('img', { name: 'Selected preview' }))
-			.not.toBeInTheDocument()
+		await expect.element(page.getByRole('img', { name: 'Attached media' })).not.toBeInTheDocument()
 
 		// Select a file
 		const file = new File(['fake content'], 'test.png', { type: 'image/png' })
@@ -78,7 +83,7 @@ describe('Composer', () => {
 		})
 		file_input.dispatchEvent(new Event('change', { bubbles: true }))
 
-		const preview = page.getByRole('img', { name: 'Selected preview' })
+		const preview = page.getByRole('img', { name: 'Attached media' })
 		await expect.element(preview).toBeInTheDocument()
 
 		const remove_btn = page.getByRole('button', { name: 'Remove image' })
