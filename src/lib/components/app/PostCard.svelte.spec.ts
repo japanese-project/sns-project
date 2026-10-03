@@ -68,13 +68,13 @@ describe('PostCard media rendering', () => {
 		await expect.element(image).toHaveAttribute('src', '/api/media/image-only.png')
 	})
 
-	it('renders image within stable aspect-ratio container with object-cover', async () => {
+	it('renders image within stable aspect-ratio container with object-contain', async () => {
 		const post = make_post({ image_url: '/api/media/test-photo.jpg' })
 		render(PostCard, { post })
 
 		const image = page.getByRole('img', { name: 'Post attachment' })
 		await expect.element(image).toBeInTheDocument()
-		await expect.element(image).toHaveClass(/object-cover/)
+		await expect.element(image).toHaveClass(/object-contain/)
 	})
 
 	it('renders fallback when attachment image fails to load with 404 response', async () => {

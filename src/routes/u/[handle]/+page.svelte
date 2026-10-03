@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation'
 	import { resolve } from '$app/paths'
 	import LogOutIcon from '@lucide/svelte/icons/log-out'
+	import SettingsIcon from '@lucide/svelte/icons/settings'
 	import { sign_out } from '$lib/auth-client'
 	import { get_banner_class } from '$lib/banner-themes'
 	import AppShell from '$lib/components/app/AppShell.svelte'
@@ -61,6 +62,14 @@
 						>
 							Edit Profile
 						</button>
+						<a
+							href={resolve('/settings')}
+							aria-label="Settings"
+							class="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-xs transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 active:scale-95"
+						>
+							<SettingsIcon class="size-3.5" />
+							<span class="hidden sm:inline">Settings</span>
+						</a>
 						<button
 							type="button"
 							onclick={handle_sign_out}
@@ -68,7 +77,7 @@
 							class="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-xs transition-all duration-150 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 active:scale-95"
 						>
 							<LogOutIcon class="size-3.5" />
-							<span>Sign out</span>
+							<span class="hidden sm:inline">Sign out</span>
 						</button>
 					{/if}
 				</div>
