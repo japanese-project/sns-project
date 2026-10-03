@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { page } from '$app/stores'
+	import { resolve } from '$app/paths'
 	import UserIcon from '@lucide/svelte/icons/user'
 	import ShieldIcon from '@lucide/svelte/icons/shield'
-	import BellIcon from '@lucide/svelte/icons/bell'
 
 	let { children } = $props()
 
-	const navItems = [
+	const nav_items = [
 		{ href: '/settings/profile', label: 'Profile', icon: UserIcon },
 		{ href: '/settings/privacy', label: 'Privacy & Safety', icon: ShieldIcon },
 	]
@@ -16,9 +16,9 @@
 	<div class="flex flex-col space-y-8 lg:flex-row lg:space-y-0 lg:space-x-12">
 		<aside class="lg:w-1/4">
 			<nav class="flex space-x-2 lg:flex-col lg:space-y-1 lg:space-x-0">
-				{#each navItems as item}
+				{#each nav_items as item (item.href)}
 					<a
-						href={item.href}
+						href={resolve(item.href)}
 						class="flex items-center space-x-2 rounded-md px-3 py-2 text-sm font-medium transition-colors {$page.url.pathname.startsWith(
 							item.href,
 						)
