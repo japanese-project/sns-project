@@ -7,8 +7,10 @@
 	import { relative_time } from '$lib/time'
 	import type { PostView } from '$lib/types'
 	import { parse_content } from '$lib/content'
+	import { extract_first_url } from '$lib/link-preview-client'
 	import Avatar from './Avatar.svelte'
 	import Comments from './Comments.svelte'
+	import LinkPreviewCard from './LinkPreviewCard.svelte'
 	import PencilIcon from '@lucide/svelte/icons/pencil'
 	import GlobeIcon from '@lucide/svelte/icons/globe'
 	import LockIcon from '@lucide/svelte/icons/lock'
@@ -62,6 +64,7 @@
 	let image_load_failed = $state(false)
 	let image_loaded = $state(false)
 	let aspect_ratio_hint = $derived(extract_aspect_ratio_hint(active_post.image_url))
+	let preview_url = $derived(extract_first_url(active_post.content))
 	let natural_aspect_ratio = $state<number | null>(null)
 	let effective_aspect_ratio = $derived(natural_aspect_ratio ?? aspect_ratio_hint)
 
@@ -500,6 +503,9 @@
 							{/each}
 						</p>
 					{/if}
+					{#if preview_url}
+						<LinkPreviewCard url={preview_url} compact={true} />
+					{/if}
 				</div>
 			{:else}
 				<button
@@ -558,6 +564,9 @@
 							{/if}
 						{/each}
 					</p>
+				{/if}
+				{#if preview_url}
+					<LinkPreviewCard url={preview_url} />
 				{/if}
 			{/if}
 

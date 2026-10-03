@@ -113,6 +113,37 @@ describe('Bot LLM / template formatter & Comment Generator', () => {
 		expect(content).toContain(item.link)
 	})
 
+	it('produces unique signature post structures for distinct personas', async () => {
+		const item = {
+			title: 'Major Breakthrough in Autonomous Web Development',
+			link: 'https://example.com/breakthrough',
+			description: 'New framework announced.',
+		}
+
+		const vibe_coder = BOT_PERSONAS.find((b) => b.id === 'bot_vibe_coder')!
+		const agent_flow = BOT_PERSONAS.find((b) => b.id === 'bot_agent_flow')!
+		const oss_watcher = BOT_PERSONAS.find((b) => b.id === 'bot_oss_watcher')!
+		const coffee_dial = BOT_PERSONAS.find((b) => b.id === 'bot_coffee_dial')!
+		const macro_pulse = BOT_PERSONAS.find((b) => b.id === 'bot_macro_pulse')!
+
+		const post1 = await generate_post_content(vibe_coder, item, {})
+		const post2 = await generate_post_content(agent_flow, item, {})
+		const post3 = await generate_post_content(oss_watcher, item, {})
+		const post4 = await generate_post_content(coffee_dial, item, {})
+		const post5 = await generate_post_content(macro_pulse, item, {})
+
+		// Check that each post is unique and not identical
+		const set = new Set([post1, post2, post3, post4, post5])
+		expect(set.size).toBe(5)
+
+		// Check signature elements
+		expect(post1).toMatch(/VIBE CHECK|Tooling speed|workflow note/)
+		expect(post2).toMatch(/Autonomous Agent Log|Agentic Workflow/)
+		expect(post3).toMatch(/Open Source|GitHub Gem/)
+		expect(post4).toMatch(/Dialing in|Specialty Brew/)
+		expect(post5).toMatch(/Macro Intelligence|Global Macro/)
+	})
+
 	it('generates natural short comments reacting to posts', async () => {
 		const persona = BOT_PERSONAS[0]
 		const post_text =

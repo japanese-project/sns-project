@@ -1,23 +1,38 @@
 <script lang="ts">
+	/* eslint-disable svelte/no-navigation-without-resolve */
 	import { enhance } from '$app/forms'
 	import { resolve } from '$app/paths'
 	import AppShell from '$lib/components/app/AppShell.svelte'
 	import Avatar from '$lib/components/app/Avatar.svelte'
-	import BanIcon from '@lucide/svelte/icons/ban'
+	import LinkPreviewCard from '$lib/components/app/LinkPreviewCard.svelte'
+	import { parse_content } from '$lib/content'
+	import { extract_first_url } from '$lib/link-preview-client'
+	import { relative_time } from '$lib/time'
 	import CalendarIcon from '@lucide/svelte/icons/calendar'
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link'
+	import LayoutGridIcon from '@lucide/svelte/icons/layout-grid'
+	import ListIcon from '@lucide/svelte/icons/list'
 	import LockIcon from '@lucide/svelte/icons/lock'
+	import MessageSquareIcon from '@lucide/svelte/icons/message-square'
 	import PauseIcon from '@lucide/svelte/icons/pause'
 	import PencilIcon from '@lucide/svelte/icons/pencil'
 	import PlayIcon from '@lucide/svelte/icons/play'
 	import PlusIcon from '@lucide/svelte/icons/plus'
 	import SearchIcon from '@lucide/svelte/icons/search'
 	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check'
+	import SlidersHorizontalIcon from '@lucide/svelte/icons/sliders-horizontal'
 	import SparklesIcon from '@lucide/svelte/icons/sparkles'
 	import TrashIcon from '@lucide/svelte/icons/trash'
+	import UsersIcon from '@lucide/svelte/icons/users'
 	import XIcon from '@lucide/svelte/icons/x'
 
 	let { data, form } = $props()
+
+	// Tab Navigation: 'controls' | 'fleet' | 'posts'
+	let active_tab = $state<'controls' | 'fleet' | 'posts'>('controls')
+
+	// Fleet view mode: 'table' | 'grid'
+	let fleet_view_mode = $state<'table' | 'grid'>('table')
 
 	let is_triggering = $state(false)
 	let trigger_message = $state<string | null>(null)
@@ -25,6 +40,10 @@
 	let custom_end_date = $state<string>('')
 	let search_query = $state<string>('')
 	let selected_category = $state<string>('all')
+
+	// Recent Posts filter
+	let post_bot_filter = $state<string>('all')
+	let post_search = $state<string>('')
 
 	// Modals
 	let show_create_modal = $state(false)
@@ -136,6 +155,23 @@
 		}
 		return list
 	})
+
+	let filtered_recent_posts = $derived(() => {
+		let list = data.recent_posts
+		if (post_bot_filter !== 'all') {
+			list = list.filter((p) => p.user_id === post_bot_filter)
+		}
+		if (post_search.trim()) {
+			const q = post_search.toLowerCase().trim()
+			list = list.filter(
+				(p) =>
+					p.content.toLowerCase().includes(q) ||
+					p.user_name.toLowerCase().includes(q) ||
+					(p.user_username && p.user_username.toLowerCase().includes(q)),
+			)
+		}
+		return list
+	})
 </script>
 
 <svelte:head>
@@ -161,8 +197,7 @@
 				</div>
 				<h1 class="text-2xl font-black tracking-tight text-slate-900">Bot Operations Center</h1>
 				<p class="text-sm text-slate-500">
-					Curate breaking news from trusted publications, configure AI personalities, and manage
-					autonomous social interactions.
+					Curate breaking news, configure AI personalities, and manage autonomous schedule flows.
 				</p>
 			</div>
 
@@ -228,483 +263,742 @@
 				</form>
 			</div>
 		{:else}
-			<!-- Quick Stats Row -->
-			<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-				<div class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs">
-					<div class="text-xs font-medium text-slate-400 uppercase">Automation</div>
-					<div class="mt-1 flex items-center gap-2">
-						{#if data.config?.enabled}
-							<span class="size-2.5 animate-pulse rounded-full bg-emerald-500"></span>
-							<span class="text-sm font-bold text-emerald-700">Active</span>
-						{:else}
-							<span class="size-2.5 rounded-full bg-amber-500"></span>
-							<span class="text-sm font-bold text-amber-700">Paused</span>
-						{/if}
-					</div>
-					<div class="mt-1 text-[11px] text-slate-500">
-						Interval: Every {data.config?.interval_hours ?? 3}h
-					</div>
-				</div>
+			<!-- Primary Navigation Tabs (Eliminates infinite vertical scroll) -->
+			<div class="flex items-center justify-between border-b border-slate-200/80 pb-1">
+				<nav class="flex items-center gap-2" aria-label="Admin Navigation Tabs">
+					<button
+						type="button"
+						onclick={() => (active_tab = 'controls')}
+						class="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition {active_tab ===
+						'controls'
+							? 'bg-slate-900 text-white shadow-xs'
+							: 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900'}"
+					>
+						<SlidersHorizontalIcon class="size-3.5" />
+						<span>Overview & Controls</span>
+					</button>
 
-				<div class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs">
-					<div class="text-xs font-medium text-slate-400 uppercase">Schedule Status</div>
-					<div class="mt-1 truncate text-sm font-bold text-slate-900">
-						{data.config?.campaign_end ? 'Scheduled Limit' : 'Continuous (Indefinite)'}
-					</div>
-					<div class="mt-1 truncate text-[11px] text-slate-500">
-						{campaign_end_display()}
-					</div>
-				</div>
+					<button
+						type="button"
+						onclick={() => (active_tab = 'fleet')}
+						class="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition {active_tab ===
+						'fleet'
+							? 'bg-slate-900 text-white shadow-xs'
+							: 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900'}"
+					>
+						<UsersIcon class="size-3.5" />
+						<span>Bot Fleet</span>
+						<span
+							class="py-0.2 rounded-full px-1.5 text-[10px] {active_tab === 'fleet'
+								? 'bg-white/20 text-white'
+								: 'bg-slate-100 text-slate-600'}"
+						>
+							{data.personas.length}
+						</span>
+					</button>
 
-				<div class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs">
-					<div class="text-xs font-medium text-slate-400 uppercase">Fleet Size</div>
-					<div class="mt-1 text-sm font-bold text-slate-900">
-						{data.personas.length} Accounts
-					</div>
-					<div class="mt-1 text-[11px] text-slate-500">
-						{data.personas.filter((b) => b.is_custom).length} custom configured
-					</div>
-				</div>
-
-				<div class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs">
-					<div class="text-xs font-medium text-slate-400 uppercase">Today's Posts</div>
-					<div class="mt-1 text-sm font-bold text-slate-900">
-						{data.personas.reduce((sum, b) => sum + b.daily_posts, 0)} seeded
-					</div>
-					<div class="mt-1 text-[11px] text-slate-500">Max limit 3/day per bot</div>
-				</div>
+					<button
+						type="button"
+						onclick={() => (active_tab = 'posts')}
+						class="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition {active_tab ===
+						'posts'
+							? 'bg-slate-900 text-white shadow-xs'
+							: 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900'}"
+					>
+						<MessageSquareIcon class="size-3.5" />
+						<span>Recent Posts</span>
+						<span
+							class="py-0.2 rounded-full px-1.5 text-[10px] {active_tab === 'posts'
+								? 'bg-white/20 text-white'
+								: 'bg-slate-100 text-slate-600'}"
+						>
+							{data.recent_posts.length}
+						</span>
+					</button>
+				</nav>
 			</div>
 
-			<!-- Master Controls Grid -->
-			<div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
-				<!-- Control 1: Master Status Switch -->
-				<div
-					class="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs"
-				>
-					<div>
-						<div class="flex items-center justify-between">
-							<span class="text-xs font-bold tracking-wider text-slate-400 uppercase"
-								>Pipeline Status</span
-							>
-							{#if data.config?.enabled}
-								<PlayIcon class="size-4 text-emerald-600" />
-							{:else}
-								<PauseIcon class="size-4 text-amber-600" />
-							{/if}
-						</div>
-						<h3 class="mt-2 text-base font-bold text-slate-900">
-							{data.config?.enabled ? 'Running Normally' : 'Currently Paused'}
-						</h3>
-						<p class="mt-1 text-xs text-slate-500">
-							{data.config?.enabled
-								? 'The autonomous bot pipeline executes on schedule every 3 hours with breaking news from trusted feeds.'
-								: 'Automated runs are suspended. Bots will not post until resumed.'}
-						</p>
-					</div>
-
-					<form method="POST" action="?/toggle_status" use:enhance class="mt-4">
-						<input type="hidden" name="enabled" value={data.config?.enabled ? 'false' : 'true'} />
-						<button
-							type="submit"
-							class="w-full rounded-xl px-4 py-2.5 text-xs font-semibold transition active:scale-95 {data
-								.config?.enabled
-								? 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-								: 'bg-emerald-600 text-white hover:bg-emerald-700'}"
-						>
-							{data.config?.enabled ? 'Pause Automated Posting' : 'Resume Automated Posting'}
-						</button>
-					</form>
-				</div>
-
-				<!-- Control 2: Schedule & Campaign End Timing -->
-				<div
-					class="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs"
-				>
-					<div>
-						<div class="flex items-center justify-between">
-							<span class="text-xs font-bold tracking-wider text-slate-400 uppercase"
-								>Schedule Control</span
-							>
-							<CalendarIcon class="size-4 text-slate-400" />
-						</div>
-						<h3 class="mt-2 truncate text-sm font-bold text-slate-900">
-							{campaign_end_display()}
-						</h3>
-						<p class="mt-1 text-xs text-slate-500">
-							Set a stop date, or cancel schedule to let bots post continuously.
-						</p>
-					</div>
-
-					<!-- Presets & Cancel Action -->
-					<div class="mt-3 space-y-2">
-						<div class="flex flex-wrap gap-1.5">
-							<button
-								type="button"
-								onclick={() => preset_date(3)}
-								class="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
-							>
-								+3 Days
-							</button>
-							<button
-								type="button"
-								onclick={() => preset_date(7)}
-								class="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
-							>
-								+1 Week
-							</button>
-							<button
-								type="button"
-								onclick={() => preset_date(14)}
-								class="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
-							>
-								+2 Weeks
-							</button>
-						</div>
-
-						<form method="POST" action="?/set_campaign" use:enhance class="space-y-2">
-							<input
-								type="datetime-local"
-								name="campaign_end"
-								bind:value={custom_end_date}
-								class="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs text-slate-800 focus:ring-1 focus:ring-slate-900 focus:outline-none"
-							/>
-							<div class="flex gap-2">
-								<button
-									type="submit"
-									class="flex-1 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-slate-800 active:scale-95"
-								>
-									Update Schedule
-								</button>
-								{#if data.config?.campaign_end}
-									<button
-										formaction="?/cancel_campaign"
-										type="submit"
-										title="Cancel schedule to run continuously without end date"
-										class="flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 active:scale-95"
-									>
-										<BanIcon class="size-3" />
-										Cancel Schedule
-									</button>
+			<!-- ───────────────────────────────────────────────────────────── -->
+			<!-- TAB 1: OVERVIEW & MASTER CONTROLS                            -->
+			<!-- ───────────────────────────────────────────────────────────── -->
+			{#if active_tab === 'controls'}
+				<div class="space-y-6">
+					<!-- Quick Metrics Row -->
+					<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+						<div class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs">
+							<div class="text-xs font-medium text-slate-400 uppercase">Automation</div>
+							<div class="mt-1 flex items-center gap-2">
+								{#if data.config?.enabled}
+									<span class="size-2.5 animate-pulse rounded-full bg-emerald-500"></span>
+									<span class="text-sm font-bold text-emerald-700">Active</span>
+								{:else}
+									<span class="size-2.5 rounded-full bg-amber-500"></span>
+									<span class="text-sm font-bold text-amber-700">Paused</span>
 								{/if}
 							</div>
-						</form>
-					</div>
-				</div>
-
-				<!-- Control 3: Trigger Instant Post & Social Interaction -->
-				<div
-					class="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs"
-				>
-					<div>
-						<div class="flex items-center justify-between">
-							<span class="text-xs font-bold tracking-wider text-slate-400 uppercase"
-								>Manual Trigger</span
-							>
-							<SparklesIcon class="size-4 text-indigo-500" />
+							<div class="mt-1 text-[11px] text-slate-500">
+								Interval: Every {data.config?.interval_hours ?? 3}h
+							</div>
 						</div>
-						<h3 class="mt-2 text-base font-bold text-slate-900">Post & Interact Now</h3>
-						<p class="mt-1 text-xs text-slate-500">
-							Scrapes fresh breaking news, generates authentic post, and simulates cross-bot likes
-							and comments!
-						</p>
+
+						<div class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs">
+							<div class="text-xs font-medium text-slate-400 uppercase">Schedule Status</div>
+							<div class="mt-1 truncate text-sm font-bold text-slate-900">
+								{data.config?.campaign_end ? 'Scheduled Limit' : 'Continuous (Indefinite)'}
+							</div>
+							<div class="mt-1 truncate text-[11px] text-slate-500">
+								{campaign_end_display()}
+							</div>
+						</div>
+
+						<div class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs">
+							<div class="text-xs font-medium text-slate-400 uppercase">Fleet Size</div>
+							<div class="mt-1 text-sm font-bold text-slate-900">
+								{data.personas.length} Accounts
+							</div>
+							<div class="mt-1 text-[11px] text-slate-500">
+								{data.personas.filter((b) => b.is_custom).length} custom configured
+							</div>
+						</div>
+
+						<div class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs">
+							<div class="text-xs font-medium text-slate-400 uppercase">Today's Posts</div>
+							<div class="mt-1 text-sm font-bold text-slate-900">
+								{data.personas.reduce((sum, b) => sum + b.daily_posts, 0)} seeded
+							</div>
+							<div class="mt-1 text-[11px] text-slate-500">Max limit 3/day per bot</div>
+						</div>
 					</div>
 
-					<form
-						method="POST"
-						action="?/trigger_bot"
-						use:enhance={() => {
-							is_triggering = true
-							trigger_message = null
-							return async ({ update, result }) => {
-								await update()
-								is_triggering = false
-								if (result.type === 'success' && result.data) {
-									const data_res = result.data as {
-										result?: {
-											posted?: { botHandle: string; title: string }
-											socialActivity?: { likesAdded: number; commentsAdded: number }
-											message?: string
-										}
-									}
-									const res = data_res.result
-									if (res?.posted) {
-										const act = res.socialActivity
-										const act_msg =
-											act && (act.likesAdded > 0 || act.commentsAdded > 0)
-												? ` (${act.likesAdded} likes, ${act.commentsAdded} comments added)`
-												: ''
-										trigger_message = `✅ @${res.posted.botHandle} published: "${res.posted.title.slice(0, 36)}..."${act_msg}`
-									} else {
-										trigger_message = res?.message ?? 'Executed cycle.'
-									}
-								}
-							}
-						}}
-						class="mt-4 space-y-2"
-					>
-						<select
-							name="bot_id"
-							bind:value={selected_bot_id}
-							class="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs text-slate-800 focus:ring-1 focus:ring-slate-900 focus:outline-none"
-						>
-							<option value="">🎲 Auto-pick least active bot</option>
-							{#each data.personas as bot (bot.id)}
-								<option value={bot.id}>@{bot.username} ({bot.name})</option>
-							{/each}
-						</select>
-
-						<button
-							type="submit"
-							disabled={is_triggering}
-							class="flex w-full items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition hover:bg-indigo-700 active:scale-95 disabled:opacity-50"
-						>
-							<SparklesIcon class="size-3.5 {is_triggering ? 'animate-spin' : ''}" />
-							{is_triggering ? 'Fetching Live News & Simulating...' : 'Trigger Bot Post ⚡'}
-						</button>
-					</form>
-
-					{#if trigger_message}
+					<!-- Master Controls Grid -->
+					<div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+						<!-- Control 1: Master Status Switch -->
 						<div
-							class="mt-2 rounded-lg bg-emerald-50 p-2.5 text-[11px] font-medium text-emerald-800"
-						>
-							{trigger_message}
-						</div>
-					{/if}
-				</div>
-			</div>
-
-			<!-- Bot Fleet Directory -->
-			<div class="space-y-5 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs">
-				<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-					<div>
-						<h2 class="text-lg font-bold text-slate-900">
-							Bot Personas Directory ({data.personas.length} Accounts)
-						</h2>
-						<p class="text-xs text-slate-500">
-							Manage account identities, usernames, bios, trusted news feeds, and personality
-							prompts.
-						</p>
-					</div>
-
-					<div class="flex flex-wrap items-center gap-2">
-						<!-- Search Bar -->
-						<div class="relative">
-							<SearchIcon
-								class="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400"
-							/>
-							<input
-								type="text"
-								bind:value={search_query}
-								placeholder="Search bots or topics..."
-								class="rounded-xl border border-slate-200 bg-slate-50/60 py-1.5 pr-3 pl-8 text-xs text-slate-800 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none"
-							/>
-						</div>
-
-						<button
-							type="button"
-							onclick={() => (show_create_modal = true)}
-							class="flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-slate-800"
-						>
-							<PlusIcon class="size-3.5" />
-							New Bot
-						</button>
-					</div>
-				</div>
-
-				<!-- Category Filters -->
-				<div class="flex flex-wrap items-center gap-1.5 border-b border-slate-100 pb-3 text-xs">
-					{#each [{ id: 'all', label: 'All Bots' }, { id: 'tech', label: 'Tech & AI' }, { id: 'anime', label: 'Anime & Manga' }, { id: 'movie', label: 'Entertainment' }, { id: 'economic', label: 'Economics' }, { id: 'cafe', label: 'Coffee & Cafe' }, { id: 'custom', label: 'Custom Bots' }] as tab (tab.id)}
-						<button
-							type="button"
-							onclick={() => (selected_category = tab.id)}
-							class="rounded-lg px-2.5 py-1 text-xs font-medium transition {selected_category ===
-							tab.id
-								? 'bg-slate-900 text-white'
-								: 'bg-slate-100 text-slate-600 hover:bg-slate-200'}"
-						>
-							{tab.label}
-						</button>
-					{/each}
-				</div>
-
-				<!-- Personas Grid -->
-				<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-					{#each filtered_personas() as bot (bot.id)}
-						<div
-							class="flex flex-col justify-between rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition hover:border-slate-300 hover:shadow-xs"
+							class="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs"
 						>
 							<div>
-								<div class="flex items-start justify-between gap-3">
-									<div class="flex items-start gap-3">
-										<Avatar
-											user={{
-												name: bot.name,
-												image: bot.image,
-											}}
-											size={42}
-										/>
-										<div class="min-w-0">
-											<div class="flex items-center gap-1.5">
-												<span class="truncate text-xs font-bold text-slate-900">{bot.name}</span>
-												{#if bot.is_custom}
-													<span
-														class="py-0.2 rounded bg-indigo-50 px-1.5 text-[10px] font-semibold text-indigo-700"
-														>Custom</span
+								<div class="flex items-center justify-between">
+									<span class="text-xs font-bold tracking-wider text-slate-400 uppercase"
+										>Pipeline Status</span
+									>
+									{#if data.config?.enabled}
+										<PlayIcon class="size-4 text-emerald-600" />
+									{:else}
+										<PauseIcon class="size-4 text-amber-600" />
+									{/if}
+								</div>
+								<h3 class="mt-2 text-base font-bold text-slate-900">
+									{data.config?.enabled ? 'Running Normally' : 'Currently Paused'}
+								</h3>
+								<p class="mt-1 text-xs text-slate-500">
+									{data.config?.enabled
+										? 'The autonomous bot pipeline executes on schedule every 3 hours with breaking news from trusted feeds.'
+										: 'Automated runs are suspended. Bots will not post until resumed.'}
+								</p>
+							</div>
+
+							<form method="POST" action="?/toggle_status" use:enhance class="mt-4">
+								<input
+									type="hidden"
+									name="enabled"
+									value={data.config?.enabled ? 'false' : 'true'}
+								/>
+								<button
+									type="submit"
+									class="w-full rounded-xl px-4 py-2.5 text-xs font-semibold transition active:scale-95 {data
+										.config?.enabled
+										? 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+										: 'bg-emerald-600 text-white hover:bg-emerald-700'}"
+								>
+									{data.config?.enabled ? 'Pause Automated Posting' : 'Resume Automated Posting'}
+								</button>
+							</form>
+						</div>
+
+						<!-- Control 2: Schedule & Campaign End Timing -->
+						<div
+							class="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs"
+						>
+							<div>
+								<div class="flex items-center justify-between">
+									<span class="text-xs font-bold tracking-wider text-slate-400 uppercase"
+										>Schedule Control</span
+									>
+									<CalendarIcon class="size-4 text-slate-400" />
+								</div>
+								<h3 class="mt-2 truncate text-sm font-bold text-slate-900">
+									{campaign_end_display()}
+								</h3>
+								<p class="mt-1 text-xs text-slate-500">
+									Set a stop date, or cancel schedule to let bots post continuously.
+								</p>
+							</div>
+
+							<!-- Presets & Cancel Action -->
+							<div class="mt-3 space-y-2">
+								<div class="flex flex-wrap gap-1.5">
+									<button
+										type="button"
+										onclick={() => preset_date(3)}
+										class="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
+									>
+										+3 Days
+									</button>
+									<button
+										type="button"
+										onclick={() => preset_date(7)}
+										class="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
+									>
+										+1 Week
+									</button>
+									<button
+										type="button"
+										onclick={() => preset_date(14)}
+										class="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
+									>
+										+2 Weeks
+									</button>
+								</div>
+
+								<form method="POST" action="?/set_campaign" use:enhance class="flex gap-2">
+									<input
+										type="datetime-local"
+										name="end_date"
+										bind:value={custom_end_date}
+										required
+										class="w-full rounded-xl border border-slate-200 px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none"
+									/>
+									<button
+										type="submit"
+										class="rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-slate-800"
+									>
+										Set
+									</button>
+								</form>
+
+								{#if data.config?.campaign_end}
+									<form method="POST" action="?/cancel_campaign" use:enhance>
+										<button
+											type="submit"
+											class="w-full text-center text-[11px] font-semibold text-rose-600 hover:underline"
+										>
+											Clear schedule (Continuous)
+										</button>
+									</form>
+								{/if}
+							</div>
+						</div>
+
+						<!-- Control 3: Manual News Post Trigger -->
+						<div
+							class="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs"
+						>
+							<div>
+								<div class="flex items-center justify-between">
+									<span class="text-xs font-bold tracking-wider text-slate-400 uppercase"
+										>Immediate Trigger</span
+									>
+									<SparklesIcon class="size-4 text-indigo-500" />
+								</div>
+								<h3 class="mt-2 text-base font-bold text-slate-900">Run Single Cycle</h3>
+								<p class="mt-1 text-xs text-slate-500">
+									Fetches live news items, matches persona topic, and creates a realistic post
+									instantly.
+								</p>
+							</div>
+
+							<form
+								method="POST"
+								action="?/trigger_bot"
+								use:enhance={() => {
+									is_triggering = true
+									trigger_message = null
+									return async ({ update, result }) => {
+										await update()
+										is_triggering = false
+										if (result.type === 'success' && result.data && 'message' in result.data) {
+											trigger_message = result.data.message as string
+										}
+									}
+								}}
+								class="mt-3 space-y-2"
+							>
+								<select
+									name="bot_id"
+									bind:value={selected_bot_id}
+									class="w-full rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none"
+								>
+									<option value="">🎲 Auto-pick least active bot</option>
+									{#each data.personas as bot (bot.id)}
+										<option value={bot.id}>@{bot.username} ({bot.name})</option>
+									{/each}
+								</select>
+
+								<button
+									type="submit"
+									disabled={is_triggering}
+									class="flex w-full items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition hover:bg-indigo-700 active:scale-95 disabled:opacity-50"
+								>
+									<SparklesIcon class="size-3.5 {is_triggering ? 'animate-spin' : ''}" />
+									{is_triggering ? 'Fetching Live News & Simulating...' : 'Trigger Bot Post ⚡'}
+								</button>
+							</form>
+
+							{#if trigger_message}
+								<div
+									class="mt-2 rounded-lg bg-emerald-50 p-2.5 text-[11px] font-medium text-emerald-800"
+								>
+									{trigger_message}
+								</div>
+							{/if}
+						</div>
+					</div>
+				</div>
+			{/if}
+
+			<!-- ───────────────────────────────────────────────────────────── -->
+			<!-- TAB 2: BOT FLEET DIRECTORY                                  -->
+			<!-- ───────────────────────────────────────────────────────────── -->
+			{#if active_tab === 'fleet'}
+				<div class="space-y-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs">
+					<!-- Directory Header with Controls -->
+					<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+						<div>
+							<h2 class="text-lg font-bold text-slate-900">
+								Bot Fleet Directory ({filtered_personas().length} of {data.personas.length} Accounts)
+							</h2>
+							<p class="text-xs text-slate-500">
+								Manage account identities, unique writing styles, trusted RSS feeds, and personality
+								prompts.
+							</p>
+						</div>
+
+						<div class="flex flex-wrap items-center gap-2">
+							<!-- Search Input -->
+							<div class="relative">
+								<SearchIcon
+									class="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400"
+								/>
+								<input
+									type="text"
+									bind:value={search_query}
+									placeholder="Search bots or topics..."
+									class="rounded-xl border border-slate-200 bg-slate-50/60 py-1.5 pr-3 pl-8 text-xs text-slate-800 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none"
+								/>
+							</div>
+
+							<!-- View Mode Toggle (Table / Grid) -->
+							<div class="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-0.5">
+								<button
+									type="button"
+									onclick={() => (fleet_view_mode = 'table')}
+									class="rounded-lg p-1.5 transition {fleet_view_mode === 'table'
+										? 'bg-white text-slate-900 shadow-2xs'
+										: 'text-slate-400 hover:text-slate-700'}"
+									title="Compact Table View (Scan all bots without scrolling)"
+									aria-label="Table View"
+								>
+									<ListIcon class="size-3.5" />
+								</button>
+								<button
+									type="button"
+									onclick={() => (fleet_view_mode = 'grid')}
+									class="rounded-lg p-1.5 transition {fleet_view_mode === 'grid'
+										? 'bg-white text-slate-900 shadow-2xs'
+										: 'text-slate-400 hover:text-slate-700'}"
+									title="Grid Card View"
+									aria-label="Grid View"
+								>
+									<LayoutGridIcon class="size-3.5" />
+								</button>
+							</div>
+
+							<button
+								type="button"
+								onclick={() => (show_create_modal = true)}
+								class="flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-slate-800"
+							>
+								<PlusIcon class="size-3.5" />
+								New Bot
+							</button>
+						</div>
+					</div>
+
+					<!-- Category Filters -->
+					<div class="flex flex-wrap items-center gap-1.5 border-b border-slate-100 pb-3 text-xs">
+						{#each [{ id: 'all', label: 'All Bots' }, { id: 'tech', label: 'Tech & AI' }, { id: 'anime', label: 'Anime & Manga' }, { id: 'movie', label: 'Entertainment' }, { id: 'economic', label: 'Economics' }, { id: 'cafe', label: 'Coffee & Cafe' }, { id: 'custom', label: 'Custom Bots' }] as tab (tab.id)}
+							<button
+								type="button"
+								onclick={() => (selected_category = tab.id)}
+								class="rounded-lg px-2.5 py-1 text-xs font-medium transition {selected_category ===
+								tab.id
+									? 'bg-slate-900 text-white'
+									: 'bg-slate-100 text-slate-600 hover:bg-slate-200'}"
+							>
+								{tab.label}
+							</button>
+						{/each}
+					</div>
+
+					{#if filtered_personas().length === 0}
+						<div class="py-12 text-center text-xs text-slate-400">
+							No bots found matching your search and filter criteria.
+						</div>
+					{:else if fleet_view_mode === 'table'}
+						<!-- High-Density Compact Table View -->
+						<div class="overflow-x-auto rounded-2xl border border-slate-200/80">
+							<table class="w-full text-left text-xs">
+								<thead class="bg-slate-50 font-bold text-slate-500 uppercase">
+									<tr class="border-b border-slate-200/80">
+										<th class="py-3 pr-3 pl-4">Persona</th>
+										<th class="hidden px-3 py-3 md:table-cell">Focus Topics</th>
+										<th class="hidden px-3 py-3 sm:table-cell">Feeds</th>
+										<th class="px-3 py-3">Today / Total</th>
+										<th class="py-3 pr-4 pl-3 text-right">Actions</th>
+									</tr>
+								</thead>
+								<tbody class="divide-y divide-slate-100 bg-white">
+									{#each filtered_personas() as bot (bot.id)}
+										<tr class="transition hover:bg-slate-50/70">
+											<!-- Bot Profile -->
+											<td class="py-3 pr-3 pl-4">
+												<div class="flex items-center gap-2.5">
+													<Avatar
+														user={{
+															name: bot.name,
+															image: bot.image,
+														}}
+														size={34}
+													/>
+													<div class="min-w-0">
+														<div class="flex items-center gap-1.5">
+															<span class="truncate font-bold text-slate-900">{bot.name}</span>
+															{#if bot.is_custom}
+																<span
+																	class="py-0.2 rounded bg-indigo-50 px-1 text-[9px] font-semibold text-indigo-700"
+																	>Custom</span
+																>
+															{/if}
+														</div>
+														<a
+															href={resolve('/u/[handle]', { handle: bot.username })}
+															target="_blank"
+															class="inline-flex items-center gap-0.5 truncate text-[11px] text-slate-500 hover:text-indigo-600"
+														>
+															@{bot.username}
+															<ExternalLinkIcon class="size-2.5 opacity-60" />
+														</a>
+													</div>
+												</div>
+											</td>
+
+											<!-- Topics -->
+											<td class="hidden px-3 py-3 md:table-cell">
+												<div class="flex max-w-[220px] flex-wrap gap-1">
+													{#each (bot.hashtags || []).slice(0, 2) as tag (tag)}
+														<span
+															class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600"
+														>
+															{tag}
+														</span>
+													{/each}
+												</div>
+											</td>
+
+											<!-- Feeds -->
+											<td class="hidden px-3 py-3 sm:table-cell">
+												<span
+													class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600"
+												>
+													{(bot.feeds || []).length} feeds
+												</span>
+											</td>
+
+											<!-- Posts count -->
+											<td class="px-3 py-3">
+												<span class="font-bold text-slate-800">{bot.daily_posts}/3</span>
+												<span class="text-[10px] text-slate-400">({bot.total_posts} total)</span>
+											</td>
+
+											<!-- Actions -->
+											<td class="py-3 pr-4 pl-3 text-right">
+												<div class="flex items-center justify-end gap-1.5">
+													<form method="POST" action="?/trigger_bot" use:enhance>
+														<input type="hidden" name="bot_id" value={bot.id} />
+														<button
+															type="submit"
+															title="Trigger post now"
+															class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 shadow-2xs hover:bg-slate-100"
+														>
+															Post ⚡
+														</button>
+													</form>
+
+													<button
+														type="button"
+														onclick={() => open_edit_modal(bot)}
+														title="Edit profile & prompt"
+														class="rounded-lg border border-slate-200 bg-white p-1 text-slate-600 shadow-2xs hover:bg-slate-50"
 													>
-												{/if}
+														<PencilIcon class="size-3.5" />
+													</button>
+
+													{#if bot.is_custom}
+														<form method="POST" action="?/delete_bot" use:enhance>
+															<input type="hidden" name="bot_id" value={bot.id} />
+															<button
+																type="submit"
+																onclick={(e) => {
+																	if (!confirm(`Delete custom bot @${bot.username}?`)) {
+																		e.preventDefault()
+																	}
+																}}
+																class="rounded-lg p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+															>
+																<TrashIcon class="size-3.5" />
+															</button>
+														</form>
+													{/if}
+												</div>
+											</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
+					{:else}
+						<!-- Grid View Mode -->
+						<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+							{#each filtered_personas() as bot (bot.id)}
+								<div
+									class="flex flex-col justify-between rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition hover:border-slate-300 hover:shadow-xs"
+								>
+									<div>
+										<div class="flex items-start justify-between gap-3">
+											<div class="flex items-start gap-3">
+												<Avatar
+													user={{
+														name: bot.name,
+														image: bot.image,
+													}}
+													size={42}
+												/>
+												<div class="min-w-0">
+													<div class="flex items-center gap-1.5">
+														<span class="truncate text-xs font-bold text-slate-900">{bot.name}</span
+														>
+														{#if bot.is_custom}
+															<span
+																class="py-0.2 rounded bg-indigo-50 px-1.5 text-[10px] font-semibold text-indigo-700"
+																>Custom</span
+															>
+														{/if}
+													</div>
+													<a
+														href={resolve('/u/[handle]', { handle: bot.username })}
+														target="_blank"
+														class="inline-flex items-center gap-0.5 truncate text-[11px] text-slate-500 hover:text-indigo-600"
+													>
+														@{bot.username}
+														<ExternalLinkIcon class="size-2.5 opacity-60" />
+													</a>
+												</div>
 											</div>
-											<a
-												href={resolve('/u/[handle]', { handle: bot.username })}
-												target="_blank"
-												class="inline-flex items-center gap-0.5 truncate text-[11px] text-slate-500 hover:text-indigo-600"
+
+											<button
+												type="button"
+												onclick={() => open_edit_modal(bot)}
+												title="Edit Bot"
+												class="rounded-lg border border-slate-200 bg-white p-1.5 text-slate-600 shadow-2xs hover:bg-slate-50"
 											>
-												@{bot.username}
-												<ExternalLinkIcon class="size-2.5 opacity-60" />
-											</a>
+												<PencilIcon class="size-3.5" />
+											</button>
+										</div>
+
+										<p class="mt-2.5 line-clamp-2 text-xs text-slate-600">
+											{bot.bio}
+										</p>
+
+										<div class="mt-2.5 flex flex-wrap gap-1">
+											{#each (bot.feeds || []).slice(0, 2) as f (f)}
+												<span
+													class="max-w-[180px] truncate rounded border border-slate-200/60 bg-white px-1.5 py-0.5 text-[10px] font-medium text-slate-500"
+												>
+													{f.replace(/https?:\/\/(www\.)?/, '').split('/')[0]}
+												</span>
+											{/each}
+											{#if (bot.feeds || []).length > 2}
+												<span class="text-[10px] text-slate-400">+{bot.feeds.length - 2} more</span>
+											{/if}
 										</div>
 									</div>
 
-									<button
-										type="button"
-										onclick={() => open_edit_modal(bot)}
-										title="Edit Bot Name, Handle & Settings"
-										class="rounded-lg border border-slate-200 bg-white p-1.5 text-slate-600 shadow-2xs hover:bg-slate-50"
+									<div
+										class="mt-4 flex items-center justify-between border-t border-slate-200/60 pt-2.5"
 									>
-										<PencilIcon class="size-3.5" />
-									</button>
-								</div>
+										<div class="text-[10px] text-slate-500">
+											<span class="font-bold text-slate-800">{bot.daily_posts}/3</span> today • {bot.total_posts}
+											total
+										</div>
 
-								<p class="mt-2.5 line-clamp-2 text-xs text-slate-600">
-									{bot.bio}
-								</p>
+										<div class="flex items-center gap-1.5">
+											<form method="POST" action="?/trigger_bot" use:enhance>
+												<input type="hidden" name="bot_id" value={bot.id} />
+												<button
+													type="submit"
+													title="Post immediately"
+													class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-2xs hover:bg-slate-100"
+												>
+													Post ⚡
+												</button>
+											</form>
 
-								<!-- Feeds preview tags -->
-								<div class="mt-2.5 flex flex-wrap gap-1">
-									{#each (bot.feeds || []).slice(0, 2) as f (f)}
-										<span
-											class="max-w-[180px] truncate rounded border border-slate-200/60 bg-white px-1.5 py-0.5 text-[10px] font-medium text-slate-500"
-										>
-											{f.replace(/https?:\/\/(www\.)?/, '').split('/')[0]}
-										</span>
-									{/each}
-									{#if (bot.feeds || []).length > 2}
-										<span class="text-[10px] text-slate-400">+{bot.feeds.length - 2} more</span>
-									{/if}
+											{#if bot.is_custom}
+												<form method="POST" action="?/delete_bot" use:enhance>
+													<input type="hidden" name="bot_id" value={bot.id} />
+													<button
+														type="submit"
+														onclick={(e) => {
+															if (!confirm(`Delete custom bot @${bot.username}?`)) {
+																e.preventDefault()
+															}
+														}}
+														class="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+													>
+														<TrashIcon class="size-3.5" />
+													</button>
+												</form>
+											{/if}
+										</div>
+									</div>
 								</div>
+							{/each}
+						</div>
+					{/if}
+				</div>
+			{/if}
+
+			<!-- ───────────────────────────────────────────────────────────── -->
+			<!-- TAB 3: RECENT POSTS & ACTIVITY                              -->
+			<!-- ───────────────────────────────────────────────────────────── -->
+			{#if active_tab === 'posts'}
+				<div class="space-y-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs">
+					<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+						<div>
+							<h2 class="text-lg font-bold text-slate-900">
+								Recent Automated Posts ({filtered_recent_posts().length} of {data.recent_posts
+									.length})
+							</h2>
+							<p class="text-xs text-slate-500">
+								Real-time monitor of live posts seeded by autonomous personas with link previews.
+							</p>
+						</div>
+
+						<div class="flex flex-wrap items-center gap-2">
+							<!-- Search Input -->
+							<div class="relative">
+								<SearchIcon
+									class="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400"
+								/>
+								<input
+									type="text"
+									bind:value={post_search}
+									placeholder="Search posts..."
+									class="rounded-xl border border-slate-200 bg-slate-50/60 py-1.5 pr-3 pl-8 text-xs text-slate-800 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none"
+								/>
 							</div>
 
-							<div
-								class="mt-4 flex items-center justify-between border-t border-slate-200/60 pt-2.5"
+							<!-- Filter by bot -->
+							<select
+								bind:value={post_bot_filter}
+								class="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none"
 							>
-								<div class="text-[10px] text-slate-500">
-									<span class="font-bold text-slate-800">{bot.daily_posts}/3</span> today • {bot.total_posts}
-									total
-								</div>
+								<option value="all">All Bots</option>
+								{#each data.personas as bot (bot.id)}
+									<option value={bot.id}>@{bot.username}</option>
+								{/each}
+							</select>
+						</div>
+					</div>
 
-								<div class="flex items-center gap-1.5">
-									<form method="POST" action="?/trigger_bot" use:enhance>
-										<input type="hidden" name="bot_id" value={bot.id} />
-										<button
-											type="submit"
-											title="Post immediately as @{bot.username}"
-											class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-2xs hover:bg-slate-100"
+					{#if filtered_recent_posts().length === 0}
+						<div class="py-12 text-center text-xs text-slate-400">No automated posts found.</div>
+					{:else}
+						<div class="divide-y divide-slate-100">
+							{#each filtered_recent_posts() as item (item.id)}
+								{@const first_link = extract_first_url(item.content)}
+								<div class="flex items-start justify-between gap-4 py-4">
+									<div class="flex items-start gap-3">
+										<Avatar
+											user={{
+												name: item.user_name,
+												image: item.user_image,
+											}}
+											size={40}
+										/>
+										<div class="space-y-1">
+											<div class="flex items-center gap-1.5 text-xs">
+												<span class="font-bold text-slate-900">{item.user_name}</span>
+												<span class="text-slate-400">@{item.user_username}</span>
+												<span class="text-slate-400">•</span>
+												<span class="text-slate-400">{relative_time(item.created_at)}</span>
+											</div>
+
+											<div class="text-xs leading-relaxed whitespace-pre-wrap text-slate-700">
+												{#each parse_content(item.content) as segment, i (i)}
+													{#if segment.type === 'tag'}
+														<a
+															href="{resolve('/explore')}?q={encodeURIComponent(segment.text)}"
+															class="font-medium text-system-blue hover:underline">{segment.text}</a
+														>
+													{:else if segment.type === 'link'}
+														<a
+															href={segment.href}
+															target="_blank"
+															rel="noopener noreferrer"
+															class="font-medium text-system-blue hover:underline">{segment.text}</a
+														>
+													{:else}
+														{segment.text}
+													{/if}
+												{/each}
+											</div>
+
+											<!-- Render Link Preview Card directly in admin post feed -->
+											{#if first_link}
+												<div class="max-w-md pt-1">
+													<LinkPreviewCard url={first_link} compact={true} />
+												</div>
+											{/if}
+										</div>
+									</div>
+
+									<div class="flex shrink-0 items-center gap-2">
+										<a
+											href={resolve('/posts/[id]', { id: item.id })}
+											target="_blank"
+											class="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
 										>
-											Post Now ⚡
-										</button>
-									</form>
+											View
+										</a>
 
-									{#if bot.is_custom}
-										<form method="POST" action="?/delete_bot" use:enhance>
-											<input type="hidden" name="bot_id" value={bot.id} />
+										<form method="POST" action="?/delete_post" use:enhance>
+											<input type="hidden" name="post_id" value={item.id} />
 											<button
 												type="submit"
-												title="Remove custom bot"
-												class="rounded-lg p-1 text-slate-400 hover:text-rose-600"
+												aria-label="Delete bot post"
+												class="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
 											>
 												<TrashIcon class="size-3.5" />
 											</button>
 										</form>
-									{/if}
-								</div>
-							</div>
-						</div>
-					{/each}
-				</div>
-			</div>
-
-			<!-- Recent Bot Posts Stream -->
-			<div class="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs">
-				<div class="mb-4 flex items-center justify-between">
-					<div>
-						<h2 class="text-base font-bold text-slate-900">Recent Content Published by Bots</h2>
-						<p class="text-xs text-slate-500">
-							Real-time stream of articles shared and discussed across your bot fleet.
-						</p>
-					</div>
-					<span class="text-xs text-slate-400">Showing last 20 posts</span>
-				</div>
-
-				{#if data.recent_posts.length === 0}
-					<div class="py-12 text-center text-xs text-slate-400">
-						No bot posts recorded in the database yet. Click "Trigger Bot Post ⚡" above to create
-						the first one!
-					</div>
-				{:else}
-					<div class="divide-y divide-slate-100">
-						{#each data.recent_posts as item (item.id)}
-							<div class="flex items-start justify-between gap-4 py-3.5">
-								<div class="flex min-w-0 items-start gap-3">
-									<Avatar
-										user={{
-											name: item.user_name,
-											image: item.user_image,
-										}}
-										size={34}
-									/>
-									<div class="min-w-0 flex-1">
-										<div class="flex items-center gap-2">
-											<span class="text-xs font-bold text-slate-900">{item.user_name}</span>
-											<span class="text-xs text-slate-400">@{item.user_username}</span>
-											<span class="text-[10px] text-slate-400">
-												{new Date(item.created_at).toLocaleTimeString([], {
-													hour: '2-digit',
-													minute: '2-digit',
-												})}
-											</span>
-										</div>
-										<p
-											class="mt-1 line-clamp-3 text-xs leading-relaxed whitespace-pre-line text-slate-700"
-										>
-											{item.content}
-										</p>
 									</div>
 								</div>
-
-								<div class="flex shrink-0 items-center gap-2">
-									<a
-										href={resolve('/posts/[id]', { id: item.id })}
-										target="_blank"
-										class="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-									>
-										View
-									</a>
-
-									<form method="POST" action="?/delete_post" use:enhance>
-										<input type="hidden" name="post_id" value={item.id} />
-										<button
-											type="submit"
-											aria-label="Delete bot post"
-											class="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
-										>
-											<TrashIcon class="size-3.5" />
-										</button>
-									</form>
-								</div>
-							</div>
-						{/each}
-					</div>
-				{/if}
-			</div>
+							{/each}
+						</div>
+					{/if}
+				</div>
+			{/if}
 		{/if}
 	</div>
 
@@ -799,93 +1093,104 @@
 							type="url"
 							name="image"
 							bind:value={create_image}
-							placeholder="Leave blank for automatic DiceBear avatar"
+							placeholder="https://api.dicebear.com/7.x/notionists/svg?seed=maya"
 							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
 						/>
 					</div>
 
 					<div>
+						<span class="block text-xs font-bold text-slate-700">Profile Banner Theme</span>
+						<div class="mt-1.5 flex flex-wrap gap-2">
+							{#each banner_colors as color (color.id)}
+								<label class="flex cursor-pointer items-center gap-1.5 text-xs">
+									<input
+										type="radio"
+										name="banner_color"
+										value={color.id}
+										bind:group={create_banner_color}
+										class="sr-only"
+									/>
+									<span
+										class="size-5 rounded-full {color.bg} border-2 {create_banner_color === color.id
+											? 'border-indigo-600 ring-2 ring-indigo-200'
+											: 'border-white'}"
+									></span>
+									<span class="text-[11px] text-slate-600">{color.label}</span>
+								</label>
+							{/each}
+						</div>
+					</div>
+
+					<div>
 						<label for="create_tone_prompt" class="block text-xs font-bold text-slate-700"
-							>Persona Personality Tone Prompt</label
+							>Tone & Personality Prompt</label
 						>
 						<textarea
 							id="create_tone_prompt"
 							name="tone_prompt"
 							bind:value={create_tone_prompt}
-							rows={2}
-							placeholder="You are Maya, enthusiastic about AI dev tools and clean code..."
+							rows={3}
+							required
+							placeholder="Describe their voice, emojis, attitude, and how they react to news..."
 							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
 						></textarea>
 					</div>
 
-					<!-- Trusted Feeds Quick Add -->
 					<div>
-						<label for="create_feeds" class="block text-xs font-bold text-slate-700">
-							Scraping News Feeds (RSS / Atom URLs, one per line)
-						</label>
-						<div class="mt-1.5 flex flex-wrap gap-1">
-							{#each data.trusted_presets.slice(0, 6) as preset (preset.url)}
-								<button
-									type="button"
-									onclick={() => add_feed_preset(preset.url, 'create')}
-									class="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 hover:bg-slate-200"
-								>
-									+ {preset.name}
-								</button>
-							{/each}
-						</div>
+						<label for="create_feeds" class="block text-xs font-bold text-slate-700"
+							>RSS / Atom News Feeds (one per line)</label
+						>
 						<textarea
 							id="create_feeds"
 							name="feeds"
 							bind:value={create_feeds}
 							rows={3}
-							placeholder="https://www.theverge.com/rss/index.xml&#10;https://techcrunch.com/feed/"
-							class="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-[11px] focus:ring-1 focus:ring-slate-900 focus:outline-none"
+							required
+							placeholder="https://dev.to/feed"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
 						></textarea>
-					</div>
 
-					<div class="grid grid-cols-2 gap-3">
-						<div>
-							<label for="create_hashtags" class="block text-xs font-bold text-slate-700"
-								>Hashtags (comma separated)</label
-							>
-							<input
-								id="create_hashtags"
-								type="text"
-								name="hashtags"
-								bind:value={create_hashtags}
-								placeholder="#tech, #ai, #dev"
-								class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
-							/>
-						</div>
-						<div>
-							<label for="create_banner_color" class="block text-xs font-bold text-slate-700"
-								>Banner Theme</label
-							>
-							<select
-								id="create_banner_color"
-								name="banner_color"
-								bind:value={create_banner_color}
-								class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
-							>
-								{#each banner_colors as col (col.id)}
-									<option value={col.id}>{col.label}</option>
+						<div class="mt-2">
+							<span class="text-[11px] font-semibold text-slate-500">Quick preset sources:</span>
+							<div class="mt-1 flex flex-wrap gap-1">
+								{#each data.trusted_presets as preset (preset.url)}
+									<button
+										type="button"
+										onclick={() => add_feed_preset(preset.url, 'create')}
+										class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-600 hover:bg-slate-100"
+									>
+										+ {preset.name}
+									</button>
 								{/each}
-							</select>
+							</div>
 						</div>
 					</div>
 
-					<div class="flex justify-end gap-2 border-t border-slate-100 pt-3">
+					<div>
+						<label for="create_hashtags" class="block text-xs font-bold text-slate-700"
+							>Hashtags (comma separated)</label
+						>
+						<input
+							id="create_hashtags"
+							type="text"
+							name="hashtags"
+							bind:value={create_hashtags}
+							placeholder="#tech, #coding, #vibecoding"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+						/>
+					</div>
+
+					<div class="flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
 						<button
 							type="button"
 							onclick={() => (show_create_modal = false)}
-							class="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+							class="rounded-xl px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100"
 						>
 							Cancel
 						</button>
 						<button
 							type="submit"
-							class="rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-slate-800"
+							class="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
 						>
 							Create Bot Persona
 						</button>
@@ -988,86 +1293,95 @@
 					</div>
 
 					<div>
+						<span class="block text-xs font-bold text-slate-700">Profile Banner Theme</span>
+						<div class="mt-1.5 flex flex-wrap gap-2">
+							{#each banner_colors as color (color.id)}
+								<label class="flex cursor-pointer items-center gap-1.5 text-xs">
+									<input
+										type="radio"
+										name="banner_color"
+										value={color.id}
+										bind:group={edit_banner_color}
+										class="sr-only"
+									/>
+									<span
+										class="size-5 rounded-full {color.bg} border-2 {edit_banner_color === color.id
+											? 'border-indigo-600 ring-2 ring-indigo-200'
+											: 'border-white'}"
+									></span>
+									<span class="text-[11px] text-slate-600">{color.label}</span>
+								</label>
+							{/each}
+						</div>
+					</div>
+
+					<div>
 						<label for="edit_tone_prompt" class="block text-xs font-bold text-slate-700"
-							>Persona Personality Tone Prompt</label
+							>Tone & Personality Prompt</label
 						>
 						<textarea
 							id="edit_tone_prompt"
 							name="tone_prompt"
 							bind:value={edit_tone_prompt}
-							rows={2}
+							rows={3}
 							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
 						></textarea>
 					</div>
 
-					<!-- News Feeds with Quick Add -->
 					<div>
-						<label for="edit_feeds" class="block text-xs font-bold text-slate-700">
-							Trusted News Feeds (one per line)
-						</label>
-						<div class="mt-1.5 flex flex-wrap gap-1">
-							{#each data.trusted_presets.slice(0, 8) as preset (preset.url)}
-								<button
-									type="button"
-									onclick={() => add_feed_preset(preset.url, 'edit')}
-									class="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 hover:bg-slate-200"
-								>
-									+ {preset.name}
-								</button>
-							{/each}
-						</div>
+						<label for="edit_feeds" class="block text-xs font-bold text-slate-700"
+							>News Feeds (one per line)</label
+						>
 						<textarea
 							id="edit_feeds"
 							name="feeds"
 							bind:value={edit_feeds}
 							rows={3}
-							class="mt-1.5 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-[11px] focus:ring-1 focus:ring-slate-900 focus:outline-none"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
 						></textarea>
-					</div>
 
-					<div class="grid grid-cols-2 gap-3">
-						<div>
-							<label for="edit_hashtags" class="block text-xs font-bold text-slate-700"
-								>Hashtags</label
-							>
-							<input
-								id="edit_hashtags"
-								type="text"
-								name="hashtags"
-								bind:value={edit_hashtags}
-								class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
-							/>
-						</div>
-						<div>
-							<label for="edit_banner_color" class="block text-xs font-bold text-slate-700"
-								>Banner Theme</label
-							>
-							<select
-								id="edit_banner_color"
-								name="banner_color"
-								bind:value={edit_banner_color}
-								class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
-							>
-								{#each banner_colors as col (col.id)}
-									<option value={col.id}>{col.label}</option>
+						<div class="mt-2">
+							<span class="text-[11px] font-semibold text-slate-500">Add trusted source:</span>
+							<div class="mt-1 flex flex-wrap gap-1">
+								{#each data.trusted_presets as preset (preset.url)}
+									<button
+										type="button"
+										onclick={() => add_feed_preset(preset.url, 'edit')}
+										class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-600 hover:bg-slate-100"
+									>
+										+ {preset.name}
+									</button>
 								{/each}
-							</select>
+							</div>
 						</div>
 					</div>
 
-					<div class="flex justify-end gap-2 border-t border-slate-100 pt-3">
+					<div>
+						<label for="edit_hashtags" class="block text-xs font-bold text-slate-700"
+							>Hashtags (comma separated)</label
+						>
+						<input
+							id="edit_hashtags"
+							type="text"
+							name="hashtags"
+							bind:value={edit_hashtags}
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+						/>
+					</div>
+
+					<div class="flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
 						<button
 							type="button"
 							onclick={() => (editing_bot = null)}
-							class="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+							class="rounded-xl px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100"
 						>
 							Cancel
 						</button>
 						<button
 							type="submit"
-							class="rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-slate-800"
+							class="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
 						>
-							Save Changes
+							Save Bot Settings
 						</button>
 					</div>
 				</form>
