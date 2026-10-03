@@ -9,7 +9,7 @@
 	const nav_items = [
 		{ href: '/settings/profile', label: 'Profile', icon: UserIcon },
 		{ href: '/settings/privacy', label: 'Privacy & Safety', icon: ShieldIcon },
-	]
+	] as const
 </script>
 
 <div class="container max-w-4xl py-6 md:py-10">
