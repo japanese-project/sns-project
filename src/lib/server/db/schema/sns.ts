@@ -25,7 +25,6 @@ export const user_settings = sqliteTable('user_settings', {
 		.default(sql`(unixepoch())`),
 })
 
-
 export const post = sqliteTable(
 	'post',
 	{

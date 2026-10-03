@@ -20,7 +20,7 @@ export const actions: Actions = {
 		const bio = data.get('bio')?.toString() || ''
 		// For simplicity, we just handle the core fields here.
 		// A full implementation might reuse the `/api/users/me` logic or share a service function.
-		
+
 		const trimmed_name = name.trim()
 		const trimmed_username = username.trim()
 		const trimmed_bio = bio.trim()
@@ -36,15 +36,16 @@ export const actions: Actions = {
 		}
 
 		try {
-			await locals.db.update(user)
+			await locals.db
+				.update(user)
 				.set({
 					name: trimmed_name,
 					username: trimmed_username,
 					bio: trimmed_bio.length > 0 ? trimmed_bio : null,
-					updatedAt: new Date()
+					updatedAt: new Date(),
 				})
 				.where(eq(user.id, session_user.id))
-			
+
 			return { success: true }
 		} catch (e: unknown) {
 			const err = e as Error

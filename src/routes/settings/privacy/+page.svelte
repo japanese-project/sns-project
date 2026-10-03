@@ -17,7 +17,7 @@
 		</p>
 	</div>
 	<Separator />
-	
+
 	<form
 		method="POST"
 		class="space-y-8"
@@ -47,7 +47,11 @@
 		<div class="space-y-4">
 			<h4 class="text-sm font-medium">Notifications</h4>
 			<div class="flex items-start space-x-3">
-				<Checkbox id="notifyOnFollow" name="notify_on_follow" checked={data.settings.notifyOnFollow} />
+				<Checkbox
+					id="notifyOnFollow"
+					name="notify_on_follow"
+					checked={data.settings.notifyOnFollow}
+				/>
 				<div class="space-y-1 leading-none">
 					<Label for="notifyOnFollow">New Followers</Label>
 					<p class="text-sm text-muted-foreground">
@@ -55,7 +59,7 @@
 					</p>
 				</div>
 			</div>
-			
+
 			<div class="flex items-start space-x-3">
 				<Checkbox id="notifyOnLike" name="notify_on_like" checked={data.settings.notifyOnLike} />
 				<div class="space-y-1 leading-none">
@@ -67,7 +71,11 @@
 			</div>
 
 			<div class="flex items-start space-x-3">
-				<Checkbox id="notifyOnComment" name="notify_on_comment" checked={data.settings.notifyOnComment} />
+				<Checkbox
+					id="notifyOnComment"
+					name="notify_on_comment"
+					checked={data.settings.notifyOnComment}
+				/>
 				<div class="space-y-1 leading-none">
 					<Label for="notifyOnComment">Comments</Label>
 					<p class="text-sm text-muted-foreground">

@@ -12,12 +12,10 @@
 <div class="space-y-6">
 	<div>
 		<h3 class="text-lg font-medium">Profile Settings</h3>
-		<p class="text-sm text-muted-foreground">
-			Manage your public profile information.
-		</p>
+		<p class="text-sm text-muted-foreground">Manage your public profile information.</p>
 	</div>
 	<Separator />
-	
+
 	<form
 		method="POST"
 		class="space-y-8"
@@ -30,7 +28,7 @@
 		}}
 	>
 		{#if form?.error}
-			<p class="text-sm text-rose-600 bg-rose-50 p-3 rounded-md">{form.error}</p>
+			<p class="rounded-md bg-rose-50 p-3 text-sm text-rose-600">{form.error}</p>
 		{/if}
 
 		<div class="space-y-4">
@@ -56,9 +54,8 @@
 					id="bio"
 					name="bio"
 					rows="3"
-					class="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-					value={data.user.bio}
-				></textarea>
+					class="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+					value={data.user.bio}></textarea>
 			</div>
 		</div>
 

@@ -19,9 +19,13 @@ export async function get_user_settings(db: Db, userId: string) {
 	}
 }
 
-export async function update_user_settings(db: Db, userId: string, partial: Partial<typeof user_settings.$inferInsert>) {
+export async function update_user_settings(
+	db: Db,
+	userId: string,
+	partial: Partial<typeof user_settings.$inferInsert>,
+) {
 	const settings = await get_user_settings(db, userId)
-	
+
 	await db
 		.insert(user_settings)
 		.values({ ...settings, ...partial, userId })
@@ -35,7 +39,7 @@ export async function has_pending_follow_request(db: Db, followerId: string, fol
 	const req = await db.query.follow_request.findFirst({
 		where: and(
 			eq(follow_request.followerId, followerId),
-			eq(follow_request.followingId, followingId)
+			eq(follow_request.followingId, followingId),
 		),
 	})
 	return !!req
