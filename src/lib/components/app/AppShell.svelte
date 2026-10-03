@@ -5,11 +5,9 @@
 
 <script lang="ts">
 	import { page } from '$app/state'
-	import { goto } from '$app/navigation'
 	import { resolve } from '$app/paths'
 	import { onMount, type Snippet } from 'svelte'
 	import { api } from '$lib/api'
-	import { sign_out } from '$lib/auth-client'
 	import { composer } from '$lib/composer-state.svelte'
 	import Avatar from './Avatar.svelte'
 	import Composer from './Composer.svelte'
@@ -66,10 +64,7 @@
 		}
 	})
 
-	async function handle_sign_out() {
-		await sign_out()
-		await goto(resolve('/login'))
-	}
+
 </script>
 
 <svelte:head><title>{title} · SNS</title></svelte:head>
@@ -88,18 +83,6 @@
 	<nav
 		class="glass-surface fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 flex-row items-center gap-2 rounded-full p-2 shadow-apple-panel backdrop-blur-3xl md:top-1/2 md:left-6 md:translate-x-0 md:-translate-y-1/2 md:flex-col"
 	>
-		<!-- Logo / Home in dock -->
-		<a
-			href={resolve('/')}
-			aria-label="Home"
-			onclick={() => {
-				if (path === '/') window.dispatchEvent(new CustomEvent('feed:refresh'))
-			}}
-			class="interactive-bounce mx-1 mb-0 flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-black text-white shadow-lg md:mx-0 md:mb-4 md:h-14 md:w-14"
-		>
-			<i class="ph-fill ph-aperture text-2xl"></i>
-		</a>
-
 		<!-- Nav Items -->
 		<a
 			href={resolve('/')}
@@ -151,9 +134,9 @@
 		<button
 			aria-label="Create Post"
 			onclick={() => composer.show()}
-			class="group interactive-bounce mx-1 flex h-12 w-12 items-center justify-center rounded-full bg-black text-white shadow-lg md:hidden"
+			class="group interactive-bounce mx-1 flex h-12 w-12 items-center justify-center rounded-full bg-black text-white shadow-lg transition-transform hover:scale-105 active:scale-95 md:mx-0 md:my-2 md:h-14 md:w-14"
 		>
-			<i class="ph ph-plus text-xl"></i>
+			<i class="ph ph-plus text-xl md:text-2xl"></i>
 		</button>
 
 		<a
@@ -218,7 +201,7 @@
 			<a
 				href={resolve('/admin/bots')}
 				aria-label="Admin"
-				class="nav-item group interactive-bounce relative mx-1 flex h-12 w-12 items-center justify-center rounded-full transition-all hover:bg-white/80 md:mx-0 md:h-14 md:w-14 {path.startsWith(
+				class="nav-item group interactive-bounce relative mx-1 hidden h-12 w-12 items-center justify-center rounded-full transition-all hover:bg-white/80 md:mx-0 md:flex md:h-14 md:w-14 {path.startsWith(
 					'/admin',
 				)
 					? 'active bg-white/60 shadow-sm'
@@ -238,38 +221,6 @@
 				></div>
 			</a>
 		{/if}
-
-		<a
-			href={resolve('/settings')}
-			aria-label="Settings"
-			class="nav-item group interactive-bounce relative mx-1 mt-auto flex h-12 w-12 items-center justify-center rounded-full transition-all hover:bg-white/80 md:mx-0 md:h-14 md:w-14 {path.startsWith(
-				'/settings',
-			)
-				? 'active bg-white/60 shadow-sm'
-				: ''}"
-		>
-			<i
-				class="ph ph-gear text-2xl {path.startsWith('/settings')
-					? 'ph-fill text-black'
-					: 'text-slate-600 transition-colors group-hover:text-black'}"
-			></i>
-			<div
-				class="absolute bottom-0 h-1.5 w-1.5 rounded-full bg-black transition-opacity md:top-1/2 md:bottom-auto md:-left-3 md:-translate-y-1/2 {path.startsWith(
-					'/settings',
-				)
-					? 'opacity-100'
-					: 'opacity-0 group-[.active]:opacity-100'}"
-			></div>
-		</a>
-
-		<button
-			aria-label="Sign Out"
-			onclick={handle_sign_out}
-			class="nav-item group interactive-bounce relative mx-1 mt-auto flex h-12 w-12 items-center justify-center rounded-full transition-all hover:bg-white/80 md:mx-0 md:h-14 md:w-14"
-		>
-			<i class="ph ph-sign-out text-2xl text-slate-600 transition-colors group-hover:text-black"
-			></i>
-		</button>
 	</nav>
 
 	<!-- Main Scrollable Canvas -->
