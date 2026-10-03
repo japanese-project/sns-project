@@ -15,6 +15,7 @@ A small social app — posts, likes, comments, follow — built with [SvelteKit]
 - [Roadmap](./docs/roadmap.md) — MVP must-have phases, access rules, and post-MVP backlog
 - [Tech Stack](./docs/tech-stack.md) — tools we use and planned architecture
 - [Database & ERD](./docs/database.md) — core entities and relationships
+- [Comment Abuse Protection](./docs/comment-abuse-protection.md) — baseline anti-spam safeguards for comment submission
 - [Contributing](./docs/contributing.md) — setup, Lefthook workflow, and code style
 
 ## MVP
