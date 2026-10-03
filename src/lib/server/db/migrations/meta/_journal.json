@@ -29,6 +29,13 @@
       "when": 1790913973611,
       "tag": "0003_add_banner_color",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1790996284787,
+      "tag": "0004_small_the_santerians",
+      "breakpoints": true
     }
   ]
 }
