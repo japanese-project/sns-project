@@ -94,7 +94,7 @@
 					maxlength={MAX_SEARCH_LENGTH}
 					placeholder="Search people or posts…"
 					aria-label="Search"
-					class="w-full rounded-2xl border border-slate-200/80 bg-white py-2.5 pr-9 pl-10 text-sm text-slate-900 shadow-xs transition outline-none placeholder:text-slate-400 focus:border-black focus:ring-1 focus:ring-black"
+					class="w-full rounded-2xl border border-slate-200/80 bg-white py-2.5 pr-9 pl-10 text-sm text-slate-900 shadow-xs transition outline-none placeholder:text-slate-400 focus:border-black focus:ring-1 focus:ring-black [&::-webkit-search-cancel-button]:appearance-none"
 				/>
 				{#if input}
 					<button
@@ -226,7 +226,7 @@
 								Recent Discussions
 							</h2>
 						</div>
-						<div class="divide-y divide-slate-100">
+						<div class="space-y-10">
 							{#each data.discovery.posts as post (post.id)}
 								<PostCard {post} />
 							{/each}
@@ -263,7 +263,7 @@
 					{#if posts.length === 0}
 						<p class="px-2 text-sm text-slate-500">No posts match “{data.query}”.</p>
 					{:else}
-						<div class="divide-y divide-slate-100">
+						<div class="space-y-10">
 							{#each posts as post (post.id)}
 								<PostCard
 									{post}

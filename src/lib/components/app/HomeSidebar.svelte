@@ -68,7 +68,7 @@
 				bind:value={search_input}
 				onfocus={() => (is_focused = true)}
 				placeholder="Search Loop…"
-				class="w-full rounded-full border border-slate-200/80 bg-white/90 py-2.5 pr-4 pl-10 text-xs text-slate-900 shadow-xs transition placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:ring-1 focus:ring-slate-900 focus:outline-none"
+				class="w-full rounded-full border border-slate-200/80 bg-white/90 py-2.5 pr-4 pl-10 text-xs text-slate-900 shadow-xs transition placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:ring-1 focus:ring-slate-900 focus:outline-none [&::-webkit-search-cancel-button]:appearance-none"
 			/>
 		</form>
 

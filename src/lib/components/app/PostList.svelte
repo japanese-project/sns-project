@@ -78,9 +78,9 @@
 	})
 </script>
 
-<div class="divide-y divide-slate-100">
+<div class="space-y-10">
 	{#if loading}
-		<div class="divide-y divide-slate-100" aria-busy="true" aria-label="Loading posts">
+		<div class="space-y-10" aria-busy="true" aria-label="Loading posts">
 			{#each [0, 1, 2] as n (n)}
 				<div class="h-32 animate-pulse px-2 py-5">
 					<div class="flex gap-3">
