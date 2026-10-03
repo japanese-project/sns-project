@@ -170,8 +170,6 @@
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && request_close()} />
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
 	class="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 backdrop-blur-sm sm:items-start sm:p-4 sm:pt-[10vh]"
 	role="presentation"
