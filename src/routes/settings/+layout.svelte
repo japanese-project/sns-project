@@ -17,7 +17,9 @@
 	<div class="py-6 md:py-10">
 		<div class="flex flex-col space-y-8 md:flex-row md:space-y-0 md:space-x-8">
 			<aside class="md:w-1/4">
-				<nav class="flex space-x-2 overflow-x-auto pb-2 md:flex-col md:space-y-1 md:space-x-0 md:pb-0">
+				<nav
+					class="flex space-x-2 overflow-x-auto pb-2 md:flex-col md:space-y-1 md:space-x-0 md:pb-0"
+				>
 					{#each nav_items as item (item.href)}
 						<a
 							href={resolve(item.href)}
@@ -33,7 +35,7 @@
 					{/each}
 				</nav>
 			</aside>
-			<div class="flex-1 min-w-0">
+			<div class="min-w-0 flex-1">
 				{@render children()}
 			</div>
 		</div>

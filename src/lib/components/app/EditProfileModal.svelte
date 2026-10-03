@@ -151,7 +151,7 @@
 		return {
 			destroy() {
 				node.remove()
-			}
+			},
 		}
 	}
 </script>
@@ -173,211 +173,211 @@
 	>
 		<!-- Header bar -->
 		<div class="flex items-center justify-between border-b border-slate-200/60 px-5 py-4">
-		<h2 id="edit-profile-title" class="text-base font-bold text-slate-900">Edit Profile</h2>
-		<button
-			type="button"
-			onclick={on_close}
-			aria-label="Close"
-			class="flex size-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-		>
-			<XIcon class="size-4" />
-		</button>
-	</div>
-
-	<!-- Scrollable body -->
-	<form onsubmit={handle_submit} class="flex flex-1 flex-col overflow-hidden">
-		<div class="flex-1 space-y-6 overflow-y-auto px-5 py-6">
-			<!-- Display Name -->
-			<div>
-				<label
-					for="profile-name"
-					class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase"
-				>
-					Display Name
-				</label>
-				<input
-					id="profile-name"
-					type="text"
-					bind:value={name}
-					maxlength={MAX_NAME_LENGTH}
-					required
-					class="mt-2 w-full border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 text-sm text-slate-900 transition outline-none focus:border-slate-900 focus:ring-0 focus:outline-none"
-				/>
-			</div>
-
-			<!-- Username -->
-			<div>
-				<label
-					for="profile-username"
-					class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase"
-				>
-					Username
-				</label>
-				<div class="relative mt-2">
-					<span
-						class="pointer-events-none absolute inset-y-0 left-0 flex items-center pb-1.5 text-sm font-semibold text-slate-400"
-						>@</span
-					>
-					<input
-						id="profile-username"
-						type="text"
-						bind:value={username}
-						maxlength={30}
-						placeholder="username"
-						class="w-full border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 pl-5 text-sm text-slate-900 transition outline-none focus:border-slate-900 focus:ring-0 focus:outline-none"
-					/>
-				</div>
-				<p class="mt-1 text-[0.68rem] text-slate-400">
-					Lowercase letters, numbers, and underscores. Changing it breaks existing links to your
-					profile.
-				</p>
-			</div>
-
-			<!-- Bio -->
-			<div>
-				<div class="flex items-center justify-between">
-					<label
-						for="profile-bio"
-						class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase"
-					>
-						Bio
-					</label>
-					<span
-						class="text-xs tabular-nums {bio.length > MAX_BIO_LENGTH
-							? 'font-semibold text-rose-600'
-							: 'text-slate-400'}"
-					>
-						{MAX_BIO_LENGTH - bio.length}
-					</span>
-				</div>
-				<textarea
-					id="profile-bio"
-					bind:value={bio}
-					rows="3"
-					maxlength={MAX_BIO_LENGTH}
-					placeholder="Tell people a little bit about yourself…"
-					class="mt-2 w-full resize-none border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 text-sm leading-relaxed text-slate-900 transition outline-none focus:border-slate-900 focus:ring-0 focus:outline-none"
-				></textarea>
-			</div>
-
-			<!-- Header Banner Theme -->
-			<div>
-				<span class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase">
-					Header Banner Theme
-				</span>
-				<p class="mt-0.5 text-[0.68rem] text-slate-400">
-					Choose a color gradient for your profile banner.
-				</p>
-				<div
-					data-testid="banner-preview"
-					class="mt-2 h-14 w-full rounded-xl {get_banner_class(
-						banner_color,
-					)} border border-slate-200/60 shadow-inner"
-				></div>
-				<div class="mt-3 grid grid-cols-4 gap-2">
-					{#each BANNER_THEMES as theme (theme.id)}
-						<button
-							type="button"
-							onclick={() => (banner_color = theme.id)}
-							aria-label="{theme.name} banner theme"
-							class="group relative flex h-9 items-center justify-center rounded-lg border-2 transition {banner_color ===
-							theme.id
-								? 'border-slate-900 ring-2 ring-slate-900/20'
-								: 'border-transparent hover:scale-105'}"
-						>
-							<span class="absolute inset-0.5 rounded-md {theme.preview_class}"></span>
-							{#if banner_color === theme.id}
-								<span class="relative text-xs font-bold text-white drop-shadow">✓</span>
-							{/if}
-						</button>
-					{/each}
-				</div>
-			</div>
-
-			<!-- Interests / Hashtag Topics -->
-			<div>
-				<p class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase">
-					Topics you enjoy
-				</p>
-				<p class="mt-0.5 text-[0.68rem] text-slate-400">These appear as #tags on your profile.</p>
-				<div class="mt-3 flex flex-wrap gap-2">
-					{#each available_interests as topic (topic)}
-						{@const is_selected = selected_interests.includes(topic)}
-						<button
-							type="button"
-							onclick={() => toggle_interest(topic)}
-							class="rounded-full px-3.5 py-1.5 text-xs font-semibold transition {is_selected
-								? 'bg-slate-900 text-white shadow-sm'
-								: 'text-slate-600 hover:bg-slate-100'}"
-						>
-							{is_selected ? '✓ ' : '#'}{topic}
-						</button>
-					{/each}
-					{#each custom_interests as topic (topic)}
-						<span
-							class="flex items-center gap-1 rounded-full bg-indigo-600 py-1.5 pr-2 pl-3.5 text-xs font-semibold text-white shadow-sm"
-						>
-							#{topic}
-							<button
-								type="button"
-								onclick={() => remove_custom(topic)}
-								class="ml-0.5 opacity-70 hover:opacity-100"
-								aria-label="Remove {topic}">✕</button
-							>
-						</span>
-					{/each}
-				</div>
-				<!-- Custom interest input -->
-				<div class="mt-3 flex gap-2">
-					<input
-						type="text"
-						bind:value={custom_input}
-						onkeydown={(e) => {
-							if (e.key === 'Enter') {
-								e.preventDefault()
-								add_custom()
-							}
-						}}
-						placeholder="Add your own…"
-						maxlength={30}
-						class="flex-1 border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-slate-900 focus:ring-0 focus:outline-none"
-					/>
-					<button
-						type="button"
-						onclick={add_custom}
-						class="rounded-full px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
-					>
-						Add
-					</button>
-				</div>
-			</div>
-
-			{#if error_message}
-				<p class="rounded-2xl bg-rose-50 px-4 py-3 text-xs text-rose-700" role="alert">
-					{error_message}
-				</p>
-			{/if}
-		</div>
-
-		<!-- Sticky footer actions -->
-		<div
-			class="flex shrink-0 items-center justify-end gap-3 border-t border-slate-200/60 px-5 py-4"
-		>
+			<h2 id="edit-profile-title" class="text-base font-bold text-slate-900">Edit Profile</h2>
 			<button
 				type="button"
 				onclick={on_close}
-				class="rounded-full px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+				aria-label="Close"
+				class="flex size-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
 			>
-				Cancel
-			</button>
-			<button
-				type="submit"
-				disabled={saving || !name.trim()}
-				class="rounded-full bg-black px-6 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50"
-			>
-				{saving ? 'Saving…' : 'Save'}
+				<XIcon class="size-4" />
 			</button>
 		</div>
-	</form>
-</div>
+
+		<!-- Scrollable body -->
+		<form onsubmit={handle_submit} class="flex flex-1 flex-col overflow-hidden">
+			<div class="flex-1 space-y-6 overflow-y-auto px-5 py-6">
+				<!-- Display Name -->
+				<div>
+					<label
+						for="profile-name"
+						class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase"
+					>
+						Display Name
+					</label>
+					<input
+						id="profile-name"
+						type="text"
+						bind:value={name}
+						maxlength={MAX_NAME_LENGTH}
+						required
+						class="mt-2 w-full border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 text-sm text-slate-900 transition outline-none focus:border-slate-900 focus:ring-0 focus:outline-none"
+					/>
+				</div>
+
+				<!-- Username -->
+				<div>
+					<label
+						for="profile-username"
+						class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase"
+					>
+						Username
+					</label>
+					<div class="relative mt-2">
+						<span
+							class="pointer-events-none absolute inset-y-0 left-0 flex items-center pb-1.5 text-sm font-semibold text-slate-400"
+							>@</span
+						>
+						<input
+							id="profile-username"
+							type="text"
+							bind:value={username}
+							maxlength={30}
+							placeholder="username"
+							class="w-full border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 pl-5 text-sm text-slate-900 transition outline-none focus:border-slate-900 focus:ring-0 focus:outline-none"
+						/>
+					</div>
+					<p class="mt-1 text-[0.68rem] text-slate-400">
+						Lowercase letters, numbers, and underscores. Changing it breaks existing links to your
+						profile.
+					</p>
+				</div>
+
+				<!-- Bio -->
+				<div>
+					<div class="flex items-center justify-between">
+						<label
+							for="profile-bio"
+							class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase"
+						>
+							Bio
+						</label>
+						<span
+							class="text-xs tabular-nums {bio.length > MAX_BIO_LENGTH
+								? 'font-semibold text-rose-600'
+								: 'text-slate-400'}"
+						>
+							{MAX_BIO_LENGTH - bio.length}
+						</span>
+					</div>
+					<textarea
+						id="profile-bio"
+						bind:value={bio}
+						rows="3"
+						maxlength={MAX_BIO_LENGTH}
+						placeholder="Tell people a little bit about yourself…"
+						class="mt-2 w-full resize-none border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 text-sm leading-relaxed text-slate-900 transition outline-none focus:border-slate-900 focus:ring-0 focus:outline-none"
+					></textarea>
+				</div>
+
+				<!-- Header Banner Theme -->
+				<div>
+					<span class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase">
+						Header Banner Theme
+					</span>
+					<p class="mt-0.5 text-[0.68rem] text-slate-400">
+						Choose a color gradient for your profile banner.
+					</p>
+					<div
+						data-testid="banner-preview"
+						class="mt-2 h-14 w-full rounded-xl {get_banner_class(
+							banner_color,
+						)} border border-slate-200/60 shadow-inner"
+					></div>
+					<div class="mt-3 grid grid-cols-4 gap-2">
+						{#each BANNER_THEMES as theme (theme.id)}
+							<button
+								type="button"
+								onclick={() => (banner_color = theme.id)}
+								aria-label="{theme.name} banner theme"
+								class="group relative flex h-9 items-center justify-center rounded-lg border-2 transition {banner_color ===
+								theme.id
+									? 'border-slate-900 ring-2 ring-slate-900/20'
+									: 'border-transparent hover:scale-105'}"
+							>
+								<span class="absolute inset-0.5 rounded-md {theme.preview_class}"></span>
+								{#if banner_color === theme.id}
+									<span class="relative text-xs font-bold text-white drop-shadow">✓</span>
+								{/if}
+							</button>
+						{/each}
+					</div>
+				</div>
+
+				<!-- Interests / Hashtag Topics -->
+				<div>
+					<p class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase">
+						Topics you enjoy
+					</p>
+					<p class="mt-0.5 text-[0.68rem] text-slate-400">These appear as #tags on your profile.</p>
+					<div class="mt-3 flex flex-wrap gap-2">
+						{#each available_interests as topic (topic)}
+							{@const is_selected = selected_interests.includes(topic)}
+							<button
+								type="button"
+								onclick={() => toggle_interest(topic)}
+								class="rounded-full px-3.5 py-1.5 text-xs font-semibold transition {is_selected
+									? 'bg-slate-900 text-white shadow-sm'
+									: 'text-slate-600 hover:bg-slate-100'}"
+							>
+								{is_selected ? '✓ ' : '#'}{topic}
+							</button>
+						{/each}
+						{#each custom_interests as topic (topic)}
+							<span
+								class="flex items-center gap-1 rounded-full bg-indigo-600 py-1.5 pr-2 pl-3.5 text-xs font-semibold text-white shadow-sm"
+							>
+								#{topic}
+								<button
+									type="button"
+									onclick={() => remove_custom(topic)}
+									class="ml-0.5 opacity-70 hover:opacity-100"
+									aria-label="Remove {topic}">✕</button
+								>
+							</span>
+						{/each}
+					</div>
+					<!-- Custom interest input -->
+					<div class="mt-3 flex gap-2">
+						<input
+							type="text"
+							bind:value={custom_input}
+							onkeydown={(e) => {
+								if (e.key === 'Enter') {
+									e.preventDefault()
+									add_custom()
+								}
+							}}
+							placeholder="Add your own…"
+							maxlength={30}
+							class="flex-1 border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-slate-900 focus:ring-0 focus:outline-none"
+						/>
+						<button
+							type="button"
+							onclick={add_custom}
+							class="rounded-full px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+						>
+							Add
+						</button>
+					</div>
+				</div>
+
+				{#if error_message}
+					<p class="rounded-2xl bg-rose-50 px-4 py-3 text-xs text-rose-700" role="alert">
+						{error_message}
+					</p>
+				{/if}
+			</div>
+
+			<!-- Sticky footer actions -->
+			<div
+				class="flex shrink-0 items-center justify-end gap-3 border-t border-slate-200/60 px-5 py-4"
+			>
+				<button
+					type="button"
+					onclick={on_close}
+					class="rounded-full px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+				>
+					Cancel
+				</button>
+				<button
+					type="submit"
+					disabled={saving || !name.trim()}
+					class="rounded-full bg-black px-6 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50"
+				>
+					{saving ? 'Saving…' : 'Save'}
+				</button>
+			</div>
+		</form>
+	</div>
 </div>

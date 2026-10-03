@@ -16,7 +16,7 @@ export const actions: Actions = {
 		const name = data.get('name')?.toString() || ''
 		const username = data.get('username')?.toString().toLowerCase() || ''
 		const bio = data.get('bio')?.toString() || ''
-		
+
 		try {
 			await update_user_profile(locals.db, session_user.id, {
 				name,
