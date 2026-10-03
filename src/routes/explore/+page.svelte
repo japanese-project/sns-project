@@ -226,7 +226,7 @@
 								Recent Discussions
 							</h2>
 						</div>
-						<div class="divide-y divide-slate-100">
+						<div class="space-y-10">
 							{#each data.discovery.posts as post (post.id)}
 								<PostCard {post} />
 							{/each}
@@ -263,7 +263,7 @@
 					{#if posts.length === 0}
 						<p class="px-2 text-sm text-slate-500">No posts match “{data.query}”.</p>
 					{:else}
-						<div class="divide-y divide-slate-100">
+						<div class="space-y-10">
 							{#each posts as post (post.id)}
 								<PostCard
 									{post}

@@ -13,16 +13,6 @@
 	function set_tab(tab: 'following' | 'global') {
 		tab_override = tab
 	}
-
-	let endpoint = $derived(
-		active_tab === 'global' ? '/api/posts?feed=global' : '/api/posts?feed=following',
-	)
-
-	let empty_message = $derived(
-		active_tab === 'global'
-			? 'No posts yet. Be the first to share something.'
-			: "You aren't following anyone yet. Discover people on Explore or switch to the Global feed!",
-	)
 </script>
 
 <AppShell user={data.user} title="Home">
@@ -70,6 +60,21 @@
 		/>
 	{/snippet}
 
-	<!-- Primary Feed -->
-	<PostList {endpoint} accepts_new_posts {empty_message} />
+	<!-- Primary Feed (Global) -->
+	<div class={active_tab === 'global' ? 'block' : 'hidden'}>
+		<PostList
+			endpoint="/api/posts?feed=global"
+			accepts_new_posts
+			empty_message="No posts yet. Be the first to share something."
+		/>
+	</div>
+
+	<!-- Following Feed -->
+	<div class={active_tab === 'following' ? 'block' : 'hidden'}>
+		<PostList
+			endpoint="/api/posts?feed=following"
+			accepts_new_posts
+			empty_message="You aren't following anyone yet. Discover people on Explore or switch to the Global feed!"
+		/>
+	</div>
 </AppShell>

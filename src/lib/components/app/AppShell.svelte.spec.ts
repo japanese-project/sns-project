@@ -45,23 +45,18 @@ describe('AppShell', () => {
 	it('renders navigation with sign out buttons', async () => {
 		render(AppShellHost, { user: mock_user })
 
-		// Both desktop and mobile navigation should contain a Sign out button
+		// There should be a single responsive navigation dock with one Sign out button
 		const sign_out_buttons = page.getByRole('button', { name: 'Sign out' }).all()
-		expect(sign_out_buttons.length).toBe(2)
+		expect(sign_out_buttons.length).toBe(1)
 
-		// Desktop and mobile navigation elements
-		await expect.element(page.getByRole('navigation', { name: 'Primary' })).toBeInTheDocument()
-		await expect
-			.element(page.getByRole('navigation', { name: 'Mobile navigation' }))
-			.toBeInTheDocument()
+		await expect.element(page.getByRole('navigation')).toBeInTheDocument()
 	})
 
 	it('triggers sign_out when Sign out button is clicked', async () => {
 		render(AppShellHost, { user: mock_user })
 
-		const mobile_nav = page.getByRole('navigation', { name: 'Mobile navigation' })
-		const mobile_sign_out = mobile_nav.getByRole('button', { name: 'Sign out' })
-		await mobile_sign_out.click()
+		const sign_out_btn = page.getByRole('button', { name: 'Sign out' })
+		await sign_out_btn.click()
 
 		expect(sign_out).toHaveBeenCalledTimes(1)
 		expect(goto).toHaveBeenCalledWith('/login')
@@ -74,7 +69,7 @@ describe('AppShell', () => {
 		await expect.element(main).toBeInTheDocument()
 
 		// Center container must enforce consistent max-w-2xl width across all page types
-		const container = main.element().closest('.max-w-2xl')
+		const container = main.element().querySelector('.max-w-2xl')
 		expect(container).not.toBeNull()
 		expect(container?.className).toContain('w-full')
 		expect(container?.className).toContain('max-w-2xl')

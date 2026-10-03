@@ -1,17 +1,5 @@
 <script lang="ts">
 	/* eslint-disable svelte/no-navigation-without-resolve */
-	import CheckIcon from '@lucide/svelte/icons/check'
-	import CopyIcon from '@lucide/svelte/icons/copy'
-	import HeartIcon from '@lucide/svelte/icons/heart'
-	import GlobeIcon from '@lucide/svelte/icons/globe'
-	import ImageIcon from '@lucide/svelte/icons/image'
-	import ImageOffIcon from '@lucide/svelte/icons/image-off'
-	import LockIcon from '@lucide/svelte/icons/lock'
-	import MessageCircleIcon from '@lucide/svelte/icons/message-circle'
-	import MoreHorizontalIcon from '@lucide/svelte/icons/more-horizontal'
-	import PencilIcon from '@lucide/svelte/icons/pencil'
-	import TrashIcon from '@lucide/svelte/icons/trash'
-	import XIcon from '@lucide/svelte/icons/x'
 	import { goto } from '$app/navigation'
 	import { resolve } from '$app/paths'
 	import { api } from '$lib/api'
@@ -21,6 +9,9 @@
 	import { parse_content } from '$lib/content'
 	import Avatar from './Avatar.svelte'
 	import Comments from './Comments.svelte'
+	import PencilIcon from '@lucide/svelte/icons/pencil'
+	import GlobeIcon from '@lucide/svelte/icons/globe'
+	import LockIcon from '@lucide/svelte/icons/lock'
 
 	let {
 		post,
@@ -333,68 +324,280 @@
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <article
-	class="min-w-0 overflow-hidden border-b border-slate-200/60 px-2 py-5 [overflow-wrap:anywhere] break-words transition-colors hover:bg-slate-50/50 {!editing
+	class="post-card glass-surface group relative rounded-[2rem] {!editing
 		? 'cursor-pointer'
-		: ''}"
+		: ''} {active_post.image_url ? 'p-3 pb-6' : 'mt-4 p-8'}"
 	data-testid="post-card"
 	onclick={handle_card_click}
 	onkeydown={handle_card_keydown}
 >
-	<header class="flex items-center gap-3">
-		<a
-			href={resolve('/u/[handle]', {
-				handle: post.author.handle || post.author.username || post.author.id || 'user',
-			})}
-			aria-label="{post.author.name}'s profile"
-		>
-			<Avatar user={post.author} size={44} />
-		</a>
-		<div class="min-w-0 flex-1">
-			<a
-				href={resolve('/u/[handle]', {
-					handle: post.author.handle || post.author.username || post.author.id || 'user',
-				})}
-				class="block truncate font-semibold text-slate-900 hover:underline">{post.author.name}</a
-			>
-			<p class="flex items-center gap-1.5 text-xs text-slate-500">
-				{#if post.author.username}<span>@{post.author.username}</span><span aria-hidden="true"
-						>•</span
-					>{/if}
-				<time
-					datetime={active_post.created_at}
-					title={new Date(active_post.created_at).toLocaleString()}
-					>{relative_time(active_post.created_at)}</time
-				>
-				{#if active_post.updated_at !== active_post.created_at}<span>(edited)</span>{/if}
-				{#if active_post.visibility === 'followers-only'}
-					<span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5"
-						><LockIcon class="size-3" /> Followers</span
+	{#if editing}
+		<div class="px-5">
+			<form onsubmit={save_edit} class="mt-3 space-y-3">
+				<div class="flex items-center justify-between text-xs">
+					<span class="flex items-center gap-1.5 font-semibold text-slate-400">
+						<PencilIcon class="size-3.5 text-indigo-500" />
+						Editing
+					</span>
+					<div class="flex items-center gap-1">
+						<button
+							type="button"
+							onclick={() => (draft_visibility = 'public')}
+							class="flex items-center gap-1 rounded-full px-2.5 py-1 transition {draft_visibility ===
+							'public'
+								? 'bg-slate-100 font-semibold text-slate-900'
+								: 'text-slate-400 hover:text-slate-600'}"
+						>
+							<GlobeIcon class="size-3.5" /> Public
+						</button>
+						<button
+							type="button"
+							onclick={() => (draft_visibility = 'followers-only')}
+							class="flex items-center gap-1 rounded-full px-2.5 py-1 transition {draft_visibility ===
+							'followers-only'
+								? 'bg-slate-100 font-semibold text-slate-900'
+								: 'text-slate-400 hover:text-slate-600'}"
+						>
+							<LockIcon class="size-3.5" /> Followers
+						</button>
+					</div>
+				</div>
+
+				<textarea
+					bind:value={draft}
+					rows="3"
+					aria-label="Edit post text"
+					class="w-full resize-none border-0 bg-transparent p-0 text-lg leading-relaxed [overflow-wrap:anywhere] break-words text-slate-900 outline-none focus:ring-0"
+				></textarea>
+
+				<div class="flex items-center justify-between text-xs">
+					<span
+						class="tabular-nums {draft.length > MAX_POST_LENGTH
+							? 'font-bold text-rose-600'
+							: 'text-slate-400'}"
 					>
-				{/if}
-			</p>
+						{MAX_POST_LENGTH - draft.length} characters left
+					</span>
+					<div class="flex items-center gap-2">
+						<button
+							type="button"
+							onclick={() => (editing = false)}
+							class="px-3 py-1.5 font-medium text-slate-500 transition hover:text-slate-800"
+							>Cancel</button
+						>
+						<button
+							type="submit"
+							disabled={saving ||
+								(draft.trim().length === 0 && !active_post.image_url) ||
+								draft.length > MAX_POST_LENGTH}
+							class="rounded-full bg-slate-900 px-4 py-1.5 font-medium text-white transition hover:bg-slate-800 disabled:opacity-50"
+						>
+							{saving ? 'Saving…' : 'Save changes'}
+						</button>
+					</div>
+				</div>
+			</form>
 		</div>
-		{#if !editing}
-			<div class="relative" bind:this={menu_container_el}>
+	{:else}
+		{#if active_post.image_url}
+			<div
+				data-testid="post-image-container"
+				data-aspect-ratio={effective_aspect_ratio ? effective_aspect_ratio.toFixed(2) : undefined}
+				class="relative mb-6 flex items-center justify-center overflow-hidden rounded-[1.5rem] border border-black/5 bg-slate-100"
+				style={effective_aspect_ratio
+					? `aspect-ratio: ${effective_aspect_ratio}; max-height: 512px; width: fit-content; max-width: 100%;`
+					: 'min-height: 220px; max-height: 512px; width: 100%;'}
+			>
+				{#if image_load_failed}
+					<div
+						data-testid="broken-image-fallback"
+						class="flex min-h-[220px] w-full flex-col items-center justify-center gap-2.5 p-6 text-slate-400"
+					>
+						<i class="ph ph-image-broken text-4xl"></i>
+						<span class="text-xs font-medium text-slate-500">Media unavailable</span>
+					</div>
+				{:else}
+					{#if !image_loaded}
+						<div
+							data-testid="image-loading-skeleton"
+							class="absolute inset-0 flex animate-pulse items-center justify-center bg-slate-100/90 text-slate-300"
+						>
+							<i class="ph ph-image text-4xl"></i>
+						</div>
+					{/if}
+					<img
+						src={active_post.image_url}
+						alt="Post attachment"
+						class="h-full w-full object-cover transition-transform duration-700 hover:scale-105 {!image_loaded
+							? 'opacity-0'
+							: 'opacity-100'}"
+						loading="lazy"
+						use:check_image_cached
+						onload={handle_image_load}
+						onerror={() => {
+							image_load_failed = true
+							image_loaded = true
+						}}
+					/>
+				{/if}
 				<button
-					bind:this={menu_button_el}
+					class="glass-pill absolute top-4 left-4 flex items-center gap-2 rounded-full px-3 py-1.5 transition-colors hover:bg-white/80"
+					onclick={(e) => {
+						e.stopPropagation()
+						goto(
+							resolve('/u/[handle]', {
+								handle: post.author.handle || post.author.username || post.author.id || 'user',
+							}),
+						)
+					}}
+				>
+					<div class="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full">
+						<Avatar user={post.author} size={24} />
+					</div>
+					<span class="text-sm font-semibold text-slate-800">{post.author.name}</span>
+					<span class="text-xs font-medium text-slate-500"
+						>{relative_time(active_post.created_at)}</span
+					>
+				</button>
+			</div>
+
+			<div class="px-5 pb-2">
+				{#if active_post.content}
+					<p
+						class="text-[15px] leading-relaxed [overflow-wrap:anywhere] whitespace-pre-wrap text-slate-500"
+					>
+						{#each parse_content(active_post.content) as segment, i (i)}
+							{#if segment.type === 'tag'}
+								<a
+									href="{resolve('/explore')}?q={encodeURIComponent(segment.text)}"
+									class="font-medium text-system-blue hover:underline"
+									onclick={(e) => e.stopPropagation()}>{segment.text}</a
+								>
+							{:else if segment.type === 'link'}
+								<a
+									href={segment.href}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="font-medium [overflow-wrap:anywhere] break-all text-system-blue hover:underline"
+									onclick={(e) => e.stopPropagation()}>{segment.text}</a
+								>
+							{:else}
+								{segment.text}
+							{/if}
+						{/each}
+					</p>
+				{/if}
+			</div>
+		{:else}
+			<button
+				class="group/author mb-6 flex items-center gap-3 text-left transition-opacity hover:opacity-80"
+				onclick={(e) => {
+					e.stopPropagation()
+					goto(
+						resolve('/u/[handle]', {
+							handle: post.author.handle || post.author.username || post.author.id || 'user',
+						}),
+					)
+				}}
+			>
+				<div class="h-10 w-10 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 p-[2px]">
+					<div
+						class="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2 border-white bg-white"
+					>
+						<Avatar user={post.author} size={36} />
+					</div>
+				</div>
+				<div>
+					<div class="flex items-center gap-1">
+						<span class="text-[15px] font-semibold text-slate-800">{post.author.name}</span>
+					</div>
+					<span class="text-xs font-medium text-slate-500"
+						>@{post.author.username || post.author.handle || post.author.id} • {relative_time(
+							active_post.created_at,
+						)}</span
+					>
+				</div>
+			</button>
+
+			{#if active_post.content}
+				<p
+					class="{active_post.content.length < 120
+						? 'mb-4 font-display text-2xl leading-snug font-medium tracking-tight text-black'
+						: 'text-[15px] leading-relaxed text-slate-500'} [overflow-wrap:anywhere] whitespace-pre-wrap"
+				>
+					{#each parse_content(active_post.content) as segment, i (i)}
+						{#if segment.type === 'tag'}
+							<a
+								href="{resolve('/explore')}?q={encodeURIComponent(segment.text)}"
+								class="font-medium text-system-blue hover:underline"
+								onclick={(e) => e.stopPropagation()}>{segment.text}</a
+							>
+						{:else if segment.type === 'link'}
+							<a
+								href={segment.href}
+								target="_blank"
+								rel="noopener noreferrer"
+								class="font-medium [overflow-wrap:anywhere] break-all text-system-blue hover:underline"
+								onclick={(e) => e.stopPropagation()}>{segment.text}</a
+							>
+						{:else}
+							{segment.text}
+						{/if}
+					{/each}
+				</p>
+			{/if}
+		{/if}
+
+		<!-- Integrated Action Capsule (Floating inside card) -->
+		<div
+			class="glass-surface absolute right-8 -bottom-5 z-20 flex items-center gap-6 rounded-full border border-white/50 px-5 py-2.5 opacity-100 shadow-lg transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 md:-translate-y-2 md:opacity-0"
+		>
+			<button
+				class="group/btn flex items-center gap-2 transition-colors hover:text-system-pink"
+				onclick={(e) => {
+					e.stopPropagation()
+					toggle_like()
+				}}
+			>
+				<i
+					class="like-anim text-xl transition-colors {liked
+						? 'ph-fill ph-heart scale-110 text-system-pink'
+						: 'ph ph-heart text-slate-400 group-hover/btn:text-system-pink'}"
+				></i>
+				<span
+					class="like-count text-sm font-medium text-slate-600 tabular-nums"
+					data-testid="like-count">{like_count}</span
+				>
+			</button>
+			<button
+				class="group/btn flex items-center gap-2 transition-colors hover:text-black"
+				onclick={(e) => {
+					e.stopPropagation()
+					comments_override = !show_comments
+				}}
+			>
+				<i
+					class="ph ph-chat-circle text-xl text-slate-400 transition-colors group-hover/btn:text-black"
+				></i>
+				<span class="text-sm font-medium text-slate-600">{comment_count}</span>
+			</button>
+			<div class="relative flex items-center" bind:this={menu_container_el}>
+				<button
 					type="button"
-					id="menu-button-{post.id}"
 					aria-label="More options"
 					aria-haspopup="menu"
 					aria-expanded={menu_open}
 					aria-controls={menu_open ? `menu-${post.id}` : undefined}
+					bind:this={menu_button_el}
+					class="flex items-center transition-colors hover:text-black"
+					onkeydown={handle_button_keydown}
 					onclick={(e) => {
 						e.stopPropagation()
-						if (menu_open) {
-							close_menu(false)
-						} else {
-							open_menu('first')
-						}
+						if (menu_open) close_menu(false)
+						else open_menu('first')
 					}}
-					onkeydown={handle_button_keydown}
-					class="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus:bg-slate-100 focus:text-slate-700 focus:outline-none active:scale-95"
 				>
-					<MoreHorizontalIcon class="size-4" />
+					<i class="ph ph-export text-xl text-slate-400 transition-colors hover:text-black"></i>
 				</button>
 				{#if menu_open}
 					<div
@@ -404,23 +607,23 @@
 						tabindex="-1"
 						aria-label="Post actions"
 						onkeydown={handle_menu_keydown}
-						class="absolute top-full right-0 z-20 mt-1 min-w-[155px] overflow-hidden rounded-2xl border border-slate-200/90 bg-white/95 py-1.5 shadow-xl shadow-slate-900/10 backdrop-blur-md focus:outline-none"
+						class="glass-surface absolute right-0 bottom-full z-50 mb-2 min-w-[155px] overflow-hidden rounded-2xl border border-white/80 py-1.5 shadow-xl shadow-black/10 focus:outline-none"
 					>
 						<button
 							type="button"
 							role="menuitem"
 							tabindex="-1"
 							onclick={handle_copy_link}
-							class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900 focus:bg-slate-50 focus:text-slate-900 focus:outline-none"
+							class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50 focus:bg-white/50"
 						>
 							{#if copy_status === 'copied'}
-								<CheckIcon class="size-4 text-emerald-600" />
+								<i class="ph-fill ph-check-circle text-base text-emerald-600"></i>
 								<span class="text-emerald-600">Copied!</span>
 							{:else if copy_status === 'failed'}
-								<XIcon class="size-4 text-rose-600" />
+								<i class="ph-fill ph-x-circle text-base text-rose-600"></i>
 								<span class="text-rose-600">Failed to copy</span>
 							{:else}
-								<CopyIcon class="size-4 text-slate-400" />
+								<i class="ph ph-copy text-base text-slate-400"></i>
 								<span>Copy link</span>
 							{/if}
 						</button>
@@ -430,15 +633,16 @@
 								type="button"
 								role="menuitem"
 								tabindex="-1"
-								onclick={() => {
+								onclick={(e) => {
+									e.stopPropagation()
 									close_menu(false)
 									draft = active_post.content
 									draft_visibility = active_post.visibility
 									editing = true
 								}}
-								class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900 focus:bg-slate-50 focus:text-slate-900 focus:outline-none"
+								class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50 focus:bg-white/50"
 							>
-								<PencilIcon class="size-4 text-slate-400" />
+								<i class="ph ph-pencil-simple text-base text-slate-400"></i>
 								<span>Edit post</span>
 							</button>
 
@@ -446,184 +650,45 @@
 								type="button"
 								role="menuitem"
 								tabindex="-1"
-								onclick={() => {
+								onclick={(e) => {
+									e.stopPropagation()
 									close_menu(false)
 									confirming_delete = true
 								}}
-								class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-rose-600 transition hover:bg-rose-50 focus:bg-rose-50 focus:outline-none"
+								class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-rose-600 transition hover:bg-rose-50 focus:bg-rose-50"
 							>
-								<TrashIcon class="size-4 text-rose-500" />
+								<i class="ph ph-trash text-base text-rose-500"></i>
 								<span>Delete post</span>
 							</button>
 						{/if}
 					</div>
 				{/if}
 			</div>
-		{/if}
-	</header>
-
-	{#if editing}
-		<form onsubmit={save_edit} class="mt-3 space-y-3">
-			<div class="flex items-center justify-between text-xs">
-				<span class="flex items-center gap-1.5 font-semibold text-slate-400">
-					<PencilIcon class="size-3.5 text-indigo-500" />
-					Editing
-				</span>
-				<div class="flex items-center gap-1">
-					<button
-						type="button"
-						onclick={() => (draft_visibility = 'public')}
-						class="flex items-center gap-1 rounded-full px-2.5 py-1 transition {draft_visibility ===
-						'public'
-							? 'bg-slate-100 font-semibold text-slate-900'
-							: 'text-slate-400 hover:text-slate-600'}"
-					>
-						<GlobeIcon class="size-3.5" /> Public
-					</button>
-					<button
-						type="button"
-						onclick={() => (draft_visibility = 'followers-only')}
-						class="flex items-center gap-1 rounded-full px-2.5 py-1 transition {draft_visibility ===
-						'followers-only'
-							? 'bg-slate-100 font-semibold text-slate-900'
-							: 'text-slate-400 hover:text-slate-600'}"
-					>
-						<LockIcon class="size-3.5" /> Followers
-					</button>
-				</div>
-			</div>
-
-			<textarea
-				bind:value={draft}
-				rows="3"
-				aria-label="Edit post text"
-				class="w-full resize-none border-0 bg-transparent p-0 text-lg leading-relaxed [overflow-wrap:anywhere] break-words text-slate-900 outline-none focus:ring-0"
-			></textarea>
-
-			<div class="flex items-center justify-between text-xs">
-				<span
-					class="tabular-nums {draft.length > MAX_POST_LENGTH
-						? 'font-bold text-rose-600'
-						: 'text-slate-400'}"
-				>
-					{MAX_POST_LENGTH - draft.length} characters left
-				</span>
-				<div class="flex items-center gap-2">
-					<button
-						type="button"
-						onclick={() => (editing = false)}
-						class="px-3 py-1.5 font-medium text-slate-500 transition hover:text-slate-800"
-						>Cancel</button
-					>
-					<button
-						type="submit"
-						disabled={saving ||
-							(draft.trim().length === 0 && !active_post.image_url) ||
-							draft.length > MAX_POST_LENGTH}
-						class="rounded-full bg-slate-900 px-4 py-1.5 font-medium text-white transition hover:bg-slate-800 disabled:opacity-50"
-					>
-						{saving ? 'Saving…' : 'Save changes'}
-					</button>
-				</div>
-			</div>
-		</form>
-	{:else}
-		{#if active_post.content}
-			<p
-				class="mt-4 text-lg leading-relaxed [overflow-wrap:anywhere] break-words whitespace-pre-wrap text-slate-900"
-			>
-				{#each parse_content(active_post.content) as segment, i (i)}
-					{#if segment.type === 'tag'}
-						<a
-							href="{resolve('/explore')}?q={encodeURIComponent(segment.text)}"
-							class="font-medium text-indigo-600 hover:text-indigo-700 hover:underline"
-							onclick={(e) => e.stopPropagation()}
-						>
-							{segment.text}
-						</a>
-					{:else if segment.type === 'link'}
-						<a
-							href={segment.href}
-							target="_blank"
-							rel="noopener noreferrer"
-							class="font-medium [overflow-wrap:anywhere] break-all text-indigo-600 hover:text-indigo-700 hover:underline"
-							onclick={(e) => e.stopPropagation()}
-						>
-							{segment.text}
-						</a>
-					{:else}
-						{segment.text}
-					{/if}
-				{/each}
-			</p>
-		{/if}
-	{/if}
-
-	{#if active_post.image_url}
-		<div
-			data-testid="post-image-container"
-			data-aspect-ratio={effective_aspect_ratio ? effective_aspect_ratio.toFixed(2) : undefined}
-			class="relative mt-3 flex items-center justify-center overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 transition-all duration-300"
-			style={effective_aspect_ratio
-				? `aspect-ratio: ${effective_aspect_ratio}; max-height: 512px; width: fit-content; max-width: 100%;`
-				: 'min-height: 220px; max-height: 512px; width: 100%;'}
-		>
-			{#if image_load_failed}
-				<div
-					data-testid="broken-image-fallback"
-					class="flex min-h-[220px] w-full flex-col items-center justify-center gap-2.5 p-6 text-slate-400"
-				>
-					<div
-						class="flex size-12 items-center justify-center rounded-full bg-slate-200/70 text-slate-400 shadow-inner"
-					>
-						<ImageOffIcon class="size-6 text-slate-400" />
-					</div>
-					<span class="text-xs font-medium text-slate-500">Media unavailable</span>
-				</div>
-			{:else}
-				{#if !image_loaded}
-					<div
-						data-testid="image-loading-skeleton"
-						class="absolute inset-0 flex animate-pulse items-center justify-center bg-slate-100/90 text-slate-300"
-					>
-						<ImageIcon class="size-8 text-slate-300" />
-					</div>
-				{/if}
-				<img
-					src={active_post.image_url}
-					alt="Post attachment"
-					class="h-auto max-h-[512px] w-auto max-w-full object-contain transition-opacity duration-300 {!image_loaded
-						? 'opacity-0'
-						: 'opacity-100'}"
-					loading="lazy"
-					use:check_image_cached
-					onload={handle_image_load}
-					onerror={() => {
-						image_load_failed = true
-						image_loaded = true
-					}}
-				/>
-			{/if}
 		</div>
 	{/if}
 
 	{#if confirming_delete}
 		<div
-			class="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-rose-50 p-3 text-sm text-rose-800"
+			class="mx-5 mt-4 flex items-center justify-between gap-3 rounded-2xl bg-rose-50 p-3 text-sm text-rose-800"
 			role="alertdialog"
-			aria-label="Confirm delete"
 		>
 			<span>Delete this post and its comments?</span>
 			<span class="flex gap-2">
 				<button
 					type="button"
-					onclick={() => (confirming_delete = false)}
+					onclick={(e) => {
+						e.stopPropagation()
+						confirming_delete = false
+					}}
 					class="rounded-full px-3 py-1 hover:bg-rose-100">Cancel</button
 				>
 				<button
 					type="button"
 					disabled={deleting}
-					onclick={confirm_delete}
+					onclick={(e) => {
+						e.stopPropagation()
+						confirm_delete()
+					}}
 					class="rounded-full bg-rose-600 px-3 py-1 text-white disabled:opacity-60"
 					>{deleting ? 'Deleting…' : 'Delete'}</button
 				>
@@ -631,39 +696,18 @@
 		</div>
 	{/if}
 
-	<footer class="mt-4 flex items-center gap-5 text-sm text-slate-500">
-		<button
-			type="button"
-			onclick={toggle_like}
-			aria-pressed={liked}
-			aria-label={liked ? 'Unlike' : 'Like'}
-			class="group flex items-center gap-1.5 transition-colors enabled:hover:text-rose-600 {liked
-				? 'text-rose-600'
-				: 'text-slate-500'}"
-		>
-			<HeartIcon
-				class="size-5 transition-transform duration-200 group-hover:scale-110 group-active:scale-125 {liked
-					? 'fill-current'
-					: ''}"
-			/>
-			<span class="tabular-nums" data-testid="like-count">{like_count}</span>
-		</button>
-		<button
-			type="button"
-			onclick={() => (comments_override = !show_comments)}
-			aria-expanded={show_comments}
-			class="group flex items-center gap-1.5 text-slate-500 transition-colors hover:text-indigo-600"
-		>
-			<MessageCircleIcon
-				class="size-5 transition-transform duration-200 group-hover:scale-110 group-active:scale-95"
-			/>
-			<span class="tabular-nums">{comment_count}</span>
-		</button>
-	</footer>
-
-	{#if error_message}<p class="mt-2 text-sm text-rose-600" role="alert">{error_message}</p>{/if}
+	{#if error_message}<p class="mx-5 mt-2 text-sm text-rose-600" role="alert">
+			{error_message}
+		</p>{/if}
 
 	{#if show_comments}
-		<Comments post_id={post.id} on_count={(n) => (comment_override = n)} />
+		<div
+			class="mt-8 px-2 pb-4 md:px-5"
+			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => e.stopPropagation()}
+			role="presentation"
+		>
+			<Comments post_id={post.id} on_count={(n) => (comment_override = n)} />
+		</div>
 	{/if}
 </article>
