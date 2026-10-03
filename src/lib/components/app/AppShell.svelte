@@ -239,6 +239,29 @@
 			</a>
 		{/if}
 
+		<a
+			href={resolve('/settings')}
+			aria-label="Settings"
+			class="nav-item group interactive-bounce relative mx-1 mt-auto flex h-12 w-12 items-center justify-center rounded-full transition-all hover:bg-white/80 md:mx-0 md:h-14 md:w-14 {path.startsWith(
+				'/settings',
+			)
+				? 'active bg-white/60 shadow-sm'
+				: ''}"
+		>
+			<i
+				class="ph ph-gear text-2xl {path.startsWith('/settings')
+					? 'ph-fill text-black'
+					: 'text-slate-600 transition-colors group-hover:text-black'}"
+			></i>
+			<div
+				class="absolute bottom-0 h-1.5 w-1.5 rounded-full bg-black transition-opacity md:top-1/2 md:bottom-auto md:-left-3 md:-translate-y-1/2 {path.startsWith(
+					'/settings',
+				)
+					? 'opacity-100'
+					: 'opacity-0 group-[.active]:opacity-100'}"
+			></div>
+		</a>
+
 		<button
 			aria-label="Sign Out"
 			onclick={handle_sign_out}

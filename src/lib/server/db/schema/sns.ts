@@ -12,6 +12,19 @@ import {
 import { sql } from 'drizzle-orm'
 import { user } from './auth'
 
+export const user_settings = sqliteTable('user_settings', {
+	userId: text('user_id')
+		.primaryKey()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	isPrivate: integer('is_private', { mode: 'boolean' }).notNull().default(false),
+	notifyOnFollow: integer('notify_on_follow', { mode: 'boolean' }).notNull().default(true),
+	notifyOnLike: integer('notify_on_like', { mode: 'boolean' }).notNull().default(true),
+	notifyOnComment: integer('notify_on_comment', { mode: 'boolean' }).notNull().default(true),
+	updatedAt: integer('updated_at', { mode: 'timestamp' })
+		.notNull()
+		.default(sql`(unixepoch())`),
+})
+
 export const post = sqliteTable(
 	'post',
 	{
@@ -101,6 +114,26 @@ export const follow = sqliteTable(
 		primaryKey({ columns: [table.followerId, table.followingId] }),
 		index('follow_following_id_idx').on(table.followingId),
 		check('follow_no_self_follow', sql`${table.followerId} != ${table.followingId}`),
+	],
+)
+
+export const follow_request = sqliteTable(
+	'follow_request',
+	{
+		followerId: text('follower_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		followingId: text('following_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		createdAt: integer('created_at', { mode: 'timestamp' })
+			.notNull()
+			.default(sql`(unixepoch())`),
+	},
+	(table) => [
+		primaryKey({ columns: [table.followerId, table.followingId] }),
+		index('follow_request_following_id_idx').on(table.followingId),
+		check('follow_request_no_self_follow', sql`${table.followerId} != ${table.followingId}`),
 	],
 )
 
