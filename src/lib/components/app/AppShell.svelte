@@ -63,8 +63,6 @@
 			window.removeEventListener('notifications:changed', on_change)
 		}
 	})
-
-
 </script>
 
 <svelte:head><title>{title} · SNS</title></svelte:head>
