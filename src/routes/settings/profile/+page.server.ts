@@ -1,8 +1,6 @@
 import { fail } from '@sveltejs/kit'
-import { user } from '$lib/server/db/schema/auth'
-import { eq } from 'drizzle-orm'
-import { MAX_BIO_LENGTH, MAX_NAME_LENGTH } from '$lib/limits'
-import { require_session_user } from '$lib/server/validation'
+import { update_user_profile } from '$lib/server/services/users'
+import { is_unique_constraint_error, require_session_user } from '$lib/server/validation'
 import type { PageServerLoad, Actions } from './$types'
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -18,42 +16,25 @@ export const actions: Actions = {
 		const name = data.get('name')?.toString() || ''
 		const username = data.get('username')?.toString().toLowerCase() || ''
 		const bio = data.get('bio')?.toString() || ''
-		// For simplicity, we just handle the core fields here.
-		// A full implementation might reuse the `/api/users/me` logic or share a service function.
-
-		const trimmed_name = name.trim()
-		const trimmed_username = username.trim()
-		const trimmed_bio = bio.trim()
-
-		if (!trimmed_name || trimmed_name.length > MAX_NAME_LENGTH) {
-			return fail(400, { error: `Name must be between 1 and ${MAX_NAME_LENGTH} characters.` })
-		}
-		if (trimmed_username && !/^[a-z0-9_]{3,30}$/.test(trimmed_username)) {
-			return fail(400, { error: 'Invalid username format.' })
-		}
-		if (trimmed_bio.length > MAX_BIO_LENGTH) {
-			return fail(400, { error: `Bio cannot exceed ${MAX_BIO_LENGTH} characters.` })
-		}
 
 		try {
-			await locals.db
-				.update(user)
-				.set({
-					name: trimmed_name,
-					username: trimmed_username,
-					bio: trimmed_bio.length > 0 ? trimmed_bio : null,
-					updatedAt: new Date(),
-				})
-				.where(eq(user.id, session_user.id))
-
+			await update_user_profile(locals.db, session_user.id, {
+				name,
+				username: username.trim() === '' ? null : username,
+				bio: bio.trim() === '' ? null : bio,
+			})
 			return { success: true }
 		} catch (e: unknown) {
-			const err = e as Error
-			// Catch SQLite unique constraint on username
-			if (err.message?.includes('UNIQUE constraint failed: user.username')) {
+			const err = e as Error & { body?: { message?: string } }
+			// Check if it's our custom error or a database unique constraint
+			if (err.message && err.message.includes('Username is already taken')) {
 				return fail(400, { error: 'Username is already taken.' })
 			}
-			return fail(500, { error: 'Failed to update profile.' })
+			if (is_unique_constraint_error(e)) {
+				return fail(400, { error: 'Username is already taken.' })
+			}
+			const message = err.body?.message || err.message || 'Failed to update profile.'
+			return fail(400, { error: message })
 		}
 	},
 }
