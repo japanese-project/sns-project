@@ -59,13 +59,22 @@ export const handle: Handle = async ({ event, resolve }) => {
 	if (event.locals.user) {
 		try {
 			const db_user = await event.locals.db
-				.select({ username: user_table.username, onboarded: user_table.onboarded })
+				.select({
+					username: user_table.username,
+					onboarded: user_table.onboarded,
+					name: user_table.name,
+					bio: user_table.bio,
+					interests: user_table.interests,
+				})
 				.from(user_table)
 				.where(eq(user_table.id, event.locals.user.id))
 				.get()
 
 			if (db_user) {
 				event.locals.user.onboarded = Boolean(db_user.onboarded)
+				event.locals.user.name = db_user.name
+				event.locals.user.bio = db_user.bio
+				event.locals.user.interests = db_user.interests
 				if (!db_user.username) {
 					event.locals.user.username = await ensure_username(
 						event.locals.db,

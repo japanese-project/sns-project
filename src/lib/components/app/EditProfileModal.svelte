@@ -145,24 +145,34 @@
 			saving = false
 		}
 	}
+
+	function portal(node: HTMLElement) {
+		document.body.appendChild(node)
+		return {
+			destroy() {
+				node.remove()
+			}
+		}
+	}
 </script>
 
-<!-- Backdrop -->
-<div
-	class="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm"
-	onclick={on_close}
-	role="presentation"
-></div>
+<div use:portal>
+	<!-- Backdrop -->
+	<div
+		class="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm"
+		onclick={on_close}
+		role="presentation"
+	></div>
 
-<!-- Slide-in sheet from right -->
-<div
-	class="fixed inset-y-0 right-0 z-50 flex w-full max-w-sm flex-col bg-[#f8fafc] shadow-2xl"
-	role="dialog"
-	aria-modal="true"
-	aria-labelledby="edit-profile-title"
->
-	<!-- Header bar -->
-	<div class="flex items-center justify-between border-b border-slate-200/60 px-5 py-4">
+	<!-- Slide-in sheet from right -->
+	<div
+		class="fixed inset-y-0 right-0 z-50 flex w-full max-w-sm flex-col bg-[#f8fafc] shadow-2xl"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="edit-profile-title"
+	>
+		<!-- Header bar -->
+		<div class="flex items-center justify-between border-b border-slate-200/60 px-5 py-4">
 		<h2 id="edit-profile-title" class="text-base font-bold text-slate-900">Edit Profile</h2>
 		<button
 			type="button"
@@ -175,8 +185,8 @@
 	</div>
 
 	<!-- Scrollable body -->
-	<form onsubmit={handle_submit} class="flex flex-1 flex-col overflow-y-auto">
-		<div class="flex-1 space-y-6 px-5 py-6">
+	<form onsubmit={handle_submit} class="flex flex-1 flex-col overflow-hidden">
+		<div class="flex-1 space-y-6 overflow-y-auto px-5 py-6">
 			<!-- Display Name -->
 			<div>
 				<label
@@ -369,4 +379,5 @@
 			</button>
 		</div>
 	</form>
+</div>
 </div>
