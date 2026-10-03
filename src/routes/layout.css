@@ -278,3 +278,8 @@ body {
 	opacity: 1;
 	transform: scale(1) translateY(0);
 }
+
+input[type='search']::-webkit-search-cancel-button {
+	-webkit-appearance: none;
+	appearance: none;
+}

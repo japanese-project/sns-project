@@ -94,7 +94,7 @@
 					maxlength={MAX_SEARCH_LENGTH}
 					placeholder="Search people or posts…"
 					aria-label="Search"
-					class="w-full rounded-2xl border border-slate-200/80 bg-white py-2.5 pr-9 pl-10 text-sm text-slate-900 shadow-xs transition outline-none placeholder:text-slate-400 focus:border-black focus:ring-1 focus:ring-black"
+					class="w-full rounded-2xl border border-slate-200/80 bg-white py-2.5 pr-9 pl-10 text-sm text-slate-900 shadow-xs transition outline-none placeholder:text-slate-400 focus:border-black focus:ring-1 focus:ring-black [&::-webkit-search-cancel-button]:appearance-none"
 				/>
 				{#if input}
 					<button
