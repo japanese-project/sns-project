@@ -12,9 +12,9 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
 	if (raw === null || raw.trim() === '') {
 		const [suggested_users, discovery_feed, topics] = await Promise.all([
-			get_suggested_users(locals.db, viewer_id, 6),
-			list_feed(locals.db, viewer_id, { limit: 8 }),
-			get_trending_topics(locals.db, 10, period),
+			get_suggested_users(locals.db, viewer_id, 8),
+			list_feed(locals.db, viewer_id, { limit: 24 }),
+			get_trending_topics(locals.db, 12, period),
 		])
 
 		return {

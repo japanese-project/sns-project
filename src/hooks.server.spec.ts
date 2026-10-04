@@ -1,6 +1,6 @@
+import { API_RATE_PER_MINUTE } from '$lib/server/rate-limit'
 import { describe, it, expect, vi } from 'vitest'
 import { handle } from './hooks.server'
-import { API_RATE_PER_MINUTE } from '$lib/server/rate-limit'
 import type { RequestEvent } from '@sveltejs/kit'
 
 vi.mock('$lib/server/auth', () => ({

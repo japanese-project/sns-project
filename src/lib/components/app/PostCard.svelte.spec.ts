@@ -7,6 +7,13 @@ import PostCard from './PostCard.svelte'
 
 vi.mock('$app/navigation', () => ({ goto: vi.fn(async () => {}) }))
 vi.mock('$lib/api', () => ({ api: vi.fn() }))
+vi.mock('$lib/link-preview-client', async (import_original) => {
+	const actual = await import_original<typeof import('$lib/link-preview-client')>()
+	return {
+		...actual,
+		get_link_preview: vi.fn(async () => null),
+	}
+})
 vi.mock('$app/paths', () => ({
 	base: '',
 	assets: '',
@@ -68,13 +75,13 @@ describe('PostCard media rendering', () => {
 		await expect.element(image).toHaveAttribute('src', '/api/media/image-only.png')
 	})
 
-	it('renders image within stable aspect-ratio container with object-cover', async () => {
+	it('renders image within stable aspect-ratio container with object-contain', async () => {
 		const post = make_post({ image_url: '/api/media/test-photo.jpg' })
 		render(PostCard, { post })
 
 		const image = page.getByRole('img', { name: 'Post attachment' })
 		await expect.element(image).toBeInTheDocument()
-		await expect.element(image).toHaveClass(/object-cover/)
+		await expect.element(image).toHaveClass(/object-contain/)
 	})
 
 	it('renders fallback when attachment image fails to load with 404 response', async () => {

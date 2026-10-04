@@ -24,6 +24,8 @@ export default defineConfig({
 						'@lucide/svelte/icons/check',
 						'@lucide/svelte/icons/log-out',
 						'@lucide/svelte/icons/bot',
+						'@lucide/svelte/icons/globe',
+						'@lucide/svelte/icons/external-link',
 					],
 				},
 				test: {

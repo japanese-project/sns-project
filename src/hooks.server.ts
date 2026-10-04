@@ -24,6 +24,7 @@ if (dev && !building) {
 	platform_proxy = await get_platform_proxy()
 }
 
+
 export const handle: Handle = async ({ event, resolve }) => {
 	if (event.url.pathname.startsWith('/api/')) {
 		if (await api_limiter.isLimited(event)) {

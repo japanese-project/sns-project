@@ -8,7 +8,9 @@
 	import { composer } from '$lib/composer-state.svelte'
 	import { MAX_POST_LENGTH, MAX_MEDIA_SIZE_BYTES } from '$lib/limits'
 	import type { PostView } from '$lib/types'
+	import { extract_first_url } from '$lib/link-preview-client'
 	import Avatar from './Avatar.svelte'
+	import LinkPreviewCard from './LinkPreviewCard.svelte'
 
 	let { user }: { user: { name: string; image?: string | null } } = $props()
 
@@ -24,6 +26,17 @@
 	let image_preview = $state<string | null>(null)
 	let image_dims = $state<{ width: number; height: number } | null>(null)
 	let image_input: HTMLInputElement | undefined = $state()
+
+	let detected_url = $state<string | null>(null)
+	let preview_dismissed = $state(false)
+
+	$effect(() => {
+		const url = extract_first_url(content)
+		if (url !== detected_url) {
+			detected_url = url
+			preview_dismissed = false
+		}
+	})
 
 	onMount(() => {
 		try {
@@ -60,6 +73,8 @@
 	function discard_draft() {
 		content = ''
 		remove_image()
+		detected_url = null
+		preview_dismissed = false
 		try {
 			localStorage.removeItem(draft_key)
 		} catch {
@@ -147,6 +162,8 @@
 			composer.created(created)
 			content = ''
 			remove_image()
+			detected_url = null
+			preview_dismissed = false
 			try {
 				localStorage.removeItem(draft_key)
 			} catch {
@@ -254,6 +271,19 @@
 							>
 								<XIcon class="size-4" />
 							</button>
+						</div>
+					{/if}
+
+					<!-- Link Preview in Composer -->
+					{#if detected_url && !preview_dismissed && !image_preview}
+						<div class="mt-3">
+							<LinkPreviewCard
+								url={detected_url}
+								dismissible={true}
+								on_dismiss={() => {
+									preview_dismissed = true
+								}}
+							/>
 						</div>
 					{/if}
 				</div>

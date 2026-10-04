@@ -1,14 +1,12 @@
 <script lang="ts">
 	import { page } from '$app/stores'
 	import { resolve } from '$app/paths'
-	import UserIcon from '@lucide/svelte/icons/user'
 	import ShieldIcon from '@lucide/svelte/icons/shield'
 	import AppShell from '$lib/components/app/AppShell.svelte'
 
 	let { data, children } = $props()
 
 	const nav_items = [
-		{ href: '/settings/profile', label: 'Profile', icon: UserIcon },
 		{ href: '/settings/privacy', label: 'Privacy & Safety', icon: ShieldIcon },
 	] as const
 </script>

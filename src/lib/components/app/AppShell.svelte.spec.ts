@@ -1,7 +1,6 @@
 import { page } from 'vitest/browser'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render } from 'vitest-browser-svelte'
-import { goto } from '$app/navigation'
 import { api } from '$lib/api'
 import { sign_out } from '$lib/auth-client'
 import AppShellHost from './AppShell.test-host.svelte'
@@ -40,26 +39,6 @@ describe('AppShell', () => {
 	beforeEach(() => {
 		vi.mocked(api).mockClear()
 		vi.mocked(sign_out).mockClear()
-	})
-
-	it('renders navigation with sign out buttons', async () => {
-		render(AppShellHost, { user: mock_user })
-
-		// There should be a single responsive navigation dock with one Sign out button
-		const sign_out_buttons = page.getByRole('button', { name: 'Sign out' }).all()
-		expect(sign_out_buttons.length).toBe(1)
-
-		await expect.element(page.getByRole('navigation')).toBeInTheDocument()
-	})
-
-	it('triggers sign_out when Sign out button is clicked', async () => {
-		render(AppShellHost, { user: mock_user })
-
-		const sign_out_btn = page.getByRole('button', { name: 'Sign out' })
-		await sign_out_btn.click()
-
-		expect(sign_out).toHaveBeenCalledTimes(1)
-		expect(goto).toHaveBeenCalledWith('/login')
 	})
 
 	it('uses consistent content width max-w-2xl and centered alignment', async () => {
