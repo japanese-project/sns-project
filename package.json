@@ -70,7 +70,8 @@
 	},
 	"dependencies": {
 		"better-auth": "^1.7.5",
-		"drizzle-orm": "^0.45.3"
+		"drizzle-orm": "^0.45.3",
+		"sveltekit-rate-limiter": "^0.8.0"
 	},
 	"overrides": {
 		"micromatch": "^4.0.8",
