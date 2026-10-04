@@ -1,6 +1,6 @@
-// src/hooks.server.spec.ts
 import { describe, it, expect, vi } from 'vitest'
 import { handle } from './hooks.server'
+import { API_RATE_PER_MINUTE } from '$lib/server/rate-limit'
 import type { RequestEvent } from '@sveltejs/kit'
 
 vi.mock('$lib/server/auth', () => ({
@@ -29,12 +29,10 @@ describe('Rate Limiter', () => {
 	it('blocks after hitting the limit', async () => {
 		const ip = '192.168.1.2'
 
-		// Run exactly 14 allowed requests
-		for (let i = 0; i < 14; i++) {
+		for (let i = 0; i < API_RATE_PER_MINUTE; i++) {
 			await handle({ event: fake_event('/api/posts', ip), resolve })
 		}
 
-		// The 15th request gets blocked with a 429
 		await expect(handle({ event: fake_event('/api/posts', ip), resolve })).rejects.toMatchObject({
 			status: 429,
 		})

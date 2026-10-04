@@ -10,10 +10,10 @@ import { create_db } from '$lib/server/db'
 import { user as user_table } from '$lib/server/db/schema'
 import { ensure_username } from '$lib/server/services/users'
 import { is_admin_user } from '$lib/server/admin'
+import { api_limiter } from '$lib/server/rate-limit'
 import { eq } from 'drizzle-orm'
 import type { Handle } from '@sveltejs/kit'
 import { error } from '@sveltejs/kit'
-import { RateLimiter } from 'sveltekit-rate-limiter/server'
 
 let platform_proxy: {
 	env: App.Platform['env']
@@ -23,11 +23,6 @@ if (dev && !building) {
 	const { getPlatformProxy: get_platform_proxy } = await import('wrangler')
 	platform_proxy = await get_platform_proxy()
 }
-
-const api_limiter = new RateLimiter({
-	IP: [29, 'm'], // 30 requests per minute per IP
-	IPUA: [14, 'm'], // 15 requests per minute per IP+User-Agent
-})
 
 export const handle: Handle = async ({ event, resolve }) => {
 	if (event.url.pathname.startsWith('/api/')) {
