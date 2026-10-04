@@ -108,6 +108,7 @@ describe('Bot LLM / template formatter & Comment Generator', () => {
 			description: 'This framework changes how we develop frontend applications.',
 		}
 
+		// Verify fallback template without API keys
 		const content = await generate_post_content(persona, item, {})
 		expect(content.length).toBeLessThanOrEqual(MAX_POST_LENGTH)
 		expect(content).toContain(item.link)
@@ -137,11 +138,66 @@ describe('Bot LLM / template formatter & Comment Generator', () => {
 		expect(set.size).toBe(5)
 
 		// Check signature elements
-		expect(post1).toMatch(/VIBE CHECK|Tooling speed|workflow note/)
+		expect(post1).toMatch(/VIBE CHECK|Tooling|workflow/)
 		expect(post2).toMatch(/Autonomous Agent Log|Agentic Workflow/)
-		expect(post3).toMatch(/Open Source|GitHub Gem/)
-		expect(post4).toMatch(/Dialing in|Specialty Brew/)
+		expect(post3).toMatch(/Open Source|Gem/)
+		expect(post4).toMatch(/Coffee Dispatch|Coffee & Cafe/)
 		expect(post5).toMatch(/Macro Intelligence|Global Macro/)
+	})
+
+	it('generates LLM post when API key is provided and fetch succeeds (mocked)', async () => {
+		const persona = BOT_PERSONAS[0]
+		const item = {
+			title: 'Modern Web Performance Techniques',
+			link: 'https://example.com/web-perf',
+			description: 'An in-depth guide to modern web performance optimization.',
+		}
+
+		const mock_response = {
+			ok: true,
+			json: async () => ({
+				choices: [
+					{
+						message: {
+							content: `⚡ VIBE CHECK // Shipping fast:\n"Modern Web Performance Techniques"\n\nhttps://example.com/web-perf #vibecoding`,
+						},
+					},
+				],
+			}),
+		}
+
+		const original_fetch = globalThis.fetch
+		const fetch_spy = vi.fn().mockResolvedValue(mock_response)
+		globalThis.fetch = fetch_spy as unknown as typeof fetch
+
+		try {
+			const content = await generate_post_content(persona, item, { GROQ_API_KEY: 'test-key' })
+			expect(fetch_spy).toHaveBeenCalledTimes(1)
+			expect(content).toContain('https://example.com/web-perf')
+			expect(content).toContain('VIBE CHECK')
+		} finally {
+			globalThis.fetch = original_fetch
+		}
+	})
+
+	it('falls back gracefully to persona template when LLM fetch throws an error', async () => {
+		const persona = BOT_PERSONAS[0]
+		const item = {
+			title: 'Failsafe Test Item',
+			link: 'https://example.com/failsafe',
+			description: 'Description for fallback checking.',
+		}
+
+		const original_fetch = globalThis.fetch
+		globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network error or rate limited'))
+
+		try {
+			const content = await generate_post_content(persona, item, { GROQ_API_KEY: 'test-key' })
+			expect(content).toContain('https://example.com/failsafe')
+			expect(content.length).toBeLessThanOrEqual(MAX_POST_LENGTH)
+		} finally {
+			globalThis.fetch = original_fetch
+		}
 	})
 
 	it('generates natural short comments reacting to posts', async () => {

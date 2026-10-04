@@ -18,6 +18,7 @@
 		title,
 		header_content,
 		right_sidebar,
+		layout = 'default',
 		children,
 	}: {
 		user: {
@@ -31,6 +32,7 @@
 		title: string
 		header_content?: Snippet
 		right_sidebar?: Snippet
+		layout?: 'default' | 'wide' | 'full'
 		children: Snippet
 	} = $props()
 
@@ -258,11 +260,20 @@
 			</div>
 		</header>
 
-		<!-- Centered constraints for single-column immersive feel -->
-		<div class="mx-auto w-full max-w-2xl px-4 md:px-0">
+		<!-- Container layout: default is max-w-2xl, wide is max-w-7xl for multi-column discovery and admin dashboards -->
+		<div
+			class="mx-auto w-full {layout === 'wide'
+				? 'max-w-7xl px-4 sm:px-6 lg:px-8'
+				: layout === 'full'
+					? 'max-w-full px-4'
+					: 'max-w-2xl px-4 md:px-0'}"
+		>
 			<!-- App View Container -->
 			<div class="view app-view active">
-				<div class="space-y-10" id="feed-container">
+				<div
+					class={layout === 'wide' || layout === 'full' ? 'space-y-6' : 'space-y-10'}
+					id="feed-container"
+				>
 					{@render children()}
 				</div>
 			</div>

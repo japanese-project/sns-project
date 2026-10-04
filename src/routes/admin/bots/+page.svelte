@@ -178,8 +178,8 @@
 	<title>Bot Fleet & Content Operations — Admin</title>
 </svelte:head>
 
-<AppShell user={data.user} title="Bot Fleet">
-	<div class="mx-auto max-w-6xl space-y-6 pb-16">
+<AppShell user={data.user} title="Bot Fleet" layout="wide">
+	<div class="space-y-6 pb-16">
 		<!-- Header Banner -->
 		<div
 			class="flex flex-col justify-between gap-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm md:flex-row md:items-center"
