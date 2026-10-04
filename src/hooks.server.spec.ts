@@ -3,6 +3,10 @@ import { describe, it, expect, vi } from 'vitest'
 import { handle } from './hooks.server'
 import type { RequestEvent } from '@sveltejs/kit'
 
+vi.mock('$lib/server/auth', () => ({
+	create_auth: () => ({ api: { getSession: vi.fn().mockResolvedValue(null) } }),
+}))
+
 const fake_event = (pathname: string, ip: string, ua = 'test') =>
 	({
 		url: new URL(`http://localhost${pathname}`),
