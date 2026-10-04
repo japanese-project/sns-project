@@ -8,7 +8,7 @@ function create_mock_event(
 	request: Request,
 	options: {
 		url?: URL
-		locals?: { user?: { id: string } }
+		locals?: { user?: { id: string } | null }
 		platform?: App.Platform
 	} = {},
 ) {
@@ -16,13 +16,19 @@ function create_mock_event(
 	return {
 		request,
 		url,
-		locals: options.locals ?? {},
+		locals: options.locals ?? { user: { id: 'mock-user-1' } },
 		platform: options.platform,
 		getClientAddress: () => '198.51.100.1',
 	}
 }
 
 describe('/api/link-preview endpoint', () => {
+	it('rejects unauthenticated requests with 401', async () => {
+		const request = new Request('http://localhost/api/link-preview?url=https://example.com')
+		const event = create_mock_event(request, { locals: {} as App.Locals })
+		await expect(GET(event as unknown as GetEvent)).rejects.toMatchObject({ status: 401 })
+	})
+
 	it('returns 400 when url parameter is missing in GET', async () => {
 		const request = new Request('http://localhost/api/link-preview')
 		const event = create_mock_event(request)

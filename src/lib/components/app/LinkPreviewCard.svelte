@@ -58,13 +58,20 @@
 </script>
 
 {#if loading}
-	<div class="relative my-2 flex items-center gap-3 py-1">
+	<a
+		href={url}
+		target="_blank"
+		rel="noopener noreferrer"
+		aria-label={url}
+		class="relative my-2 flex items-center gap-3 py-1 transition-opacity hover:opacity-80"
+		onclick={(e) => e.stopPropagation()}
+	>
 		<div class="size-10 shrink-0 animate-pulse rounded-xl bg-slate-200/70"></div>
 		<div class="min-w-0 flex-1 space-y-1.5">
 			<div class="h-3 w-1/3 animate-pulse rounded-md bg-slate-200/70"></div>
 			<div class="h-3.5 w-3/4 animate-pulse rounded-md bg-slate-200/50"></div>
 		</div>
-	</div>
+	</a>
 {:else if preview}
 	<div class="group relative my-2 overflow-hidden bg-transparent">
 		{#if dismissible}
@@ -86,6 +93,7 @@
 			href={url}
 			target="_blank"
 			rel="noopener noreferrer"
+			aria-label={url}
 			onclick={(e) => e.stopPropagation()}
 			class="block transition-opacity hover:opacity-90"
 		>
@@ -164,6 +172,7 @@
 			href={url}
 			target="_blank"
 			rel="noopener noreferrer"
+			aria-label={url}
 			onclick={(e) => e.stopPropagation()}
 			class="flex items-center gap-2 py-1.5 transition-opacity hover:opacity-80"
 		>

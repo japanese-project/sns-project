@@ -4,6 +4,7 @@ import {
 	fetch_link_preview,
 	validate_preview_url,
 } from '$lib/server/link-preview'
+import { require_user_id } from '$lib/server/validation'
 import type { RequestHandler } from './$types'
 
 function get_client_id(event: Parameters<RequestHandler>[0]): string {
@@ -35,6 +36,8 @@ function get_client_id(event: Parameters<RequestHandler>[0]): string {
 }
 
 export const GET: RequestHandler = async (event) => {
+	require_user_id(event.locals)
+
 	const target_url = event.url.searchParams.get('url')
 	if (!target_url) {
 		return json({ error: 'url parameter is required' }, { status: 400 })
@@ -85,6 +88,8 @@ export const GET: RequestHandler = async (event) => {
 }
 
 export const POST: RequestHandler = async (event) => {
+	require_user_id(event.locals)
+
 	let body: { url?: string }
 	try {
 		body = await event.request.json()
