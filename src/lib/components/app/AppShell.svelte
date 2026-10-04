@@ -1,13 +1,26 @@
 <script module lang="ts">
+	// Every page renders its own AppShell, so it remounts on each navigation. Keep the last
+	// unread count outside the component: a remount reuses it (no flash back to 0) and only
+	// re-fetches once it is older than the poll interval. Written only in the browser
+	// (onMount / event handlers), so it is never shared between requests during SSR.
 	const unread_poll_ms = 60_000
 	let unread_cache: { user_id: string; count: number; fetched_at: number } | null = null
 </script>
 
 <script lang="ts">
+	import { goto } from '$app/navigation'
 	import { page } from '$app/state'
 	import { resolve } from '$app/paths'
+	import BellIcon from '@lucide/svelte/icons/bell'
+	import BotIcon from '@lucide/svelte/icons/bot'
+	import CompassIcon from '@lucide/svelte/icons/compass'
+	import HouseIcon from '@lucide/svelte/icons/house'
+	import LogOutIcon from '@lucide/svelte/icons/log-out'
+	import PencilIcon from '@lucide/svelte/icons/pencil'
+	import PlusIcon from '@lucide/svelte/icons/plus'
 	import { onMount, type Snippet } from 'svelte'
 	import { api } from '$lib/api'
+	import { sign_out } from '$lib/auth-client'
 	import { composer } from '$lib/composer-state.svelte'
 	import Avatar from './Avatar.svelte'
 	import Composer from './Composer.svelte'
@@ -18,6 +31,7 @@
 		title,
 		header_content,
 		right_sidebar,
+		layout = 'default',
 		children,
 	}: {
 		user: {
@@ -31,6 +45,7 @@
 		title: string
 		header_content?: Snippet
 		right_sidebar?: Snippet
+		layout?: 'default' | 'wide' | 'full'
 		children: Snippet
 	} = $props()
 
@@ -46,7 +61,7 @@
 			unread = count
 			unread_cache = { user_id: user.id, count, fetched_at: Date.now() }
 		} catch {
-			/* ignore */
+			// Badge refresh is best-effort
 		}
 	}
 
@@ -63,217 +78,254 @@
 			window.removeEventListener('notifications:changed', on_change)
 		}
 	})
+
+	const nav_button =
+		'relative flex size-11 items-center justify-center rounded-full transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900'
+	const active = 'bg-black text-white shadow-xs'
+	const idle = 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+
+	async function handle_sign_out() {
+		await sign_out()
+		await goto(resolve('/login'))
+	}
 </script>
 
 <svelte:head><title>{title} · SNS</title></svelte:head>
 
-<div class="ambient-bg">
-	<div class="ambient-blob blob-1"></div>
-	<div class="ambient-blob blob-2"></div>
-	<div class="ambient-blob blob-3"></div>
-</div>
-
-<div
-	id="app-shell"
-	class="fixed inset-0 z-10 flex flex-col transition-all duration-700 md:flex-row"
->
-	<!-- Spatial Dock (Desktop: Left vertically centered, Mobile: Bottom horizontally centered) -->
+<div class="min-h-screen bg-[#f8fafc] text-slate-900 antialiased">
+	<!-- ───────────────────────────────────────────────────────────────── -->
+	<!-- Tablet & Desktop Floating Vertical Navigation Pill (Floot dock)   -->
+	<!-- ───────────────────────────────────────────────────────────────── -->
 	<nav
-		class="glass-surface fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 flex-row items-center gap-2 rounded-full p-2 shadow-apple-panel backdrop-blur-3xl md:top-1/2 md:left-6 md:translate-x-0 md:-translate-y-1/2 md:flex-col"
+		aria-label="Primary"
+		class="fixed top-1/2 left-3 z-40 hidden -translate-y-1/2 flex-col items-center gap-2 rounded-full border border-slate-200/80 bg-white/90 p-2 shadow-lg shadow-slate-900/5 backdrop-blur-md md:flex lg:left-6"
 	>
-		<!-- Nav Items -->
 		<a
 			href={resolve('/')}
-			aria-label="Feed"
 			onclick={() => {
-				if (path === '/') window.dispatchEvent(new CustomEvent('feed:refresh'))
+				if (path === '/') {
+					window.dispatchEvent(new CustomEvent('feed:refresh'))
+				}
 			}}
-			class="nav-item group interactive-bounce relative mx-1 flex h-12 w-12 items-center justify-center rounded-full transition-all hover:bg-white/80 md:mx-0 md:h-14 md:w-14 {path ===
-			'/'
-				? 'active bg-white/60 shadow-sm'
-				: ''}"
+			title="Home"
+			aria-label="Home"
+			aria-current={path === '/' ? 'page' : undefined}
+			class="{nav_button} {path === '/' ? active : idle}"
 		>
-			<i
-				class="ph ph-squares-four text-2xl {path === '/'
-					? 'ph-fill text-black'
-					: 'text-slate-600 transition-colors group-hover:text-black'}"
-			></i>
-			<div
-				class="absolute bottom-0 h-1.5 w-1.5 rounded-full bg-black transition-opacity md:top-1/2 md:bottom-auto md:-left-3 md:-translate-y-1/2 {path ===
-				'/'
-					? 'opacity-100'
-					: 'opacity-0 group-[.active]:opacity-100'}"
-			></div>
-		</a>
-
-		<a
-			href={resolve('/explore')}
-			aria-label="Explore"
-			class="nav-item group interactive-bounce relative mx-1 flex h-12 w-12 items-center justify-center rounded-full transition-all hover:bg-white/80 md:mx-0 md:h-14 md:w-14 {path.startsWith(
-				'/explore',
-			)
-				? 'active bg-white/60 shadow-sm'
-				: ''}"
-		>
-			<i
-				class="ph ph-compass text-2xl {path.startsWith('/explore')
-					? 'ph-fill text-black'
-					: 'text-slate-600 transition-colors group-hover:text-black'}"
-			></i>
-			<div
-				class="absolute bottom-0 h-1.5 w-1.5 rounded-full bg-black transition-opacity md:top-1/2 md:bottom-auto md:-left-3 md:-translate-y-1/2 {path.startsWith(
-					'/explore',
-				)
-					? 'opacity-100'
-					: 'opacity-0 group-[.active]:opacity-100'}"
-			></div>
+			<HouseIcon class="size-5" />
 		</a>
 
 		<button
-			aria-label="Create Post"
+			type="button"
 			onclick={() => composer.show()}
-			class="group interactive-bounce mx-1 flex h-12 w-12 items-center justify-center rounded-full bg-black text-white shadow-lg transition-transform hover:scale-105 active:scale-95 md:mx-0 md:my-2 md:h-14 md:w-14"
+			title="Create post"
+			aria-label="Create post"
+			class="{nav_button} {idle}"
 		>
-			<i class="ph ph-plus text-xl md:text-2xl"></i>
+			<PlusIcon class="size-5" />
 		</button>
 
 		<a
-			href={resolve('/notifications')}
-			aria-label="Notifications"
-			class="nav-item group interactive-bounce relative mx-1 flex h-12 w-12 items-center justify-center rounded-full transition-all hover:bg-white/80 md:mx-0 md:h-14 md:w-14 {path.startsWith(
-				'/notifications',
-			)
-				? 'active bg-white/60 shadow-sm'
-				: ''}"
+			href={resolve('/explore')}
+			title="Explore"
+			aria-label="Explore"
+			aria-current={path.startsWith('/explore') ? 'page' : undefined}
+			class="{nav_button} {path.startsWith('/explore') ? active : idle}"
 		>
-			<div class="relative">
-				<i
-					class="ph ph-bell text-2xl {path.startsWith('/notifications')
-						? 'ph-fill text-black'
-						: 'text-slate-600 transition-colors group-hover:text-black'}"
-				></i>
-				{#if unread > 0}
-					<div
-						class="0 absolute right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-system-pink"
-						data-testid="unread-badge"
-					></div>
-				{/if}
-			</div>
-			<div
-				class="absolute bottom-0 h-1.5 w-1.5 rounded-full bg-black transition-opacity md:top-1/2 md:bottom-auto md:-left-3 md:-translate-y-1/2 {path.startsWith(
-					'/notifications',
-				)
-					? 'opacity-100'
-					: 'opacity-0 group-[.active]:opacity-100'}"
-			></div>
+			<CompassIcon class="size-5" />
+		</a>
+
+		<a
+			href={resolve('/notifications')}
+			title={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
+			aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
+			aria-current={path.startsWith('/notifications') ? 'page' : undefined}
+			class="{nav_button} {path.startsWith('/notifications') ? active : idle}"
+		>
+			<BellIcon class="size-5" />
+			{#if unread > 0}
+				<span
+					class="absolute top-1.5 right-1.5 flex min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] leading-4 font-bold text-white shadow-xs"
+					data-testid="unread-badge">{unread > 99 ? '99+' : unread}</span
+				>
+			{/if}
 		</a>
 
 		<a
 			href={resolve('/u/[handle]', { handle: me_handle })}
+			title="Profile"
 			aria-label="Profile"
-			class="nav-item group interactive-bounce relative mx-1 flex h-12 w-12 items-center justify-center rounded-full transition-all hover:bg-white/80 md:mx-0 md:mt-4 md:h-14 md:w-14 {path.split(
-				'/',
-			)[2] === me_handle && path.startsWith('/u/')
-				? 'active bg-white/60 shadow-sm'
-				: ''}"
+			aria-current={path.startsWith('/u/') && path.split('/')[2] === me_handle ? 'page' : undefined}
+			class="{nav_button} {path.split('/')[2] === me_handle && path.startsWith('/u/')
+				? active
+				: idle}"
 		>
-			<!-- Apply similar styling to avatar to fit dock -->
-			<div
-				class="rounded-full border-2 {path.split('/')[2] === me_handle && path.startsWith('/u/')
-					? 'border-black'
-					: 'border-transparent group-[.active]:border-black'} flex items-center justify-center overflow-hidden transition-all"
-				style="width: 2.5rem; height: 2.5rem;"
-			>
-				<Avatar {user} size={40} />
-			</div>
-			<div
-				class="absolute bottom-0 h-1.5 w-1.5 rounded-full bg-black transition-opacity md:top-1/2 md:bottom-auto md:-left-3 md:-translate-y-1/2 {path.split(
-					'/',
-				)[2] === me_handle && path.startsWith('/u/')
-					? 'opacity-100'
-					: 'opacity-0 group-[.active]:opacity-100'}"
-			></div>
+			<Avatar {user} size={28} />
 		</a>
 
 		{#if user.isAdmin}
 			<a
 				href={resolve('/admin/bots')}
-				aria-label="Admin"
-				class="nav-item group interactive-bounce relative mx-1 hidden h-12 w-12 items-center justify-center rounded-full transition-all hover:bg-white/80 md:mx-0 md:flex md:h-14 md:w-14 {path.startsWith(
-					'/admin',
-				)
-					? 'active bg-white/60 shadow-sm'
-					: ''}"
+				title="Bot Fleet"
+				aria-label="Bot Fleet"
+				aria-current={path.startsWith('/admin') ? 'page' : undefined}
+				class="{nav_button} {path.startsWith('/admin') ? active : idle}"
 			>
-				<i
-					class="ph ph-robot text-2xl {path.startsWith('/admin')
-						? 'ph-fill text-black'
-						: 'text-slate-600 transition-colors group-hover:text-black'}"
-				></i>
-				<div
-					class="absolute bottom-0 h-1.5 w-1.5 rounded-full bg-black transition-opacity md:top-1/2 md:bottom-auto md:-left-3 md:-translate-y-1/2 {path.startsWith(
-						'/admin',
-					)
-						? 'opacity-100'
-						: 'opacity-0 group-[.active]:opacity-100'}"
-				></div>
+				<BotIcon class="size-5" />
+			</a>
+		{/if}
+
+		<button
+			type="button"
+			aria-label="Sign out"
+			title="Sign out"
+			onclick={handle_sign_out}
+			class="{nav_button} {idle} hover:bg-rose-50 hover:text-rose-600"
+		>
+			<LogOutIcon class="size-4" />
+		</button>
+	</nav>
+
+	<!-- ───────────────────────────────────────────────────────────────── -->
+	<!-- Mobile Floating Bottom Navigation Pill (< md)                    -->
+	<!-- ───────────────────────────────────────────────────────────────── -->
+	<nav
+		aria-label="Mobile navigation"
+		class="fixed bottom-4 left-1/2 z-40 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-slate-200/90 bg-white/95 p-1.5 shadow-lg shadow-slate-900/10 backdrop-blur-md md:hidden"
+	>
+		<a
+			href={resolve('/')}
+			onclick={() => {
+				if (path === '/') {
+					window.dispatchEvent(new CustomEvent('feed:refresh'))
+				}
+			}}
+			aria-label="Home"
+			aria-current={path === '/' ? 'page' : undefined}
+			class="{nav_button} {path === '/' ? active : idle}"
+		>
+			<HouseIcon class="size-5" />
+		</a>
+
+		<button
+			type="button"
+			onclick={() => composer.show()}
+			title="Create post"
+			aria-label="Create post"
+			class="{nav_button} {idle}"
+		>
+			<PlusIcon class="size-5" />
+		</button>
+
+		<a
+			href={resolve('/explore')}
+			aria-label="Explore"
+			aria-current={path.startsWith('/explore') ? 'page' : undefined}
+			class="{nav_button} {path.startsWith('/explore') ? active : idle}"
+		>
+			<CompassIcon class="size-5" />
+		</a>
+
+		<a
+			href={resolve('/notifications')}
+			aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
+			aria-current={path.startsWith('/notifications') ? 'page' : undefined}
+			class="{nav_button} {path.startsWith('/notifications') ? active : idle}"
+		>
+			<BellIcon class="size-5" />
+			{#if unread > 0}
+				<span
+					class="absolute top-1.5 right-1.5 flex min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] leading-4 font-bold text-white shadow-xs"
+					data-testid="unread-badge">{unread > 99 ? '99+' : unread}</span
+				>
+			{/if}
+		</a>
+
+		<a
+			href={resolve('/u/[handle]', { handle: me_handle })}
+			aria-label="Profile"
+			aria-current={path.startsWith('/u/') && path.split('/')[2] === me_handle ? 'page' : undefined}
+			class="{nav_button} {path.split('/')[2] === me_handle && path.startsWith('/u/')
+				? active
+				: idle}"
+		>
+			<Avatar {user} size={26} />
+		</a>
+
+		{#if user.isAdmin}
+			<a
+				href={resolve('/admin/bots')}
+				aria-label="Bot Fleet"
+				aria-current={path.startsWith('/admin') ? 'page' : undefined}
+				class="{nav_button} {path.startsWith('/admin') ? active : idle}"
+			>
+				<BotIcon class="size-5" />
 			</a>
 		{/if}
 	</nav>
 
-	<!-- Main Scrollable Canvas -->
-	<main
-		class="relative h-full w-full flex-1 overflow-x-hidden overflow-y-auto scroll-smooth pt-20 pb-32 md:pt-28"
-		id="scroll-container"
-	>
-		<!-- Dynamic Island (Top Context Bar) -->
-		<header
-			class="fixed top-6 left-1/2 z-30 flex -translate-x-1/2 items-center justify-center transition-all duration-500"
-			id="dynamic-island"
-		>
+	<!-- ───────────────────────────────────────────────────────────────── -->
+	<!-- Content Layout: md:pl-20 lg:pl-24 guarantees dock never overlaps  -->
+	<!-- ───────────────────────────────────────────────────────────────── -->
+	<div class="flex min-h-screen w-full items-start px-3 sm:px-4 md:pr-6 md:pl-20 lg:pr-8 lg:pl-24">
+		<!-- Left / Center column: header + main content -->
+		<div class="relative min-w-0 flex-1">
 			<div
-				class="glass-pill flex items-center gap-4 rounded-full px-6 py-3 shadow-apple-glass md:gap-6 md:py-4"
+				class="mx-auto w-full {layout === 'wide'
+					? 'max-w-7xl'
+					: layout === 'full'
+						? 'max-w-full'
+						: 'max-w-4xl'}"
 			>
-				{#if header_content}
+				<!-- Centered Sticky Header Pill -->
+				<header class="sticky top-3 z-30 flex justify-center pt-1 pb-3 sm:top-4 sm:pt-2 sm:pb-4">
 					<div
-						class="flex min-w-[6rem] items-center justify-center text-center text-sm font-semibold tracking-wide text-black/80 md:text-base"
+						class="inline-flex items-center gap-3 rounded-full border border-slate-200/80 bg-white/90 p-1.5 shadow-sm shadow-slate-900/5 backdrop-blur-md sm:gap-3.5 sm:px-5 sm:py-2"
 					>
-						{@render header_content()}
+						{#if header_content}
+							{@render header_content()}
+						{:else}
+							<h1 class="px-2 text-sm font-bold tracking-tight text-slate-900">{title}</h1>
+						{/if}
+
+						<span class="h-4 w-px bg-slate-200"></span>
+
+						<button
+							type="button"
+							onclick={() => composer.show()}
+							class="flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 sm:px-2.5"
+						>
+							<PencilIcon class="size-3.5" />
+							<span class="hidden sm:inline">Share a thought…</span>
+							<span class="sm:hidden">Post</span>
+						</button>
 					</div>
-				{:else}
-					<span
-						class="min-w-[6rem] text-center text-sm font-semibold tracking-wide text-black/80 md:text-base"
-						>{title}</span
-					>
-				{/if}
-				<div class="h-4 w-[1px] bg-black/10"></div>
-				<button
-					type="button"
-					class="interactive-bounce group flex cursor-pointer items-center gap-2 text-slate-500 transition-colors hover:text-slate-800"
-					onclick={() => composer.show()}
-				>
-					<i class="ph ph-pencil-simple text-lg transition-colors group-hover:text-slate-800"></i>
-					<span class="hidden text-sm font-medium md:inline">Share a thought...</span>
-				</button>
-			</div>
-		</header>
+				</header>
 
-		<!-- Centered constraints for single-column immersive feel -->
-		<div class="mx-auto w-full max-w-2xl px-4 md:px-0">
-			<!-- App View Container -->
-			<div class="view app-view active">
-				<div class="space-y-10" id="feed-container">
-					{@render children()}
-				</div>
+				<!-- Main Page Content -->
+				<main class="w-full pt-1 pb-28 md:pb-16">
+					{#if layout === 'default'}
+						<div class="mx-auto w-full max-w-2xl">
+							{@render children()}
+						</div>
+					{:else}
+						{@render children()}
+					{/if}
+				</main>
 			</div>
-
-			{#if right_sidebar}
-				<div class="mt-12 scale-95 opacity-80 transition-all hover:scale-100 hover:opacity-100">
-					{@render right_sidebar()}
-				</div>
-			{/if}
 		</div>
-	</main>
+
+		<!-- Right column: sidebar — starts at header level, sticks on desktop -->
+		{#if right_sidebar}
+			<aside
+				class="sticky top-4 hidden shrink-0 lg:block xl:ml-8"
+				style="width: 320px; margin-left: 1.5rem;"
+				aria-label="Secondary Sidebar"
+			>
+				{@render right_sidebar()}
+			</aside>
+		{/if}
+	</div>
 
 	{#if composer.open}
 		<Composer {user} />

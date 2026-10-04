@@ -7,6 +7,13 @@ import PostCard from './PostCard.svelte'
 
 vi.mock('$app/navigation', () => ({ goto: vi.fn(async () => {}) }))
 vi.mock('$lib/api', () => ({ api: vi.fn() }))
+vi.mock('$lib/link-preview-client', async (import_original) => {
+	const actual = await import_original<typeof import('$lib/link-preview-client')>()
+	return {
+		...actual,
+		get_link_preview: vi.fn(async () => null),
+	}
+})
 vi.mock('$app/paths', () => ({
 	base: '',
 	assets: '',

@@ -1,7 +1,7 @@
 import { and, desc, eq, lt, or, sql } from 'drizzle-orm'
 import { error } from '@sveltejs/kit'
 import type { Db } from '../db'
-import { follow, user } from '../db/schema'
+import { follow, like, post, user } from '../db/schema'
 import type { Page, ProfileView, UserListItem } from '$lib/types'
 import { clamp_limit, decode_cursor, encode_cursor } from './cursor'
 import { create_notification, remove_notification } from './notifications'
@@ -17,7 +17,7 @@ export async function is_following(db: Db, follower_id: string, following_id: st
 }
 
 async function counts(db: Db, user_id: string) {
-	const [followers, following] = await Promise.all([
+	const [followers, following, likes] = await Promise.all([
 		db
 			.select({ n: sql<number>`count(*)` })
 			.from(follow)
@@ -28,8 +28,18 @@ async function counts(db: Db, user_id: string) {
 			.from(follow)
 			.where(eq(follow.followerId, user_id))
 			.get(),
+		db
+			.select({ n: sql<number>`count(*)` })
+			.from(like)
+			.innerJoin(post, eq(like.postId, post.id))
+			.where(eq(post.userId, user_id))
+			.get(),
 	])
-	return { follower_count: Number(followers?.n ?? 0), following_count: Number(following?.n ?? 0) }
+	return {
+		follower_count: Number(followers?.n ?? 0),
+		following_count: Number(following?.n ?? 0),
+		likes_count: Number(likes?.n ?? 0),
+	}
 }
 
 export async function build_profile(

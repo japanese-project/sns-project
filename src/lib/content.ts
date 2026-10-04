@@ -45,8 +45,13 @@ function clean_trailing_url(raw_url: string): { url: string; trailing: string } 
 /**
  * Parses user or bot text into tokens containing plain text, hashtags, and clickable web links.
  * URLs take precedence over hashtags so hash fragments in URLs are not misidentified as tags.
+ * When `exclude_url` is provided, that URL is omitted from the parsed text segments so that
+ * the raw URL and rich link preview card can be unified into a single presentation.
  */
-export function parse_content(text: string): ContentSegment[] {
+export function parse_content(
+	text: string,
+	options?: { exclude_url?: string | null },
+): ContentSegment[] {
 	if (!text) return []
 
 	// Matches URLs (http, https, or www.) or hashtags
@@ -92,6 +97,23 @@ export function parse_content(text: string): ContentSegment[] {
 			if (url.length > 0) {
 				const href =
 					url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`
+
+				if (options?.exclude_url && (href === options.exclude_url || url === options.exclude_url)) {
+					// Omit the raw link so it is unified into the preview card
+					if (trailing.length > 0) {
+						push_text(trailing)
+					}
+					const prev = segments[segments.length - 1]
+					if (prev && prev.type === 'text' && /\s+$/.test(prev.text)) {
+						prev.text = prev.text.replace(/\s+$/, ' ')
+					}
+					last_index = token_regex.lastIndex
+					if (text[last_index] === ' ' && prev && prev.type === 'text' && prev.text.endsWith(' ')) {
+						last_index++
+					}
+					continue
+				}
+
 				segments.push({
 					type: 'link',
 					text: url,
@@ -107,6 +129,13 @@ export function parse_content(text: string): ContentSegment[] {
 
 	if (last_index < text.length) {
 		push_text(text.slice(last_index))
+	}
+
+	if (options?.exclude_url) {
+		const has_real_content = segments.some((s) => s.type !== 'text' || s.text.trim().length > 0)
+		if (!has_real_content) {
+			return []
+		}
 	}
 
 	return segments

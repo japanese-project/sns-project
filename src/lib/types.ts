@@ -62,6 +62,7 @@ export interface ProfileView {
 	joined_at: string
 	follower_count: number
 	following_count: number
+	likes_count?: number
 	is_following: boolean
 	is_followed_by: boolean
 	is_self: boolean
