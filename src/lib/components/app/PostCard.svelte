@@ -57,8 +57,6 @@
 		return null
 	}
 
-	// Optimistic like state: an override applied immediately and cleared (rolled back) if the
-	// request fails. Without an override the values come straight from the post prop.
 	let post_override = $state<PostView | null>(null)
 	let active_post = $derived(post_override ?? post)
 	let image_load_failed = $state(false)
@@ -66,14 +64,10 @@
 	let aspect_ratio_hint = $derived(extract_aspect_ratio_hint(active_post.image_url))
 	let preview_url = $derived(extract_first_url(active_post.content))
 	let display_segments = $derived(parse_content(active_post.content, { exclude_url: preview_url }))
-	let display_text_length = $derived(
-		display_segments.reduce((acc, seg) => acc + seg.text.length, 0),
-	)
 	let natural_aspect_ratio = $state<number | null>(null)
 	let effective_aspect_ratio = $derived(natural_aspect_ratio ?? aspect_ratio_hint)
 
 	$effect(() => {
-		// Reset image loading and failure state when the active post image URL changes
 		void active_post.image_url
 		image_load_failed = false
 		image_loaded = false
@@ -331,16 +325,16 @@
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <article
-	class="post-card glass-surface group relative rounded-[2rem] {!editing
+	class="post-card group relative rounded-3xl border border-slate-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md sm:p-6 {!editing
 		? 'cursor-pointer'
-		: ''} {active_post.image_url ? 'p-3 pb-6' : 'mt-4 p-8'}"
+		: ''}"
 	data-testid="post-card"
 	onclick={handle_card_click}
 	onkeydown={handle_card_keydown}
 >
 	{#if editing}
-		<div class="px-5">
-			<form onsubmit={save_edit} class="mt-3 space-y-3">
+		<div class="w-full">
+			<form onsubmit={save_edit} class="space-y-3">
 				<div class="flex items-center justify-between text-xs">
 					<span class="flex items-center gap-1.5 font-semibold text-slate-400">
 						<PencilIcon class="size-3.5 text-indigo-500" />
@@ -374,7 +368,7 @@
 					bind:value={draft}
 					rows="3"
 					aria-label="Edit post text"
-					class="w-full resize-none border-0 bg-transparent p-0 text-lg leading-relaxed [overflow-wrap:anywhere] break-words text-slate-900 outline-none focus:ring-0"
+					class="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-[15px] leading-relaxed [overflow-wrap:anywhere] break-words text-slate-900 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
 				></textarea>
 
 				<div class="flex items-center justify-between text-xs">
@@ -406,47 +400,97 @@
 			</form>
 		</div>
 	{:else}
-		<div class="relative pb-2">
+		<div class="flex flex-col">
+			<!-- Header -->
+			<button
+				class="group/author flex items-center gap-3 text-left transition-opacity hover:opacity-80"
+				onclick={(e) => {
+					e.stopPropagation()
+					goto(
+						resolve('/u/[handle]', {
+							handle: post.author.handle || post.author.username || post.author.id || 'user',
+						}),
+					)
+				}}
+			>
+				<div
+					class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-100 bg-slate-50"
+				>
+					<Avatar user={post.author} size={44} />
+				</div>
+				<div class="flex flex-col leading-tight">
+					<span class="text-[15px] font-bold text-slate-900">{post.author.name}</span>
+					<span class="mt-0.5 text-[13px] text-slate-500">
+						@{post.author.username || post.author.handle || post.author.id} • {relative_time(
+							active_post.created_at,
+						)}
+					</span>
+				</div>
+			</button>
+
+			<!-- Text Content -->
+			{#if display_segments.length > 0}
+				<p
+					class="mt-4 text-[15px] leading-relaxed [overflow-wrap:anywhere] whitespace-pre-wrap text-slate-800"
+				>
+					{#each display_segments as segment, i (i)}
+						{#if segment.type === 'tag'}
+							<a
+								href="{resolve('/explore')}?q={encodeURIComponent(segment.text)}"
+								class="font-medium text-blue-600 hover:underline"
+								onclick={(e) => e.stopPropagation()}>{segment.text}</a
+							>
+						{:else if segment.type === 'link'}
+							<a
+								href={segment.href}
+								target="_blank"
+								rel="noopener noreferrer"
+								class="font-medium [overflow-wrap:anywhere] break-all text-blue-600 hover:underline"
+								onclick={(e) => e.stopPropagation()}>{segment.text}</a
+							>
+						{:else}
+							{segment.text}
+						{/if}
+					{/each}
+				</p>
+			{/if}
+
+			<!-- Media -->
 			{#if active_post.image_url}
 				<div
 					data-testid="post-image-container"
-					data-aspect-ratio={effective_aspect_ratio ? effective_aspect_ratio.toFixed(2) : undefined}
-					class="relative mb-6 flex w-full items-center justify-center overflow-hidden rounded-[1.5rem] border border-black/5 bg-slate-100"
+					class="relative mt-4 flex max-h-[320px] w-full items-center justify-center overflow-hidden rounded-2xl border border-slate-100 bg-slate-50 sm:max-h-[400px] md:max-h-[500px]"
 					style={effective_aspect_ratio
-						? `aspect-ratio: ${effective_aspect_ratio}; max-height: 400px;`
-						: 'min-height: 220px; max-height: 400px;'}
+						? `aspect-ratio: ${effective_aspect_ratio};`
+						: 'min-height: 200px;'}
 				>
 					{#if image_load_failed}
 						<div
-							data-testid="broken-image-fallback"
-							class="flex min-h-[220px] w-full flex-col items-center justify-center gap-2.5 p-6 text-slate-400"
+							class="flex min-h-[200px] w-full flex-col items-center justify-center gap-2 p-6 text-slate-400"
 						>
-							<i class="ph ph-image-broken text-4xl"></i>
-							<span class="text-xs font-medium text-slate-500">Media unavailable</span>
+							<i class="ph ph-image-broken text-3xl"></i>
+							<span class="text-xs font-medium">Media unavailable</span>
 						</div>
 					{:else}
 						{#if !image_loaded}
 							<div
-								data-testid="image-loading-skeleton"
-								class="absolute inset-0 z-0 flex animate-pulse items-center justify-center bg-slate-100/90 text-slate-300"
+								class="absolute inset-0 z-0 flex animate-pulse items-center justify-center bg-slate-100 text-slate-300"
 							>
-								<i class="ph ph-image text-4xl"></i>
+								<i class="ph ph-image text-3xl"></i>
 							</div>
 						{/if}
-						<!-- Blurred background for extreme aspect ratios that hit max-height -->
 						<img
 							src={active_post.image_url}
 							alt=""
-							class="absolute inset-0 z-0 h-full w-full scale-110 object-cover opacity-50 blur-2xl transition-opacity duration-700 {!image_loaded
+							class="absolute inset-0 z-0 h-full w-full scale-110 object-cover opacity-40 blur-xl transition-opacity duration-700 {!image_loaded
 								? 'opacity-0'
 								: ''}"
 							aria-hidden="true"
 						/>
-						<!-- Uncropped main image -->
 						<img
 							src={active_post.image_url}
 							alt="Post attachment"
-							class="relative z-10 h-full w-full object-contain transition-transform duration-700 hover:scale-105 {!image_loaded
+							class="relative z-10 h-full w-full object-contain transition-transform duration-700 hover:scale-[1.02] {!image_loaded
 								? 'opacity-0'
 								: 'opacity-100'}"
 							loading="lazy"
@@ -458,120 +502,14 @@
 							}}
 						/>
 					{/if}
-					<button
-						class="glass-pill absolute top-4 left-4 z-20 flex items-center gap-2 rounded-full px-3 py-1.5 transition-colors hover:bg-white/80"
-						onclick={(e) => {
-							e.stopPropagation()
-							goto(
-								resolve('/u/[handle]', {
-									handle: post.author.handle || post.author.username || post.author.id || 'user',
-								}),
-							)
-						}}
-					>
-						<div class="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full">
-							<Avatar user={post.author} size={24} />
-						</div>
-						<span class="text-sm font-semibold text-slate-800">{post.author.name}</span>
-						<span class="text-xs font-medium text-slate-500"
-							>{relative_time(active_post.created_at)}</span
-						>
-					</button>
 				</div>
+			{/if}
 
-				<div class="px-5 pb-2">
-					{#if active_post.content}
-						<p
-							class="{active_post.content.length < 120
-								? 'mb-4 font-display text-2xl leading-snug font-medium tracking-tight text-black'
-								: 'text-[15px] leading-relaxed text-slate-500'} [overflow-wrap:anywhere] whitespace-pre-wrap"
-						>
-							{#each parse_content(active_post.content) as segment, i (i)}
-								{#if segment.type === 'tag'}
-									<a
-										href="{resolve('/explore')}?q={encodeURIComponent(segment.text)}"
-										class="font-medium text-system-blue hover:underline"
-										onclick={(e) => e.stopPropagation()}>{segment.text}</a
-									>
-								{:else if segment.type === 'link'}
-									<a
-										href={segment.href}
-										target="_blank"
-										rel="noopener noreferrer"
-										class="font-medium [overflow-wrap:anywhere] break-all text-system-blue hover:underline"
-										onclick={(e) => e.stopPropagation()}>{segment.text}</a
-									>
-								{:else}
-									{segment.text}
-								{/if}
-							{/each}
-						</p>
-					{/if}
-					{#if preview_url}
-						<LinkPreviewCard url={preview_url} compact={true} />
-					{/if}
+			<!-- Link Preview -->
+			{#if preview_url}
+				<div class="mt-4">
+					<LinkPreviewCard url={preview_url} compact={!!active_post.image_url} />
 				</div>
-			{:else}
-				<button
-					class="group/author mb-6 flex items-center gap-3 text-left transition-opacity hover:opacity-80"
-					onclick={(e) => {
-						e.stopPropagation()
-						goto(
-							resolve('/u/[handle]', {
-								handle: post.author.handle || post.author.username || post.author.id || 'user',
-							}),
-						)
-					}}
-				>
-					<div class="h-10 w-10 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 p-[2px]">
-						<div
-							class="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2 border-white bg-white"
-						>
-							<Avatar user={post.author} size={36} />
-						</div>
-					</div>
-					<div>
-						<div class="flex items-center gap-1">
-							<span class="text-[15px] font-semibold text-slate-800">{post.author.name}</span>
-						</div>
-						<span class="text-xs font-medium text-slate-500"
-							>@{post.author.username || post.author.handle || post.author.id} • {relative_time(
-								active_post.created_at,
-							)}</span
-						>
-					</div>
-				</button>
-
-				{#if display_segments.length > 0}
-					<p
-						class="{display_text_length < 120 && !preview_url
-							? 'mb-4 font-display text-2xl leading-snug font-medium tracking-tight text-black'
-							: 'mb-3 text-[15px] leading-relaxed text-slate-700'} [overflow-wrap:anywhere] whitespace-pre-wrap"
-					>
-						{#each display_segments as segment, i (i)}
-							{#if segment.type === 'tag'}
-								<a
-									href="{resolve('/explore')}?q={encodeURIComponent(segment.text)}"
-									class="font-medium text-system-blue hover:underline"
-									onclick={(e) => e.stopPropagation()}>{segment.text}</a
-								>
-							{:else if segment.type === 'link'}
-								<a
-									href={segment.href}
-									target="_blank"
-									rel="noopener noreferrer"
-									class="font-medium [overflow-wrap:anywhere] break-all text-system-blue hover:underline"
-									onclick={(e) => e.stopPropagation()}>{segment.text}</a
-								>
-							{:else}
-								{segment.text}
-							{/if}
-						{/each}
-					</p>
-				{/if}
-				{#if preview_url}
-					<LinkPreviewCard url={preview_url} />
-				{/if}
 			{/if}
 
 			<!-- Integrated Action Capsule (Floating inside card) -->
@@ -696,7 +634,7 @@
 
 	{#if confirming_delete}
 		<div
-			class="mx-5 mt-4 flex items-center justify-between gap-3 rounded-2xl bg-rose-50 p-3 text-sm text-rose-800"
+			class="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-rose-50 p-3 text-sm text-rose-800"
 			role="alertdialog"
 		>
 			<span>Delete this post and its comments?</span>
@@ -723,13 +661,13 @@
 		</div>
 	{/if}
 
-	{#if error_message}<p class="mx-5 mt-2 text-sm text-rose-600" role="alert">
+	{#if error_message}<p class="mt-2 text-sm text-rose-600" role="alert">
 			{error_message}
 		</p>{/if}
 
 	{#if show_comments}
 		<div
-			class="mt-8 px-2 pb-4 md:px-5"
+			class="mt-6 border-t border-slate-100 pt-4"
 			onclick={(e) => e.stopPropagation()}
 			onkeydown={(e) => e.stopPropagation()}
 			role="presentation"

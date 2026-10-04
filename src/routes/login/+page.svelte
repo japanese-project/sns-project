@@ -14,7 +14,7 @@
 
 <main class="grid min-h-svh bg-white font-sans lg:grid-cols-[0.92fr_1.08fr]">
 	<section
-		class="relative hidden overflow-hidden bg-[linear-gradient(145deg,rgba(19,31,58,0.96),rgba(35,48,82,0.98))] text-white lg:block"
+		class="relative hidden overflow-hidden bg-[linear-gradient(145deg,rgba(19,31,58,0.96),rgba(35,48,82,0.98))] text-white lg:flex lg:flex-col lg:justify-between"
 		aria-label="About Loop"
 	>
 		<div
@@ -77,26 +77,28 @@
 		</div>
 	</section>
 
-	<section
-		class="max-h-[760px]:lg:justify-start max-h-[760px]:lg:overflow-y-auto relative flex min-h-svh flex-col items-center justify-center px-6 pt-26 pb-20 max-[375px]:justify-start max-[375px]:px-4 max-[375px]:pt-14 max-[375px]:pb-4 lg:min-h-0 lg:px-[clamp(2rem,7vw,7rem)] lg:py-12"
-	>
-		<div class="absolute top-6 left-6 max-[375px]:top-4 max-[375px]:left-4 lg:hidden">
+	<section class="relative flex min-h-svh flex-col px-6 py-8 sm:px-12 md:px-16 lg:min-h-0 lg:py-12">
+		<div class="flex justify-start pt-2 lg:hidden">
 			<BrandMark />
 		</div>
-		<LoginForm />
-		<p
-			class="max-h-[760px]:lg:hidden absolute bottom-5 m-0 text-center text-[0.68rem] text-[#a0a7b5] max-[375px]:hidden"
-		>
-			By continuing, you agree to our
-			<a
-				class="font-semibold text-[#70798c] no-underline hover:underline"
-				href={resolve('/login#terms')}>Terms</a
-			>
-			and
-			<a
-				class="font-semibold text-[#70798c] no-underline hover:underline"
-				href={resolve('/login#privacy')}>Privacy Policy</a
-			>.
-		</p>
+
+		<div class="flex flex-1 flex-col justify-center py-12 lg:py-0">
+			<LoginForm />
+		</div>
+
+		<div class="mt-auto">
+			<p class="text-center text-[0.7rem] text-[#a0a7b5]">
+				By continuing, you agree to our
+				<a
+					class="font-semibold text-[#70798c] no-underline transition-colors hover:text-[#15213a] hover:underline"
+					href={resolve('/login#terms')}>Terms</a
+				>
+				and
+				<a
+					class="font-semibold text-[#70798c] no-underline transition-colors hover:text-[#15213a] hover:underline"
+					href={resolve('/login#privacy')}>Privacy Policy</a
+				>.
+			</p>
+		</div>
 	</section>
 </main>
