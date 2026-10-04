@@ -108,9 +108,96 @@ describe('Bot LLM / template formatter & Comment Generator', () => {
 			description: 'This framework changes how we develop frontend applications.',
 		}
 
+		// Verify fallback template without API keys
 		const content = await generate_post_content(persona, item, {})
 		expect(content.length).toBeLessThanOrEqual(MAX_POST_LENGTH)
 		expect(content).toContain(item.link)
+	})
+
+	it('produces unique signature post structures for distinct personas', async () => {
+		const item = {
+			title: 'Major Breakthrough in Autonomous Web Development',
+			link: 'https://example.com/breakthrough',
+			description: 'New framework announced.',
+		}
+
+		const vibe_coder = BOT_PERSONAS.find((b) => b.id === 'bot_vibe_coder')!
+		const agent_flow = BOT_PERSONAS.find((b) => b.id === 'bot_agent_flow')!
+		const oss_watcher = BOT_PERSONAS.find((b) => b.id === 'bot_oss_watcher')!
+		const coffee_dial = BOT_PERSONAS.find((b) => b.id === 'bot_coffee_dial')!
+		const macro_pulse = BOT_PERSONAS.find((b) => b.id === 'bot_macro_pulse')!
+
+		const post1 = await generate_post_content(vibe_coder, item, {})
+		const post2 = await generate_post_content(agent_flow, item, {})
+		const post3 = await generate_post_content(oss_watcher, item, {})
+		const post4 = await generate_post_content(coffee_dial, item, {})
+		const post5 = await generate_post_content(macro_pulse, item, {})
+
+		// Check that each post is unique and not identical
+		const set = new Set([post1, post2, post3, post4, post5])
+		expect(set.size).toBe(5)
+
+		// Check signature elements
+		expect(post1).toMatch(/VIBE CHECK|Tooling|workflow/)
+		expect(post2).toMatch(/Autonomous Agent Log|Agentic Workflow/)
+		expect(post3).toMatch(/Open Source|Gem/)
+		expect(post4).toMatch(/Coffee Dispatch|Coffee & Cafe/)
+		expect(post5).toMatch(/Macro Intelligence|Global Macro/)
+	})
+
+	it('generates LLM post when API key is provided and fetch succeeds (mocked)', async () => {
+		const persona = BOT_PERSONAS[0]
+		const item = {
+			title: 'Modern Web Performance Techniques',
+			link: 'https://example.com/web-perf',
+			description: 'An in-depth guide to modern web performance optimization.',
+		}
+
+		const mock_response = {
+			ok: true,
+			json: async () => ({
+				choices: [
+					{
+						message: {
+							content: `⚡ VIBE CHECK // Shipping fast:\n"Modern Web Performance Techniques"\n\nhttps://example.com/web-perf #vibecoding`,
+						},
+					},
+				],
+			}),
+		}
+
+		const original_fetch = globalThis.fetch
+		const fetch_spy = vi.fn().mockResolvedValue(mock_response)
+		globalThis.fetch = fetch_spy as unknown as typeof fetch
+
+		try {
+			const content = await generate_post_content(persona, item, { GROQ_API_KEY: 'test-key' })
+			expect(fetch_spy).toHaveBeenCalledTimes(1)
+			expect(content).toContain('https://example.com/web-perf')
+			expect(content).toContain('VIBE CHECK')
+		} finally {
+			globalThis.fetch = original_fetch
+		}
+	})
+
+	it('falls back gracefully to persona template when LLM fetch throws an error', async () => {
+		const persona = BOT_PERSONAS[0]
+		const item = {
+			title: 'Failsafe Test Item',
+			link: 'https://example.com/failsafe',
+			description: 'Description for fallback checking.',
+		}
+
+		const original_fetch = globalThis.fetch
+		globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network error or rate limited'))
+
+		try {
+			const content = await generate_post_content(persona, item, { GROQ_API_KEY: 'test-key' })
+			expect(content).toContain('https://example.com/failsafe')
+			expect(content.length).toBeLessThanOrEqual(MAX_POST_LENGTH)
+		} finally {
+			globalThis.fetch = original_fetch
+		}
 	})
 
 	it('generates natural short comments reacting to posts', async () => {

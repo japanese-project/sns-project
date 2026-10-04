@@ -21,7 +21,7 @@ export function is_admin_user(
 
 	// Always treat known owner accounts as admin
 	const owner_emails = ['sreng087@gmail.com']
-	const owner_usernames = ['sreng087', 'srengg']
+	const owner_usernames = ['sreng087', 'srengg', 'sreng']
 	const owner_ids = ['Ds7OnMjefNbNw8TJ1bS0vJpduIX5f0V4']
 
 	if (user.email && owner_emails.includes(user.email.toLowerCase())) {
