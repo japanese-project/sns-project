@@ -459,6 +459,7 @@
 			{#if active_post.image_url}
 				<div
 					data-testid="post-image-container"
+					data-aspect-ratio={effective_aspect_ratio}
 					class="relative mt-4 flex max-h-[320px] w-full items-center justify-center overflow-hidden rounded-2xl border border-slate-100 bg-slate-50 sm:max-h-[400px] md:max-h-[500px]"
 					style={effective_aspect_ratio
 						? `aspect-ratio: ${effective_aspect_ratio};`
@@ -466,6 +467,7 @@
 				>
 					{#if image_load_failed}
 						<div
+							data-testid="broken-image-fallback"
 							class="flex min-h-[200px] w-full flex-col items-center justify-center gap-2 p-6 text-slate-400"
 						>
 							<i class="ph ph-image-broken text-3xl"></i>
@@ -485,6 +487,7 @@
 							class="absolute inset-0 z-0 h-full w-full scale-110 object-cover opacity-40 blur-xl transition-opacity duration-700 {!image_loaded
 								? 'opacity-0'
 								: ''}"
+							style="position: absolute; width: 100%; height: 100%; object-fit: cover;"
 							aria-hidden="true"
 						/>
 						<img
@@ -493,6 +496,7 @@
 							class="relative z-10 h-full w-full object-contain transition-transform duration-700 hover:scale-[1.02] {!image_loaded
 								? 'opacity-0'
 								: 'opacity-100'}"
+							style="position: relative; width: 100%; height: 100%; object-fit: contain;"
 							loading="lazy"
 							use:check_image_cached
 							onload={handle_image_load}
