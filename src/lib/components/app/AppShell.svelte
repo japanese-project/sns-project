@@ -260,30 +260,45 @@
 			</div>
 		</header>
 
-		<!-- Container layout: default is max-w-2xl, wide is max-w-7xl for multi-column discovery and admin dashboards -->
-		<div
-			class="mx-auto w-full {layout === 'wide'
-				? 'max-w-7xl px-4 sm:px-6 lg:px-8'
-				: layout === 'full'
-					? 'max-w-full px-4'
-					: 'max-w-2xl px-4 md:px-0'}"
-		>
-			<!-- App View Container -->
-			<div class="view app-view active">
-				<div
-					class={layout === 'wide' || layout === 'full' ? 'space-y-6' : 'space-y-10'}
-					id="feed-container"
+		<!-- Container layout: when right_sidebar is provided, render desktop 2-column layout (feed + right sidebar) -->
+		{#if right_sidebar}
+			<div
+				class="mx-auto flex w-full max-w-5xl items-start justify-center gap-8 px-4 sm:px-6 lg:px-8"
+			>
+				<!-- Main content area -->
+				<div class="view app-view active w-full max-w-2xl min-w-0 flex-1">
+					<div class="space-y-10" id="feed-container">
+						{@render children()}
+					</div>
+				</div>
+
+				<!-- Right Sidebar Column (Sticky desktop right sidebar) -->
+				<aside
+					class="sticky top-6 hidden w-80 shrink-0 lg:block xl:w-[340px]"
+					aria-label="Secondary Sidebar"
 				>
-					{@render children()}
+					{@render right_sidebar()}
+				</aside>
+			</div>
+		{:else}
+			<div
+				class="mx-auto w-full {layout === 'wide'
+					? 'max-w-7xl px-4 sm:px-6 lg:px-8'
+					: layout === 'full'
+						? 'max-w-full px-4'
+						: 'max-w-2xl px-4 md:px-0'}"
+			>
+				<!-- App View Container -->
+				<div class="view app-view active">
+					<div
+						class={layout === 'wide' || layout === 'full' ? 'space-y-6' : 'space-y-10'}
+						id="feed-container"
+					>
+						{@render children()}
+					</div>
 				</div>
 			</div>
-
-			{#if right_sidebar}
-				<div class="mt-12 scale-95 opacity-80 transition-all hover:scale-100 hover:opacity-100">
-					{@render right_sidebar()}
-				</div>
-			{/if}
-		</div>
+		{/if}
 	</main>
 
 	{#if composer.open}

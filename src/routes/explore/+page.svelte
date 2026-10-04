@@ -4,7 +4,6 @@
 	import ListIcon from '@lucide/svelte/icons/list'
 	import SearchIcon from '@lucide/svelte/icons/search'
 	import SparklesIcon from '@lucide/svelte/icons/sparkles'
-	import TrendingUpIcon from '@lucide/svelte/icons/trending-up'
 	import XIcon from '@lucide/svelte/icons/x'
 	import { goto } from '$app/navigation'
 	import { resolve } from '$app/paths'
@@ -86,9 +85,9 @@
 </script>
 
 <AppShell user={data.user} title="Explore" layout="wide">
-	<div class="mx-auto w-full space-y-6">
-		<!-- Search Bar with Suggestions -->
-		<div class="relative mx-auto max-w-2xl">
+	<div class="mx-auto w-full space-y-5">
+		<!-- Top Bar: Search Input with Suggestions dropdown -->
+		<div class="relative mx-auto max-w-3xl">
 			<form onsubmit={submit} role="search" class="relative">
 				<SearchIcon
 					class="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-slate-400"
@@ -141,196 +140,159 @@
 			</p>
 		{:else if !data.results && data.discovery}
 			<!-- ───────────────────────────────────────────────────────────── -->
-			<!-- DISCOVERY MODE (PINTEREST / INSTAGRAM SEARCH ALIGNMENT)       -->
+			<!-- DISCOVERY MODE: PINTEREST / INSTAGRAM SEARCH ALIGNMENT        -->
 			<!-- ───────────────────────────────────────────────────────────── -->
 
-			<!-- Topics & Period Selector Bar -->
-			<section
-				aria-labelledby="topics-heading"
-				class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-2xs"
-			>
-				<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-					<div class="flex items-center gap-2">
-						<TrendingUpIcon class="size-4 text-indigo-600" />
-						<h2
-							id="topics-heading"
-							class="text-xs font-bold tracking-wider text-slate-500 uppercase"
+			<!-- Sleek Horizontal Topic & Time Window Strip (No vertical stacking boxes!) -->
+			<div class="flex scrollbar-none items-center gap-2 overflow-x-auto pb-1">
+				<!-- Time Window Tabs: Today / Week / Month -->
+				<div
+					class="inline-flex shrink-0 items-center rounded-full bg-slate-100 p-0.5 text-xs font-medium"
+					role="tablist"
+					aria-label="Trending time window"
+				>
+					{#each ['today', 'week', 'month'] as const as p (p)}
+						<button
+							type="button"
+							role="tab"
+							aria-selected={data.period === p}
+							onclick={() => set_period(p)}
+							class="rounded-full px-2.5 py-1 text-[11px] font-semibold transition {data.period ===
+							p
+								? 'bg-white text-slate-900 shadow-xs'
+								: 'text-slate-500 hover:text-slate-900'}"
 						>
-							Trending Topics
-						</h2>
-					</div>
-
-					<!-- Time Window Tabs: Today / Week / Month -->
-					<div
-						class="inline-flex items-center rounded-full bg-slate-100 p-0.5 text-xs font-medium"
-						role="tablist"
-						aria-label="Trending time window"
-					>
-						{#each ['today', 'week', 'month'] as const as p (p)}
-							<button
-								type="button"
-								role="tab"
-								aria-selected={data.period === p}
-								onclick={() => set_period(p)}
-								class="rounded-full px-3 py-1 text-[11px] font-semibold transition {data.period ===
-								p
-									? 'bg-white text-slate-900 shadow-xs'
-									: 'text-slate-500 hover:text-slate-900'}"
-							>
-								{period_labels[p]}
-							</button>
-						{/each}
-					</div>
+							{period_labels[p]}
+						</button>
+					{/each}
 				</div>
 
-				{#if data.discovery.topics.length === 0}
-					<p class="mt-2 text-xs text-slate-400">
-						No trending topics found for {period_labels[data.period ?? 'week'].toLowerCase()}.
-					</p>
-				{:else}
-					<div class="mt-3 flex flex-wrap gap-2">
-						{#each data.discovery.topics as item (typeof item === 'string' ? item : item.tag)}
-							{@const tag_name = typeof item === 'string' ? item : item.tag}
-							{@const post_count = typeof item === 'string' ? null : item.count}
-							<button
-								type="button"
-								onclick={() => search_for(`#${tag_name}`)}
-								class="group flex items-baseline gap-1.5 rounded-full border border-slate-200/80 bg-slate-50/60 px-3 py-1 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900"
-							>
-								<span>#{tag_name}</span>
-								{#if post_count && post_count > 1}
-									<span class="text-[11px] font-normal text-slate-400 group-hover:text-slate-500">
-										{post_count}
-									</span>
-								{/if}
-							</button>
-						{/each}
-					</div>
-				{/if}
-			</section>
+				<div class="h-4 w-px shrink-0 bg-slate-200"></div>
 
-			<!-- Instagram-style Horizontal Carousel: People to Discover -->
+				<!-- Trending Topic Chips -->
+				{#each data.discovery.topics as item (typeof item === 'string' ? item : item.tag)}
+					{@const tag_name = typeof item === 'string' ? item : item.tag}
+					{@const post_count = typeof item === 'string' ? null : item.count}
+					<button
+						type="button"
+						onclick={() => search_for(`#${tag_name}`)}
+						class="group flex shrink-0 items-center gap-1 rounded-full border border-slate-200/80 bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+					>
+						<span class="text-indigo-600">#</span>
+						<span>{tag_name}</span>
+						{#if post_count && post_count > 1}
+							<span
+								class="py-0.2 rounded-full bg-slate-100 px-1.5 text-[10px] font-normal text-slate-500"
+							>
+								{post_count}
+							</span>
+						{/if}
+					</button>
+				{/each}
+			</div>
+
+			<!-- Compact Suggested Creators Carousel -->
 			{#if data.discovery.suggested_users.length > 0}
-				<section aria-labelledby="suggested-heading" class="space-y-3">
+				<div class="space-y-2">
 					<div class="flex items-center justify-between px-1 text-slate-700">
-						<div class="flex items-center gap-2">
-							<SparklesIcon class="size-4 text-amber-500" />
-							<h2
-								id="suggested-heading"
-								class="text-xs font-bold tracking-wider text-slate-500 uppercase"
-							>
+						<div class="flex items-center gap-1.5">
+							<SparklesIcon class="size-3.5 text-amber-500" />
+							<span class="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
 								Suggested Creators
-							</h2>
+							</span>
 						</div>
-						<span class="text-[11px] font-medium text-slate-400">Swipe or scroll horizontally</span>
 					</div>
 
-					<div class="flex scrollbar-none gap-3 overflow-x-auto pb-2">
+					<div class="flex scrollbar-none gap-3 overflow-x-auto pb-1">
 						{#each data.discovery.suggested_users as person (person.id)}
 							<UserCard {person} />
 						{/each}
 					</div>
-				</section>
+				</div>
 			{/if}
 
-			<!-- Pinterest / Instagram Style Multi-Column Discovery Grid -->
-			{#if data.discovery.posts.length > 0}
-				<section aria-labelledby="recent-heading" class="space-y-4">
-					<div class="flex items-center justify-between px-1 text-slate-700">
-						<div class="flex items-center gap-2">
-							<CompassIcon class="size-4 text-indigo-600" />
-							<h2
-								id="recent-heading"
-								class="text-xs font-bold tracking-wider text-slate-500 uppercase"
-							>
-								Explore Content ({data.discovery.posts.length} posts)
-							</h2>
-						</div>
-
-						<!-- Layout switch: Pinterest Masonry vs Single Feed -->
-						<div class="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-0.5">
-							<button
-								type="button"
-								onclick={() => (view_mode = 'masonry')}
-								class="rounded-lg p-1.5 transition {view_mode === 'masonry'
-									? 'bg-white text-slate-900 shadow-2xs'
-									: 'text-slate-400 hover:text-slate-700'}"
-								title="Pinterest / Instagram Masonry Grid"
-								aria-label="Masonry Grid View"
-							>
-								<LayoutGridIcon class="size-3.5" />
-							</button>
-							<button
-								type="button"
-								onclick={() => (view_mode = 'feed')}
-								class="rounded-lg p-1.5 transition {view_mode === 'feed'
-									? 'bg-white text-slate-900 shadow-2xs'
-									: 'text-slate-400 hover:text-slate-700'}"
-								title="Standard Single Feed"
-								aria-label="Feed View"
-							>
-								<ListIcon class="size-3.5" />
-							</button>
-						</div>
+			<!-- Pinterest / Instagram Style Multi-Column Grid Header & Content -->
+			<div class="space-y-3 pt-1">
+				<div class="flex items-center justify-between px-1 text-slate-700">
+					<div class="flex items-center gap-2">
+						<CompassIcon class="size-4 text-indigo-600" />
+						<h2 class="text-xs font-bold tracking-wider text-slate-500 uppercase">
+							Explore Content ({data.discovery.posts.length})
+						</h2>
 					</div>
 
-					{#if view_mode === 'masonry'}
-						<!-- Pinterest-style waterfall masonry grid -->
-						<div
-							class="columns-1 gap-4 [column-fill:_balance] sm:columns-2 lg:columns-3 xl:columns-4"
+					<!-- View Mode Switch: Masonry Grid vs Single Feed -->
+					<div class="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-0.5">
+						<button
+							type="button"
+							onclick={() => (view_mode = 'masonry')}
+							class="rounded-lg p-1.5 transition {view_mode === 'masonry'
+								? 'bg-white text-slate-900 shadow-2xs'
+								: 'text-slate-400 hover:text-slate-700'}"
+							title="Pinterest / Instagram Masonry Grid"
+							aria-label="Masonry Grid View"
 						>
-							{#each data.discovery.posts as post (post.id)}
-								<ExplorePinCard {post} />
-							{/each}
-						</div>
-					{:else}
-						<!-- Classic Single-Column Stream -->
-						<div class="mx-auto max-w-2xl space-y-8">
-							{#each data.discovery.posts as post (post.id)}
-								<PostCard {post} />
-							{/each}
-						</div>
-					{/if}
-				</section>
-			{/if}
+							<LayoutGridIcon class="size-3.5" />
+						</button>
+						<button
+							type="button"
+							onclick={() => (view_mode = 'feed')}
+							class="rounded-lg p-1.5 transition {view_mode === 'feed'
+								? 'bg-white text-slate-900 shadow-2xs'
+								: 'text-slate-400 hover:text-slate-700'}"
+							title="Standard Single Feed"
+							aria-label="Feed View"
+						>
+							<ListIcon class="size-3.5" />
+						</button>
+					</div>
+				</div>
+
+				{#if view_mode === 'masonry'}
+					<!-- Responsive Pinterest / Instagram Multi-Column Grid (2 cols on mobile, up to 5 on wide) -->
+					<div
+						class="columns-2 gap-3.5 [column-fill:_balance] sm:columns-3 lg:columns-4 xl:columns-5"
+					>
+						{#each data.discovery.posts as post (post.id)}
+							<ExplorePinCard {post} />
+						{/each}
+					</div>
+				{:else}
+					<!-- Classic Single-Column Stream -->
+					<div class="mx-auto max-w-2xl space-y-6">
+						{#each data.discovery.posts as post (post.id)}
+							<PostCard {post} />
+						{/each}
+					</div>
+				{/if}
+			</div>
 		{:else if data.results}
 			<!-- ───────────────────────────────────────────────────────────── -->
 			<!-- SEARCH RESULTS MODE (MULTI-COLUMN ALIGNMENT)                  -->
 			<!-- ───────────────────────────────────────────────────────────── -->
 
-			<!-- Matching People Row/Grid -->
+			<!-- Matching People Carousel -->
 			{#if data.results.users.length > 0}
-				<section
-					aria-labelledby="people-heading"
-					class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-2xs"
-				>
-					<h2
-						id="people-heading"
-						class="mb-3 px-1 text-xs font-bold tracking-wider text-slate-500 uppercase"
-					>
+				<div class="space-y-2">
+					<h3 class="px-1 text-xs font-bold tracking-wider text-slate-500 uppercase">
 						People Matching “{data.query}” ({data.results.users.length})
-					</h2>
-
-					<div class="flex scrollbar-none gap-3 overflow-x-auto pb-2">
+					</h3>
+					<div class="flex scrollbar-none gap-3 overflow-x-auto pb-1">
 						{#each data.results.users as person (person.id)}
 							<UserCard {person} />
 						{/each}
 					</div>
-				</section>
-			{:else}
-				<div class="rounded-2xl border border-slate-200/60 bg-white p-4 text-xs text-slate-500">
-					No people match “{data.query}”.
 				</div>
 			{/if}
 
-			<!-- Matching Posts in Pinterest/Instagram Masonry Grid -->
-			<section aria-labelledby="posts-heading" class="space-y-4">
+			<!-- Matching Posts in Pinterest / Instagram Multi-Column Grid -->
+			<div class="space-y-3 pt-2">
 				<div class="flex items-center justify-between px-1 text-slate-700">
-					<h2 id="posts-heading" class="text-xs font-bold tracking-wider text-slate-500 uppercase">
+					<h2 class="text-xs font-bold tracking-wider text-slate-500 uppercase">
 						Posts Matching “{data.query}” ({posts.length})
 					</h2>
 
-					<!-- Layout switch -->
+					<!-- View Mode Switch -->
 					<div class="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-0.5">
 						<button
 							type="button"
@@ -365,45 +327,37 @@
 					</div>
 				{:else if view_mode === 'masonry'}
 					<div
-						class="columns-1 gap-4 [column-fill:_balance] sm:columns-2 lg:columns-3 xl:columns-4"
+						class="columns-2 gap-3.5 [column-fill:_balance] sm:columns-3 lg:columns-4 xl:columns-5"
 					>
 						{#each posts as post (post.id)}
-							<ExplorePinCard
-								{post}
-								on_deleted={(id) => (extra_posts = extra_posts.filter((p) => p.id !== id))}
-							/>
+							<ExplorePinCard {post} />
 						{/each}
 					</div>
 				{:else}
-					<div class="mx-auto max-w-2xl space-y-8">
+					<div class="mx-auto max-w-2xl space-y-6">
 						{#each posts as post (post.id)}
-							<PostCard
-								{post}
-								on_deleted={(id) => (extra_posts = extra_posts.filter((p) => p.id !== id))}
-							/>
+							<PostCard {post} />
 						{/each}
 					</div>
 				{/if}
 
-				{#if more_error}
-					<p class="mt-3 text-center text-sm text-rose-600" role="alert">
-						{more_error}
-					</p>
-				{/if}
-
+				<!-- Cursor Paginated Load More Button -->
 				{#if next_cursor}
-					<div class="mt-8 flex justify-center pb-8">
+					<div class="pt-4 pb-8 text-center">
 						<button
 							type="button"
 							onclick={load_more}
 							disabled={loading_more}
-							class="rounded-full border border-slate-200 bg-white px-6 py-2.5 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-95 disabled:opacity-60"
+							class="rounded-full border border-slate-200 bg-white px-6 py-2.5 text-xs font-bold text-slate-800 shadow-xs transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
 						>
-							{loading_more ? 'Loading more posts…' : 'Load more posts'}
+							{loading_more ? 'Loading more content…' : 'Load more results'}
 						</button>
+						{#if more_error}
+							<p class="mt-2 text-xs text-rose-600">{more_error}</p>
+						{/if}
 					</div>
 				{/if}
-			</section>
+			</div>
 		{/if}
 	</div>
 </AppShell>
