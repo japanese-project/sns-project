@@ -37,6 +37,17 @@
 		},
 	],
 
+	// One binding per distinct rate. The limit is fixed per binding, so categories that share a
+	// limit share a binding and stay independent via the "<category>:<ip>" key in rate-limit.ts.
+	// Keep these in sync with RATE_LIMITS (src/lib/server/rate-limit.ts); a test enforces it.
+	"ratelimits": [
+		{ "name": "RL_10", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } },
+		{ "name": "RL_20", "namespace_id": "1002", "simple": { "limit": 20, "period": 60 } },
+		{ "name": "RL_30", "namespace_id": "1003", "simple": { "limit": 30, "period": 60 } },
+		{ "name": "RL_60", "namespace_id": "1004", "simple": { "limit": 60, "period": 60 } },
+		{ "name": "RL_120", "namespace_id": "1005", "simple": { "limit": 120, "period": 60 } },
+	],
+
 	"env": {
 		"preview": {
 			"d1_databases": [
@@ -58,6 +69,15 @@
 					"binding": "MEDIA_BUCKET",
 					"bucket_name": "sns-media-preview",
 				},
+			],
+			// `ratelimits` is not inherited from the top level, so it must be repeated per
+			// environment. Preview uses its own namespace ids to keep counters off production's.
+			"ratelimits": [
+				{ "name": "RL_10", "namespace_id": "2001", "simple": { "limit": 10, "period": 60 } },
+				{ "name": "RL_20", "namespace_id": "2002", "simple": { "limit": 20, "period": 60 } },
+				{ "name": "RL_30", "namespace_id": "2003", "simple": { "limit": 30, "period": 60 } },
+				{ "name": "RL_60", "namespace_id": "2004", "simple": { "limit": 60, "period": 60 } },
+				{ "name": "RL_120", "namespace_id": "2005", "simple": { "limit": 120, "period": 60 } },
 			],
 		},
 	},
