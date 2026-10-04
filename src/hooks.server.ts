@@ -10,7 +10,7 @@ import { create_db } from '$lib/server/db'
 import { user as user_table } from '$lib/server/db/schema'
 import { ensure_username } from '$lib/server/services/users'
 import { is_admin_user } from '$lib/server/admin'
-import { api_limiter } from '$lib/server/rate-limit'
+import { rate_limit_for, limiters } from '$lib/server/rate-limit'
 import { eq } from 'drizzle-orm'
 import type { Handle } from '@sveltejs/kit'
 import { error } from '@sveltejs/kit'
@@ -26,8 +26,9 @@ if (dev && !building) {
 
 export const handle: Handle = async ({ event, resolve }) => {
 	if (event.url.pathname.startsWith('/api/')) {
-		if (await api_limiter.isLimited(event)) {
-			error(429, 'API rate limit exceeded. Please try again later.')
+		const category = rate_limit_for(event.url.pathname, event.request.method)
+		if (category && (await limiters[category].isLimited(event))) {
+			error(429, `API rate limit exceeded for ${category}. Please try again later.`)
 		}
 	}
 
