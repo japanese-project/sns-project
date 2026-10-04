@@ -123,7 +123,44 @@ These are deliberate trade-offs for the expected workload (< 10k users / posts).
 - **People suggestions by interest:** Matches against **all** users in the database (interests are matched in SQL over the stored JSON list), excluding yourself and people you follow, newest accounts first, up to the requested limit (max 50). There is no "latest N users" window. Matching is case-insensitive for ASCII only. It still scans the user table per request; at larger scale, normalise interests into an indexed `user_interest` table.
 - **Trending topics:** Computed from a **sample**: the 500 most recent public posts that contain a `#` within the selected window (`today` / `week` / `month`). Posts without a hashtag don't use up that budget. Once a window holds more than 500 hashtagged posts, tags whose posts fall outside the newest 500 drop out even if still active, and counts are per sampled post rather than exact totals. At larger scale, use a materialized tag-count table or scheduled job.
 - **Post search:** A case-insensitive substring (`LIKE`) scan over visible posts. Cost per request is bounded by the query-length cap, page size and cursor pagination, but grows linearly with the posts table; at larger scale move to SQLite FTS5 or a search service.
-- **No rate limiting or response caching** is applied to these endpoints in the app. They require a session, so exposure is limited to signed-in accounts, but a signed-in user can still call them in a loop; add edge rules (e.g. Cloudflare rate limiting) before opening sign-up widely.
+- **Rate limiting** is applied to these endpoints in the app, per client IP: 30/min for people suggestions and trending topics, 120/min for post search (see [Endpoint rate limits](#endpoint-rate-limits)). Enforcement uses the Cloudflare Rate Limiting binding, which counts **per Cloudflare location** and is deliberately permissive and eventually consistent rather than an exact global counter — it is meant to damp abuse, not to meter usage. These endpoints still require a session, so exposure is limited to signed-in accounts.
+- **No response caching** is applied to these endpoints.
+
+### Endpoint rate limits
+
+Every `/api/*` request is assigned to a category by path and method (`rate_limit_for` in
+`src/lib/server/rate-limit.ts`), and each category has its own per-IP budget. Exceeding a budget
+returns `429`.
+
+| Category      | Limit   | Applies to                                 |
+| ------------- | ------- | ------------------------------------------ |
+| `auth`        | 10/min  | `/api/auth/*`                              |
+| `uploads`     | 10/min  | `POST /api/media`                          |
+| `reports`     | 10/min  | `/api/report*`                             |
+| `posts_write` | 20/min  | writes under `/api/posts`                  |
+| `comments`    | 30/min  | `/api/posts/*/comments`, `/api/comments/*` |
+| `follows`     | 30/min  | `/api/users/*/follow`                      |
+| `search`      | 30/min  | `/api/search`                              |
+| `likes`       | 60/min  | `/api/posts/*/like`                        |
+| `read`        | 120/min | everything else under `/api`               |
+
+`/api/health` and `/api/internal/*` are **not** rate limited: the deploy pipeline polls the health
+probe and the bot runs on a schedule, so throttling them would break deploys and the bot.
+
+**Enforcement.** Production uses the [Cloudflare Rate Limiting binding](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/)
+(`ratelimits` in `wrangler.jsonc`). Counters are keyed `"<category>:<ip>"`, so categories that share
+a limit share one binding yet stay independent. Two caveats matter:
+
+- The binding counts **per Cloudflare location**, not globally, and is intentionally permissive and
+  eventually consistent. It is abuse dampening, not exact metering — do not build billing or
+  quota logic on it.
+- Where no binding is bound (local dev, unit tests, prerendering) the code falls back to an
+  in-memory limiter. Those counters are per-isolate and reset when the isolate recycles, so they
+  are **not** a production limit.
+
+Limits are defined once in `RATE_LIMITS` and mirrored in `wrangler.jsonc`; a test
+(`src/lib/server/rate-limit.spec.ts`) fails if the two drift apart. The link preview endpoint keeps
+its own separate limiter (`check_preview_rate_limit`).
 
 ---
 

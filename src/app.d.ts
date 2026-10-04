@@ -27,6 +27,13 @@ declare global {
 				DB: D1Database
 				AUTH_KV: KVNamespace
 				MEDIA_BUCKET: R2Bucket
+				// Cloudflare Rate Limiting bindings. Optional because they are absent during
+				// prerendering and in unit tests; see src/lib/server/rate-limit.ts.
+				RL_10?: RateLimit
+				RL_20?: RateLimit
+				RL_30?: RateLimit
+				RL_60?: RateLimit
+				RL_120?: RateLimit
 				BOT_CRON_SECRET?: string
 				GROQ_API_KEY?: string
 				OPENAI_API_KEY?: string
