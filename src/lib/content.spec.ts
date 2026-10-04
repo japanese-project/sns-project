@@ -131,4 +131,19 @@ describe('parse_content', () => {
 			{ type: 'tag', text: '#engineering', href: '/explore?q=%23engineering' },
 		])
 	})
+
+	it('omits preview_url when exclude_url option is provided to unify link and preview', () => {
+		const post = 'Check out this awesome tool! https://github.com/trending #coding'
+		const result = parse_content(post, { exclude_url: 'https://github.com/trending' })
+		expect(result).toEqual([
+			{ type: 'text', text: 'Check out this awesome tool! ' },
+			{ type: 'tag', text: '#coding', href: '/explore?q=%23coding' },
+		])
+	})
+
+	it('returns empty array if post consists solely of the excluded preview URL', () => {
+		const post = 'https://github.com/trending'
+		const result = parse_content(post, { exclude_url: 'https://github.com/trending' })
+		expect(result).toEqual([])
+	})
 })

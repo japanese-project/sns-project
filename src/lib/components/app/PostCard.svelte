@@ -65,6 +65,10 @@
 	let image_loaded = $state(false)
 	let aspect_ratio_hint = $derived(extract_aspect_ratio_hint(active_post.image_url))
 	let preview_url = $derived(extract_first_url(active_post.content))
+	let display_segments = $derived(parse_content(active_post.content, { exclude_url: preview_url }))
+	let display_text_length = $derived(
+		display_segments.reduce((acc, seg) => acc + seg.text.length, 0),
+	)
 	let natural_aspect_ratio = $state<number | null>(null)
 	let effective_aspect_ratio = $derived(natural_aspect_ratio ?? aspect_ratio_hint)
 
@@ -538,13 +542,13 @@
 					</div>
 				</button>
 
-				{#if active_post.content}
+				{#if display_segments.length > 0}
 					<p
-						class="{active_post.content.length < 120
+						class="{display_text_length < 120 && !preview_url
 							? 'mb-4 font-display text-2xl leading-snug font-medium tracking-tight text-black'
-							: 'text-[15px] leading-relaxed text-slate-500'} [overflow-wrap:anywhere] whitespace-pre-wrap"
+							: 'mb-3 text-[15px] leading-relaxed text-slate-700'} [overflow-wrap:anywhere] whitespace-pre-wrap"
 					>
-						{#each parse_content(active_post.content) as segment, i (i)}
+						{#each display_segments as segment, i (i)}
 							{#if segment.type === 'tag'}
 								<a
 									href="{resolve('/explore')}?q={encodeURIComponent(segment.text)}"

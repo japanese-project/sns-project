@@ -27,6 +27,7 @@
 	let like_pending = $state(false)
 
 	let preview_url = $derived(post.image_url ? null : extract_first_url(post.content))
+	let display_segments = $derived(parse_content(post.content, { exclude_url: preview_url }))
 	let post_url = $derived(resolve('/posts/[id]', { id: post.id }))
 	let deleting = $state(false)
 
@@ -134,10 +135,10 @@
 		</div>
 
 		<!-- Post Body Content -->
-		<div class="mt-3 text-xs leading-relaxed text-slate-700">
-			{#if post.content}
+		{#if display_segments.length > 0}
+			<div class="mt-3 text-xs leading-relaxed text-slate-700">
 				<div class="line-clamp-6 whitespace-pre-wrap">
-					{#each parse_content(post.content) as segment, i (i)}
+					{#each display_segments as segment, i (i)}
 						{#if segment.type === 'tag'}
 							<a
 								href="{resolve('/explore')}?q={encodeURIComponent(segment.text)}"
@@ -161,8 +162,8 @@
 						{/if}
 					{/each}
 				</div>
-			{/if}
-		</div>
+			</div>
+		{/if}
 
 		<!-- Rich Link Preview Thumbnail (if content contains link & no native image) -->
 		{#if preview_url}

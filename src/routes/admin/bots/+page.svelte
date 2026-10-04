@@ -944,25 +944,29 @@
 												<span class="text-slate-400">{relative_time(item.created_at)}</span>
 											</div>
 
-											<div class="text-xs leading-relaxed whitespace-pre-wrap text-slate-700">
-												{#each parse_content(item.content) as segment, i (i)}
-													{#if segment.type === 'tag'}
-														<a
-															href="{resolve('/explore')}?q={encodeURIComponent(segment.text)}"
-															class="font-medium text-system-blue hover:underline">{segment.text}</a
-														>
-													{:else if segment.type === 'link'}
-														<a
-															href={segment.href}
-															target="_blank"
-															rel="noopener noreferrer"
-															class="font-medium text-system-blue hover:underline">{segment.text}</a
-														>
-													{:else}
-														{segment.text}
-													{/if}
-												{/each}
-											</div>
+											{#if parse_content(item.content, { exclude_url: first_link }).length > 0}
+												<div class="text-xs leading-relaxed whitespace-pre-wrap text-slate-700">
+													{#each parse_content( item.content, { exclude_url: first_link } ) as segment, i (i)}
+														{#if segment.type === 'tag'}
+															<a
+																href="{resolve('/explore')}?q={encodeURIComponent(segment.text)}"
+																class="font-medium text-system-blue hover:underline"
+																>{segment.text}</a
+															>
+														{:else if segment.type === 'link'}
+															<a
+																href={segment.href}
+																target="_blank"
+																rel="noopener noreferrer"
+																class="font-medium text-system-blue hover:underline"
+																>{segment.text}</a
+															>
+														{:else}
+															{segment.text}
+														{/if}
+													{/each}
+												</div>
+											{/if}
 
 											<!-- Render Link Preview Card directly in admin post feed -->
 											{#if first_link}
