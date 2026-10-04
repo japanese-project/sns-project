@@ -88,7 +88,7 @@
 	tabindex="0"
 	onclick={handle_card_click}
 	onkeydown={handle_card_keydown}
-	class="group mb-3.5 flex cursor-pointer break-inside-avoid flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xs transition-all duration-200 hover:-translate-y-1 hover:border-slate-300 hover:shadow-md sm:mb-4"
+	class="group mb-2.5 flex cursor-pointer break-inside-avoid flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xs transition-all duration-200 hover:-translate-y-1 hover:border-slate-300 hover:shadow-md sm:mb-4"
 >
 	<!-- Visual Media Header (if post has image) -->
 	{#if post.image_url}
@@ -102,7 +102,7 @@
 		</div>
 	{/if}
 
-	<div class="p-3 sm:p-3.5">
+	<div class="p-2.5 sm:p-3.5">
 		<!-- Author Header -->
 		<div class="flex items-center justify-between gap-1.5">
 			<a
@@ -174,9 +174,9 @@
 
 	<!-- Bottom Card Actions Bar -->
 	<div
-		class="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-3 py-2 text-xs text-slate-500 sm:px-3.5"
+		class="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-2.5 py-1.5 text-xs text-slate-500 sm:px-3.5 sm:py-2"
 	>
-		<div class="flex items-center gap-3">
+		<div class="flex items-center gap-2 sm:gap-3">
 			<!-- Like button -->
 			<button
 				type="button"

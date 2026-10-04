@@ -79,8 +79,12 @@
 			onclick={(e) => e.stopPropagation()}
 			class="block transition-opacity hover:opacity-90"
 		>
-			{#if preview.image && !image_failed && !compact}
-				<div class="relative max-h-60 w-full overflow-hidden rounded-2xl bg-slate-100">
+			{#if preview.image && !image_failed}
+				<div
+					class="relative w-full overflow-hidden bg-slate-100 {compact
+						? 'max-h-36 rounded-xl sm:max-h-44'
+						: 'max-h-60 rounded-2xl'}"
+				>
 					<img
 						src={preview.image}
 						alt={preview.title || 'Link preview image'}
@@ -91,7 +95,7 @@
 				</div>
 			{/if}
 
-			<div class="py-2 {preview.image && !image_failed && !compact ? 'px-0.5' : ''}">
+			<div class="py-2 {preview.image && !image_failed ? 'px-0.5' : ''}">
 				<!-- Hostname & Icon Row -->
 				<div class="mb-1 flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
 					{#if preview.favicon}

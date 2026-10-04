@@ -251,7 +251,7 @@
 				{#if view_mode === 'masonry'}
 					<!-- Responsive Pinterest / Instagram Multi-Column Grid (2 cols on mobile, up to 5 on wide) -->
 					<div
-						class="columns-2 gap-3.5 [column-fill:_balance] sm:columns-3 lg:columns-4 xl:columns-5"
+						class="columns-2 gap-2.5 [column-fill:_balance] sm:columns-3 sm:gap-3.5 lg:columns-4 xl:columns-5"
 					>
 						{#each data.discovery.posts as post (post.id)}
 							<ExplorePinCard {post} />
@@ -327,7 +327,7 @@
 					</div>
 				{:else if view_mode === 'masonry'}
 					<div
-						class="columns-2 gap-3.5 [column-fill:_balance] sm:columns-3 lg:columns-4 xl:columns-5"
+						class="columns-2 gap-2.5 [column-fill:_balance] sm:columns-3 sm:gap-3.5 lg:columns-4 xl:columns-5"
 					>
 						{#each posts as post (post.id)}
 							<ExplorePinCard {post} />
