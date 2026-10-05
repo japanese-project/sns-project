@@ -144,7 +144,7 @@
 			<!-- ───────────────────────────────────────────────────────────── -->
 
 			<!-- Sleek Horizontal Topic & Time Window Strip (No vertical stacking boxes!) -->
-			<div class="flex scrollbar-none items-center gap-2 overflow-x-auto pb-1">
+			<div class="custom-scrollbar flex items-center gap-2 overflow-x-auto pb-1">
 				<!-- Time Window Tabs: Today / Week / Month -->
 				<div
 					class="inline-flex shrink-0 items-center rounded-full bg-slate-100 p-0.5 text-xs font-medium"
@@ -203,7 +203,7 @@
 						</div>
 					</div>
 
-					<div class="flex scrollbar-none gap-3 overflow-x-auto pb-1">
+					<div class="custom-scrollbar flex gap-3 overflow-x-auto pb-1">
 						{#each data.discovery.suggested_users as person (person.id)}
 							<UserCard {person} />
 						{/each}
@@ -277,7 +277,7 @@
 					<h3 class="px-1 text-xs font-bold tracking-wider text-slate-500 uppercase">
 						People Matching “{data.query}” ({data.results.users.length})
 					</h3>
-					<div class="flex scrollbar-none gap-3 overflow-x-auto pb-1">
+					<div class="custom-scrollbar flex gap-3 overflow-x-auto pb-1">
 						{#each data.results.users as person (person.id)}
 							<UserCard {person} />
 						{/each}
