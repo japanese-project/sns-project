@@ -11,11 +11,12 @@ The `notification` table and `user.username` were added in migration `0001`.
 - **user** — Better Auth user identity and profile basics.
 - **account** — Better Auth OAuth/provider account linkage.
 - **session** — Better Auth persistent sessions when database session storage is selected.
-- **post** — text content, author, visibility, timestamps, and optional image URL.
+- **post** — text content, author, visibility, timestamps, and optional image URL. A repost is a public post row whose `repost_of_id` points at the original and whose `content` is an optional caption (empty for a plain repost); it is only readable while the original is, and is deleted with it.
 - **like** — one user-to-post like; unique per user/post pair.
+- **bookmark** — a post saved to the user's private Favorites; unique per user/post pair, never counted publicly or notified.
 - **comment** — a post comment or one-level reply; replies use `parent_comment_id`.
 - **follow** — directed follower → followee relationship; unique pair and no self-follow.
-- **notification** — in-app notification for likes, comments, and follows.
+- **notification** — in-app notification for likes, reposts, comments, and follows.
 
 ## ERD
 
@@ -25,12 +26,15 @@ erDiagram
     USER ||--o{ SESSION : has
     USER ||--o{ POST : authors
     USER ||--o{ LIKE : creates
+    USER ||--o{ BOOKMARK : saves
     USER ||--o{ COMMENT : writes
     USER ||--o{ FOLLOW : follows
     USER ||--o{ FOLLOW : followed_by
     USER ||--o{ NOTIFICATION : receives
 
     POST ||--o{ LIKE : has
+    POST ||--o{ BOOKMARK : saved_in
+    POST ||--o{ POST : reposted_as
     POST ||--o{ COMMENT : has
     COMMENT ||--o{ COMMENT : replies_to
 
@@ -52,11 +56,18 @@ erDiagram
         string body
         string visibility
         string image_url
+        string repost_of_id FK
         datetime created_at
         datetime updated_at
     }
 
     LIKE {
+        string user_id FK
+        string post_id FK
+        datetime created_at
+    }
+
+    BOOKMARK {
         string user_id FK
         string post_id FK
         datetime created_at
@@ -94,6 +105,8 @@ erDiagram
 
 - `post.visibility` is `public` or `followers-only`.
 - A `like` is unique on (`user_id`, `post_id`).
+- A repost is unique on (`repost_of_id`, `user_id`); only public posts can be reposted, and reposting a repost reposts its original.
+- A `bookmark` is unique on (`user_id`, `post_id`) and is only ever listed for its owner (`GET /api/users/me/bookmarks`).
 - A `follow` is unique on (`follower_id`, `followee_id`) and cannot have identical follower/followee IDs.
 - A reply must reference a comment on the same post.
 - Only one reply level is allowed.
@@ -108,6 +121,7 @@ erDiagram
 ## Notification de-duplication policy
 
 - **like**: at most one notification per (actor, post). Unliking deletes it, so like → unlike → like produces exactly one again.
+- **repost**: at most one notification per (actor, post), keyed `repost:<actor>:<post>`. Undoing the repost deletes it.
 - **follow**: at most one notification per (actor, recipient). Unfollowing deletes it.
 - **comment**: one notification per comment, sent to the post author and, for replies, the parent comment's author.
 - Nobody is notified about their own actions.

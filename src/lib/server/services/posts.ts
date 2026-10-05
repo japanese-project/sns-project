@@ -1,11 +1,12 @@
-import { and, desc, eq, gte, lt, ne, or, sql, type SQL } from 'drizzle-orm'
+import { and, desc, eq, gte, inArray, isNull, lt, ne, or, sql, type SQL } from 'drizzle-orm'
 import { error } from '@sveltejs/kit'
 import type { Db } from '../db'
-import { comment, follow, like, post, user } from '../db/schema'
+import { bookmark, comment, follow, like, post, user } from '../db/schema'
 import { MAX_POST_LENGTH, MAX_TRENDING_LIMIT, TRENDING_SCAN_LIMIT } from '$lib/limits'
 import type { Page, PostView, TrendingPeriod } from '$lib/types'
 import { clamp_limit, decode_cursor, encode_cursor, like_pattern, new_id } from './cursor'
 import { with_media_lock } from './media'
+import { remove_notification } from './notifications'
 import { to_user_summary } from './users'
 
 export type Visibility = 'public' | 'followers-only'
@@ -19,12 +20,19 @@ export function parse_visibility(raw: unknown): Visibility {
 /**
  * The single source of truth for who may read a post:
  *   public OR author = viewer OR viewer follows author
+ * and, for a repost, the same rule applied to the original it points at, so a repost disappears
+ * for anyone who can no longer read the original.
  * Every read path (feed, profile, search, single post, likes, comments) goes through this.
  */
 export function visible_to(viewer_id: string): SQL {
-	return sql`(${post.visibility} = 'public'
+	return sql`((${post.visibility} = 'public'
 		or ${post.userId} = ${viewer_id}
-		or exists (select 1 from ${follow} where ${follow.followerId} = ${viewer_id} and ${follow.followingId} = ${post.userId}))`
+		or exists (select 1 from ${follow} where ${follow.followerId} = ${viewer_id} and ${follow.followingId} = ${post.userId}))
+		and (${post.repostOfId} is null or exists (
+			select 1 from post original where original.id = ${post.repostOfId}
+			and (original.visibility = 'public'
+				or original.user_id = ${viewer_id}
+				or exists (select 1 from follow f where f.follower_id = ${viewer_id} and f.following_id = original.user_id)))))`
 }
 
 const post_columns = (viewer_id: string) => ({
@@ -35,12 +43,16 @@ const post_columns = (viewer_id: string) => ({
 	created_at: post.createdAt,
 	user_id: post.userId,
 	updated_at: post.updatedAt,
+	repost_of_id: post.repostOfId,
 	author_name: user.name,
 	author_username: user.username,
 	author_image: user.image,
 	like_count: sql<number>`(select count(*) from ${like} where ${like.postId} = ${post.id})`,
 	comment_count: sql<number>`(select count(*) from ${comment} where ${comment.postId} = ${post.id})`,
 	liked_by_me: sql<number>`exists(select 1 from ${like} where ${like.postId} = ${post.id} and ${like.userId} = ${viewer_id})`,
+	bookmarked_by_me: sql<number>`exists(select 1 from ${bookmark} where ${bookmark.postId} = ${post.id} and ${bookmark.userId} = ${viewer_id})`,
+	repost_count: sql<number>`(select count(*) from post r where r.repost_of_id = ${post.id})`,
+	reposted_by_me: sql<number>`exists(select 1 from post r where r.repost_of_id = ${post.id} and r.user_id = ${viewer_id})`,
 })
 
 type PostRow = Awaited<ReturnType<typeof select_posts>>[number]
@@ -72,8 +84,34 @@ function to_post_view(row: PostRow, viewer_id: string): PostView {
 		like_count: Number(row.like_count),
 		comment_count: Number(row.comment_count),
 		liked_by_me: Boolean(row.liked_by_me),
+		bookmarked_by_me: Boolean(row.bookmarked_by_me),
+		repost_count: Number(row.repost_count),
+		reposted_by_me: Boolean(row.reposted_by_me),
+		repost_of: null,
 		is_owner: viewer_id === row.user_id,
 	}
+}
+
+/**
+ * Builds the views for a page of rows, attaching the original post to each repost. Originals are
+ * never reposts themselves (reposting a repost reposts its original), so one lookup suffices.
+ */
+async function to_post_views(db: Db, viewer_id: string, rows: PostRow[]): Promise<PostView[]> {
+	const ids = [...new Set(rows.flatMap((row) => (row.repost_of_id ? [row.repost_of_id] : [])))]
+	const originals = new Map<string, PostView>()
+	if (ids.length > 0) {
+		const where = and(inArray(post.id, ids), visible_to(viewer_id))
+		for (const row of await select_posts(db, viewer_id, where, ids.length)) {
+			originals.set(row.id, to_post_view(row, viewer_id))
+		}
+	}
+	return rows.flatMap((row) => {
+		const view = to_post_view(row, viewer_id)
+		if (!row.repost_of_id) return [view]
+		const original = originals.get(row.repost_of_id)
+		// visible_to already hid reposts of unreadable posts; this only covers a concurrent delete.
+		return original ? [{ ...view, repost_of: original }] : []
+	})
 }
 
 function after_cursor(cursor: string | null | undefined): SQL | undefined {
@@ -98,7 +136,7 @@ async function paginate(
 	const page = has_more ? rows.slice(0, limit) : rows
 	const last = page.at(-1)
 	return {
-		items: page.map((row) => to_post_view(row, viewer_id)),
+		items: await to_post_views(db, viewer_id, page),
 		next_cursor: has_more && last ? encode_cursor(last.created_at, last.id) : null,
 	}
 }
@@ -216,7 +254,8 @@ export function list_feed(
 		const following_filter = sql<boolean>`(${post.userId} = ${viewer_id} or exists (select 1 from ${follow} where ${follow.followerId} = ${viewer_id} and ${follow.followingId} = ${post.userId}))`
 		return paginate(db, viewer_id, [following_filter], opts)
 	}
-	return paginate(db, viewer_id, [eq(post.visibility, 'public')], opts)
+	// Every public post is already in the global feed, so reposts there would only be duplicates.
+	return paginate(db, viewer_id, [eq(post.visibility, 'public'), isNull(post.repostOfId)], opts)
 }
 
 export function list_posts_by_user(
@@ -227,6 +266,59 @@ export function list_posts_by_user(
 ) {
 	return paginate(db, viewer_id, [eq(post.userId, author_id)], opts)
 }
+
+/**
+ * The viewer's own liked or bookmarked posts, newest like/bookmark first (not newest post
+ * first), so the cursor is keyed on the like/bookmark time. Posts the viewer can no longer
+ * read (e.g. they unfollowed a followers-only author) are left out.
+ */
+async function list_collected(
+	db: Db,
+	viewer_id: string,
+	collection: typeof like | typeof bookmark,
+	opts: { cursor?: string | null; limit?: number },
+): Promise<Page<PostView>> {
+	const limit = clamp_limit(opts.limit)
+	const cursor = decode_cursor(opts.cursor)
+	const rows = await db
+		.select({ ...post_columns(viewer_id), collected_at: collection.createdAt })
+		.from(collection)
+		.innerJoin(post, eq(post.id, collection.postId))
+		.innerJoin(user, eq(user.id, post.userId))
+		.where(
+			and(
+				eq(collection.userId, viewer_id),
+				visible_to(viewer_id),
+				cursor
+					? or(
+							lt(collection.createdAt, cursor.date),
+							and(eq(collection.createdAt, cursor.date), lt(post.id, cursor.id)),
+						)
+					: undefined,
+			),
+		)
+		.orderBy(desc(collection.createdAt), desc(post.id))
+		.limit(limit + 1)
+	const has_more = rows.length > limit
+	const page = has_more ? rows.slice(0, limit) : rows
+	const last = page.at(-1)
+	return {
+		items: await to_post_views(db, viewer_id, page),
+		next_cursor: has_more && last ? encode_cursor(last.collected_at, last.id) : null,
+	}
+}
+
+export const list_liked_posts = (
+	db: Db,
+	viewer_id: string,
+	opts: { cursor?: string | null; limit?: number } = {},
+) => list_collected(db, viewer_id, like, opts)
+
+export const list_bookmarked_posts = (
+	db: Db,
+	viewer_id: string,
+	opts: { cursor?: string | null; limit?: number } = {},
+) => list_collected(db, viewer_id, bookmark, opts)
 
 /**
  * Design note: search is a case-insensitive `LIKE '%query%'` over post content, ANDed with the
@@ -258,7 +350,8 @@ export async function get_visible_post(db: Db, viewer_id: string, post_id: strin
 		and(eq(post.id, post_id), visible_to(viewer_id)),
 		1,
 	)
-	return rows[0] ? to_post_view(rows[0], viewer_id) : null
+	const [view] = await to_post_views(db, viewer_id, rows)
+	return view ?? null
 }
 
 export async function get_post_or_404(db: Db, viewer_id: string, post_id: string) {
@@ -275,6 +368,7 @@ async function require_owned_post(db: Db, user_id: string, post_id: string) {
 			visibility: post.visibility,
 			imageUrl: post.imageUrl,
 			content: post.content,
+			repostOfId: post.repostOfId,
 		})
 		.from(post)
 		.where(eq(post.id, post_id))
@@ -297,6 +391,7 @@ export async function update_post(
 	bucket?: R2Bucket,
 ): Promise<PostView> {
 	const owned = await require_owned_post(db, user_id, post_id)
+	if (owned.repostOfId) error(400, 'A repost cannot be edited')
 	const changes: Partial<typeof post.$inferInsert> = { updatedAt: new Date() }
 
 	let new_image_url = owned.imageUrl
@@ -397,6 +492,8 @@ export async function delete_post(
 ): Promise<void> {
 	const owned = await require_owned_post(db, user_id, post_id)
 	await db.delete(post).where(eq(post.id, post_id))
+	// Deleting a repost is undoing it, so withdraw its notification too.
+	if (owned.repostOfId) await remove_notification(db, `repost:${user_id}:${owned.repostOfId}`)
 
 	// Clean up R2 object ONLY AFTER database deletion succeeds
 	if (bucket && owned.imageUrl) {

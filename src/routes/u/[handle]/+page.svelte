@@ -331,30 +331,31 @@
 							: `${profile.user.name} has no posts you can see yet.`}
 					/>
 				{/key}
-			{:else if active_tab === 'favorites'}
-				<div class="flex flex-col items-center justify-center py-16 text-center text-slate-500">
-					<div class="mb-3 rounded-full bg-slate-100 p-4 text-slate-400">
-						<BookmarkIcon class="size-8" />
-					</div>
-					<h4 class="text-sm font-bold text-slate-800">Favorite posts</h4>
-					<p class="mt-1 max-w-xs text-xs text-slate-400">
-						{profile.is_self
-							? 'Save posts to view them in your favorites collection.'
-							: 'Favorite posts are only visible to the user.'}
-					</p>
-				</div>
-			{:else if active_tab === 'liked'}
+			{:else if profile.is_self}
+				<!-- Favorites and likes are private, so these lists only ever exist for your own profile. -->
+				{#if active_tab === 'favorites'}
+					<PostList
+						endpoint="/api/users/me/bookmarks"
+						empty_message="No favorites yet. Tap the bookmark on any post to save it here."
+					/>
+				{:else}
+					<PostList
+						endpoint="/api/users/me/likes"
+						empty_message="Posts you like will show up here."
+					/>
+				{/if}
+			{:else}
 				<div class="flex flex-col items-center justify-center py-16 text-center text-slate-500">
 					<div class="mb-3 rounded-full bg-slate-100 p-4 text-slate-400">
 						<LockIcon class="size-8" />
 					</div>
 					<h4 class="text-sm font-bold text-slate-800">
-						{profile.is_self ? 'Your liked posts' : 'This account is private'}
+						{active_tab === 'favorites' ? 'Favorites are private' : 'Liked posts are private'}
 					</h4>
 					<p class="mt-1 max-w-xs text-xs text-slate-400">
-						{profile.is_self
-							? 'Posts you have liked are only visible to you.'
-							: 'Posts liked by this user are currently hidden.'}
+						Only {profile.user.name} can see the posts they {active_tab === 'favorites'
+							? 'saved'
+							: 'liked'}.
 					</p>
 				</div>
 			{/if}

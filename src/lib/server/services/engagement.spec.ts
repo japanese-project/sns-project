@@ -1,11 +1,21 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import type { Db } from '../db'
-import { comment, follow, like, notification, post, user } from '../db/schema'
+import { bookmark, comment, follow, like, notification, post, user } from '../db/schema'
+import { bookmark_post, unbookmark_post } from './bookmarks'
+import { repost_post, unrepost_post } from './reposts'
 import { create_comment, delete_comment, list_comments, update_comment } from './comments'
 import { follow_user, list_followers, list_following, unfollow_user } from './follows'
 import { like_post, unlike_post } from './likes'
 import { list_notifications, mark_read, unread_count } from './notifications'
-import { create_post, delete_post, list_feed, list_posts_by_user } from './posts'
+import {
+	create_post,
+	delete_post,
+	list_bookmarked_posts,
+	list_feed,
+	list_liked_posts,
+	list_posts_by_user,
+	update_post,
+} from './posts'
 import { parse_query, search_all, search_users } from './search'
 import { create_test_db, make_follow, make_user } from './test-db'
 import { eq } from 'drizzle-orm'
@@ -24,6 +34,7 @@ afterAll(() => dispose())
 beforeEach(async () => {
 	await db.delete(notification)
 	await db.delete(like)
+	await db.delete(bookmark)
 	await db.delete(comment)
 	await db.delete(follow)
 	await db.delete(post)
@@ -60,6 +71,175 @@ describe('likes', () => {
 		expect(await status_of(like_post(db, bob, p.id))).toBe(404)
 		await make_follow(db, bob, alice)
 		expect((await like_post(db, bob, p.id)).liked).toBe(true)
+	})
+})
+
+describe('liked posts list', () => {
+	it("lists only the viewer's likes, most recently liked first", async () => {
+		const older = await create_post(db, alice, { content: 'older post' })
+		const newer = await create_post(db, alice, { content: 'newer post' })
+		await create_post(db, alice, { content: 'not liked' })
+		// Liked in the opposite order to posting: the list follows like time, not post time.
+		await db.insert(like).values([
+			{ userId: bob, postId: newer.id, createdAt: new Date('2026-01-01T00:00:00Z') },
+			{ userId: bob, postId: older.id, createdAt: new Date('2026-01-02T00:00:00Z') },
+			{ userId: carol, postId: newer.id },
+		])
+		const page = await list_liked_posts(db, bob)
+		expect(page.items.map((p) => p.content)).toEqual(['older post', 'newer post'])
+		expect(page.items.every((p) => p.liked_by_me)).toBe(true)
+		expect(page.next_cursor).toBeNull()
+	})
+
+	it('pages with a cursor keyed on like time', async () => {
+		const posts = []
+		for (const n of [1, 2, 3]) posts.push(await create_post(db, alice, { content: `p${n}` }))
+		await db.insert(like).values(
+			posts.map((p, i) => ({
+				userId: bob,
+				postId: p.id,
+				createdAt: new Date(Date.UTC(2026, 0, 1 + i)),
+			})),
+		)
+		const first = await list_liked_posts(db, bob, { limit: 2 })
+		expect(first.items.map((p) => p.content)).toEqual(['p3', 'p2'])
+		const second = await list_liked_posts(db, bob, { limit: 2, cursor: first.next_cursor })
+		expect(second.items.map((p) => p.content)).toEqual(['p1'])
+		expect(second.next_cursor).toBeNull()
+	})
+})
+
+describe('bookmarks', () => {
+	it('are idempotent, listed newest first, and flagged only for their owner', async () => {
+		const a = await create_post(db, alice, { content: 'first' })
+		const b = await create_post(db, carol, { content: 'second' })
+		expect(await bookmark_post(db, bob, a.id)).toEqual({ bookmarked: true })
+		expect(await bookmark_post(db, bob, a.id)).toEqual({ bookmarked: true })
+		await bookmark_post(db, bob, b.id)
+		expect(await db.select().from(bookmark).where(eq(bookmark.userId, bob))).toHaveLength(2)
+
+		expect((await list_bookmarked_posts(db, bob)).items.map((p) => p.id)).toEqual([b.id, a.id])
+		expect((await list_bookmarked_posts(db, alice)).items).toEqual([])
+		expect((await list_posts_by_user(db, bob, alice)).items[0].bookmarked_by_me).toBe(true)
+		expect((await list_posts_by_user(db, alice, alice)).items[0].bookmarked_by_me).toBe(false)
+		// Private: saving a post never notifies its author.
+		expect(await db.select().from(notification)).toHaveLength(0)
+
+		expect(await unbookmark_post(db, bob, a.id)).toEqual({ bookmarked: false })
+		expect(await unbookmark_post(db, bob, a.id)).toEqual({ bookmarked: false })
+		expect((await list_bookmarked_posts(db, bob)).items.map((p) => p.id)).toEqual([b.id])
+	})
+
+	it('cannot target a post the user cannot see', async () => {
+		const p = await create_post(db, alice, { content: 'hidden', visibility: 'followers-only' })
+		expect(await status_of(bookmark_post(db, bob, p.id))).toBe(404)
+		expect(await status_of(unbookmark_post(db, bob, p.id))).toBe(404)
+		expect(await status_of(bookmark_post(db, bob, 'no-such-post'))).toBe(404)
+	})
+
+	it('drop out of the saved and liked lists once the post is no longer visible', async () => {
+		const p = await create_post(db, alice, { content: 'inner', visibility: 'followers-only' })
+		await make_follow(db, bob, alice)
+		await bookmark_post(db, bob, p.id)
+		await like_post(db, bob, p.id)
+		expect((await list_bookmarked_posts(db, bob)).items).toHaveLength(1)
+		expect((await list_liked_posts(db, bob)).items).toHaveLength(1)
+
+		await unfollow_user(db, bob, alice)
+		expect((await list_bookmarked_posts(db, bob)).items).toHaveLength(0)
+		expect((await list_liked_posts(db, bob)).items).toHaveLength(0)
+	})
+
+	it('are removed when the post is deleted', async () => {
+		const p = await create_post(db, alice, { content: 'temporary' })
+		await bookmark_post(db, bob, p.id)
+		await delete_post(db, alice, p.id)
+		expect(await db.select().from(bookmark)).toHaveLength(0)
+	})
+})
+
+describe('reposts', () => {
+	it("show on the reposter's profile and followers' following feed, not the global feed", async () => {
+		const p = await create_post(db, alice, { content: 'worth sharing' })
+		expect(await repost_post(db, bob, p.id)).toEqual({ reposted: true, repost_count: 1 })
+		expect(await repost_post(db, bob, p.id)).toEqual({ reposted: true, repost_count: 1 })
+
+		const [item] = (await list_posts_by_user(db, carol, bob)).items
+		expect(item.author.id).toBe(bob)
+		expect(item.repost_of?.id).toBe(p.id)
+		expect(item.repost_of?.content).toBe('worth sharing')
+
+		await make_follow(db, carol, bob)
+		const [following] = (await list_feed(db, carol, { feed: 'following' })).items
+		expect([following.author.id, following.repost_of?.id]).toEqual([bob, p.id])
+		expect((await list_feed(db, carol)).items.map((i) => i.id)).toEqual([p.id])
+
+		const [original] = (await list_posts_by_user(db, bob, alice)).items
+		expect([original.repost_count, original.reposted_by_me]).toEqual([1, true])
+	})
+
+	it('carry an optional caption that can be changed by reposting again', async () => {
+		const p = await create_post(db, alice, { content: 'worth sharing' })
+		await repost_post(db, bob, p.id, { content: '  Totally agree  ' })
+		const caption = async () => (await list_posts_by_user(db, carol, bob)).items[0].content
+		expect(await caption()).toBe('Totally agree')
+
+		// No content => caption untouched; new content => caption replaced; still one repost.
+		expect((await repost_post(db, bob, p.id)).repost_count).toBe(1)
+		expect(await caption()).toBe('Totally agree')
+		await repost_post(db, bob, p.id, { content: 'On second thought' })
+		expect(await caption()).toBe('On second thought')
+		await repost_post(db, bob, p.id, { content: '' })
+		expect(await caption()).toBe('')
+		expect((await list_notifications(db, alice)).items).toHaveLength(1)
+
+		expect(await status_of(repost_post(db, bob, p.id, { content: 'x'.repeat(10_000) }))).toBe(400)
+		expect(await status_of(repost_post(db, bob, p.id, { content: 42 }))).toBe(400)
+	})
+
+	it('notify the author once; undoing removes the repost and its notification', async () => {
+		const p = await create_post(db, alice, { content: 'notify me' })
+		await repost_post(db, bob, p.id)
+		await repost_post(db, bob, p.id)
+		await repost_post(db, alice, p.id) // reposting your own post notifies nobody
+		const notes = (await list_notifications(db, alice)).items
+		expect(notes.map((n) => [n.type, n.actor.id, n.post_id])).toEqual([['repost', bob, p.id]])
+
+		expect(await unrepost_post(db, bob, p.id)).toEqual({ reposted: false, repost_count: 1 })
+		expect((await list_notifications(db, alice)).items).toEqual([])
+		expect((await list_posts_by_user(db, carol, bob)).items).toEqual([])
+	})
+
+	it('of a repost reposts the original', async () => {
+		const p = await create_post(db, alice, { content: 'original' })
+		await repost_post(db, bob, p.id)
+		const [bob_repost] = (await list_posts_by_user(db, carol, bob)).items
+		expect((await repost_post(db, carol, bob_repost.id)).repost_count).toBe(2)
+		const [carol_item] = (await list_posts_by_user(db, carol, carol)).items
+		expect(carol_item.repost_of?.id).toBe(p.id)
+	})
+
+	it('refuse followers-only posts and hide once the original is no longer visible', async () => {
+		const priv = await create_post(db, alice, { content: 'inner', visibility: 'followers-only' })
+		await make_follow(db, bob, alice)
+		expect(await status_of(repost_post(db, bob, priv.id))).toBe(403)
+		expect(await status_of(repost_post(db, carol, priv.id))).toBe(404)
+
+		const pub = await create_post(db, alice, { content: 'public for now' })
+		await repost_post(db, bob, pub.id)
+		expect((await list_posts_by_user(db, carol, bob)).items).toHaveLength(1)
+		await update_post(db, alice, pub.id, { visibility: 'followers-only' })
+		expect((await list_posts_by_user(db, carol, bob)).items).toHaveLength(0)
+		expect((await list_posts_by_user(db, bob, bob)).items).toHaveLength(1)
+	})
+
+	it('cannot be edited, and are deleted along with the original', async () => {
+		const p = await create_post(db, alice, { content: 'temporary' })
+		await repost_post(db, bob, p.id)
+		const [item] = (await list_posts_by_user(db, bob, bob)).items
+		expect(await status_of(update_post(db, bob, item.id, { content: 'hijack' }))).toBe(400)
+		await delete_post(db, alice, p.id)
+		expect(await db.select().from(post)).toHaveLength(0)
 	})
 })
 

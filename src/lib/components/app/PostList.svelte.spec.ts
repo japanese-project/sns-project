@@ -48,4 +48,34 @@ describe('PostList', () => {
 			await expect.element(page.getByRole('alert')).not.toBeInTheDocument()
 		})
 	})
+
+	it('loads the next page when scrolled to the end, without a button', async () => {
+		const post = (id: string) => ({
+			id,
+			content: `post ${id}`,
+			visibility: 'public',
+			image_url: null,
+			created_at: new Date().toISOString(),
+			updated_at: new Date().toISOString(),
+			author: { id: 'u1', name: 'Alice', username: 'alice', handle: 'alice', image: null },
+			like_count: 0,
+			comment_count: 0,
+			liked_by_me: false,
+			bookmarked_by_me: false,
+			repost_count: 0,
+			reposted_by_me: false,
+			repost_of: null,
+			is_owner: false,
+		})
+		vi.mocked(api)
+			.mockResolvedValueOnce({ items: [post('a')], next_cursor: 'c1' })
+			.mockResolvedValueOnce({ items: [post('b')], next_cursor: null })
+		render(PostList, { endpoint: '/api/posts' })
+
+		await expect.element(page.getByRole('button', { name: 'Load more' })).not.toBeInTheDocument()
+		// The sentinel sits right under the one short post, so it is already in view.
+		await vi.waitFor(() => expect(api).toHaveBeenCalledTimes(2))
+		expect(api).toHaveBeenLastCalledWith('/api/posts?cursor=c1')
+		await expect.element(page.getByText("You're all caught up.")).toBeVisible()
+	})
 })
