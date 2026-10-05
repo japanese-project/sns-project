@@ -24,6 +24,7 @@
 		on_repost_change,
 		my_repost_caption = '',
 		embedded = false,
+		on_edit_caption,
 	}: {
 		initial_open_comments?: boolean
 		post: PostView
@@ -34,6 +35,8 @@
 		my_repost_caption?: string
 		/** Rendered inside a repost: a flat, bordered card instead of a standalone raised one. */
 		embedded?: boolean
+		/** Set by a repost card: "Edit caption" edits in the repost's header, not under this post. */
+		on_edit_caption?: () => void
 	} = $props()
 
 	function extract_aspect_ratio_hint(url: string | null | undefined): number | null {
@@ -112,6 +115,30 @@
 	let repost_menu_open = $state(false)
 	let captioning = $state(false)
 	let caption_draft = $state('')
+	// Editing the caption of a repost item happens in its header (see the repost card below).
+	let editing_caption = $state(false)
+	let edit_draft = $state('')
+	let edit_saving = $state(false)
+	let edit_error = $state<string | null>(null)
+
+	async function save_repost_caption(event: SubmitEvent) {
+		event.preventDefault()
+		if (!post.repost_of || edit_saving || edit_draft.length > MAX_POST_LENGTH) return
+		edit_saving = true
+		edit_error = null
+		try {
+			await api(`/api/posts/${post.repost_of.id}/repost`, {
+				method: 'PUT',
+				body: { content: edit_draft },
+			})
+			editing_caption = false
+			on_updated?.({ ...post, content: edit_draft.trim() })
+		} catch (e) {
+			edit_error = e instanceof Error ? e.message : 'Could not save caption'
+		} finally {
+			edit_saving = false
+		}
+	}
 	// Followers-only posts can't be reposted (it would widen their audience); undo stays possible.
 	let can_repost = $derived(active_post.visibility === 'public' || reposted)
 	let comments_override = $state<boolean | null>(null)
@@ -339,6 +366,7 @@
 
 	function open_caption_form() {
 		repost_menu_open = false
+		if (reposted && on_edit_caption) return on_edit_caption()
 		caption_draft = my_repost_caption
 		captioning = true
 	}
@@ -545,7 +573,40 @@
 				</span>
 			</a>
 		</div>
-		{#if post.content}
+		{#if editing_caption}
+			<form onsubmit={save_repost_caption} class="mb-3 space-y-2">
+				<textarea
+					bind:value={edit_draft}
+					rows="2"
+					placeholder="Add a caption…"
+					aria-label="Repost caption"
+					class="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-[15px] leading-relaxed outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+				></textarea>
+				{#if edit_error}<p class="text-xs text-rose-600" role="alert">{edit_error}</p>{/if}
+				<div class="flex items-center justify-between text-xs">
+					<span
+						class="tabular-nums {edit_draft.length > MAX_POST_LENGTH
+							? 'font-bold text-rose-600'
+							: 'text-slate-400'}"
+					>
+						{MAX_POST_LENGTH - edit_draft.length} characters left
+					</span>
+					<span class="flex items-center gap-2">
+						<button
+							type="button"
+							onclick={() => (editing_caption = false)}
+							class="px-3 py-1.5 font-medium text-slate-500 hover:text-slate-800">Cancel</button
+						>
+						<button
+							type="submit"
+							disabled={edit_saving || edit_draft.length > MAX_POST_LENGTH}
+							class="rounded-full bg-slate-900 px-4 py-1.5 font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+							>{edit_saving ? 'Saving…' : 'Save caption'}</button
+						>
+					</span>
+				</div>
+			</form>
+		{:else if post.content}
 			<p
 				class="mb-3 text-[15px] leading-relaxed [overflow-wrap:anywhere] whitespace-pre-wrap text-slate-800"
 				data-testid="repost-caption"
@@ -572,6 +633,13 @@
 		{/if}
 		<PostCard
 			embedded
+			on_edit_caption={post.is_owner
+				? () => {
+						edit_draft = post.content
+						edit_error = null
+						editing_caption = true
+					}
+				: undefined}
 			post={post.repost_of}
 			{initial_open_comments}
 			my_repost_caption={post.is_owner ? post.content : ''}
@@ -588,9 +656,9 @@
 {:else}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<article
-		class="post-card group relative border border-slate-100 {embedded
-			? 'rounded-2xl bg-slate-50/60 p-4'
-			: 'rounded-3xl bg-white p-5 shadow-sm transition-shadow hover:shadow-md sm:p-6'} {!editing
+		class="post-card group relative {embedded
+			? ''
+			: 'rounded-3xl border border-slate-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md sm:p-6'} {!editing
 			? 'cursor-pointer'
 			: ''}"
 		data-testid="post-card"

@@ -46,6 +46,24 @@
 	}
 
 	let last_endpoint = $state<string | null>(null)
+	let sentinel = $state<HTMLElement | null>(null)
+
+	// Infinite scroll: fetch the next page as the end of the list nears the viewport. A failed
+	// page stops auto-loading (otherwise a persistent error would retry in a loop); the
+	// "Try again" button below resumes it.
+	$effect(() => {
+		if (!sentinel || !next_cursor || typeof IntersectionObserver === 'undefined') return
+		const observer = new IntersectionObserver(
+			(entries) => {
+				if (entries.some((e) => e.isIntersecting) && !loading_more && !error_message) {
+					void load(false)
+				}
+			},
+			{ rootMargin: '600px 0px' },
+		)
+		observer.observe(sentinel)
+		return () => observer.disconnect()
+	})
 
 	$effect(() => {
 		const current = endpoint
@@ -129,15 +147,17 @@
 			<p class="text-center text-sm text-rose-600" role="alert">{error_message}</p>
 		{/if}
 		{#if next_cursor}
-			<div class="flex justify-center">
-				<button
-					type="button"
-					disabled={loading_more}
-					onclick={() => load(false)}
-					class="rounded-full bg-white px-5 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 disabled:opacity-60"
-				>
-					{loading_more ? 'Loading…' : 'Load more'}
-				</button>
+			<div bind:this={sentinel} class="flex justify-center py-4" aria-live="polite">
+				{#if error_message}
+					<button
+						type="button"
+						onclick={() => load(false)}
+						class="rounded-full bg-white px-5 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50"
+						>Try again</button
+					>
+				{:else}
+					<span class="text-xs text-slate-400">{loading_more ? 'Loading…' : ''}</span>
+				{/if}
 			</div>
 		{:else}
 			<p class="text-center text-xs text-slate-400">You're all caught up.</p>
