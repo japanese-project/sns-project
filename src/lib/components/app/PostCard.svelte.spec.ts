@@ -470,7 +470,7 @@ describe('PostCard favorites and reposts', () => {
 		await page.getByTestId('repost-button').click()
 		await page.getByRole('menuitem', { name: 'Repost with caption' }).click()
 		await page.getByLabelText('Repost caption').fill('This is so true')
-		await page.getByRole('button', { name: 'Repost', exact: true }).nth(1).click()
+		await page.getByRole('button', { name: 'Repost', exact: true }).first().click()
 
 		expect(api).toHaveBeenLastCalledWith('/api/posts/p8/repost', {
 			method: 'PUT',

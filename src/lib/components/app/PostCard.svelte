@@ -665,6 +665,49 @@
 		onclick={handle_card_click}
 		onkeydown={handle_card_keydown}
 	>
+		{#if captioning}
+			<form
+				class="mb-4 space-y-2"
+				onclick={(e) => e.stopPropagation()}
+				onkeydown={(e) => e.stopPropagation()}
+				onsubmit={(e) => {
+					e.preventDefault()
+					void send_repost(caption_draft)
+				}}
+			>
+				<textarea
+					bind:value={caption_draft}
+					rows="2"
+					placeholder="Add a caption…"
+					aria-label="Repost caption"
+					class="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-[15px] leading-relaxed outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+				></textarea>
+				<div class="flex items-center justify-between text-xs">
+					<span
+						class="tabular-nums {caption_draft.length > MAX_POST_LENGTH
+							? 'font-bold text-rose-600'
+							: 'text-slate-400'}"
+					>
+						{MAX_POST_LENGTH - caption_draft.length} characters left
+					</span>
+					<span class="flex items-center gap-2">
+						<button
+							type="button"
+							onclick={() => (captioning = false)}
+							class="px-3 py-1.5 font-medium text-slate-500 hover:text-slate-800">Cancel</button
+						>
+						<button
+							type="submit"
+							disabled={repost_pending || caption_draft.length > MAX_POST_LENGTH}
+							class="rounded-full bg-slate-900 px-4 py-1.5 font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+						>
+							{reposted ? 'Save caption' : 'Repost'}
+						</button>
+					</span>
+				</div>
+			</form>
+		{/if}
+
 		{#if editing}
 			<div class="w-full">
 				<form onsubmit={save_edit} class="space-y-3">
@@ -990,49 +1033,6 @@
 					</button>
 				</div>
 			</div>
-		{/if}
-
-		{#if captioning}
-			<form
-				class="mt-8 space-y-2 rounded-2xl bg-slate-50 p-3"
-				onclick={(e) => e.stopPropagation()}
-				onkeydown={(e) => e.stopPropagation()}
-				onsubmit={(e) => {
-					e.preventDefault()
-					void send_repost(caption_draft)
-				}}
-			>
-				<textarea
-					bind:value={caption_draft}
-					rows="2"
-					placeholder="Add a caption…"
-					aria-label="Repost caption"
-					class="w-full resize-none rounded-xl border border-slate-200 bg-white p-3 text-[15px] leading-relaxed outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-				></textarea>
-				<div class="flex items-center justify-between text-xs">
-					<span
-						class="tabular-nums {caption_draft.length > MAX_POST_LENGTH
-							? 'font-bold text-rose-600'
-							: 'text-slate-400'}"
-					>
-						{MAX_POST_LENGTH - caption_draft.length} characters left
-					</span>
-					<span class="flex items-center gap-2">
-						<button
-							type="button"
-							onclick={() => (captioning = false)}
-							class="px-3 py-1.5 font-medium text-slate-500 hover:text-slate-800">Cancel</button
-						>
-						<button
-							type="submit"
-							disabled={repost_pending || caption_draft.length > MAX_POST_LENGTH}
-							class="rounded-full bg-slate-900 px-4 py-1.5 font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-						>
-							{reposted ? 'Save caption' : 'Repost'}
-						</button>
-					</span>
-				</div>
-			</form>
 		{/if}
 
 		{#if confirming_delete}
