@@ -35,7 +35,9 @@ export function rate_limit_for(pathname: string, method: string): RateCategory |
 	if (pathname.startsWith('/api/report')) return 'reports'
 	if (pathname.startsWith('/api/media') && method === 'POST') return 'uploads'
 	if (pathname.endsWith('/comments') || pathname.startsWith('/api/comments')) return 'comments'
-	if (pathname.endsWith('/like') && method !== 'GET') return 'likes'
+	// Saving to favorites is the same kind of cheap toggle as a like, so it shares that budget.
+	if ((pathname.endsWith('/like') || pathname.endsWith('/bookmark')) && method !== 'GET')
+		return 'likes'
 	if (pathname.endsWith('/follow') && method !== 'GET') return 'follows'
 	if (pathname.startsWith('/api/posts') && method !== 'GET') return 'posts_write'
 	return 'read'

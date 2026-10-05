@@ -29,6 +29,7 @@ export interface PostView {
 	like_count: number
 	comment_count: number
 	liked_by_me: boolean
+	bookmarked_by_me: boolean
 	is_owner: boolean
 }
 

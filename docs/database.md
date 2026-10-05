@@ -13,6 +13,7 @@ The `notification` table and `user.username` were added in migration `0001`.
 - **session** — Better Auth persistent sessions when database session storage is selected.
 - **post** — text content, author, visibility, timestamps, and optional image URL.
 - **like** — one user-to-post like; unique per user/post pair.
+- **bookmark** — a post saved to the user's private Favorites; unique per user/post pair, never counted publicly or notified.
 - **comment** — a post comment or one-level reply; replies use `parent_comment_id`.
 - **follow** — directed follower → followee relationship; unique pair and no self-follow.
 - **notification** — in-app notification for likes, comments, and follows.
@@ -25,12 +26,14 @@ erDiagram
     USER ||--o{ SESSION : has
     USER ||--o{ POST : authors
     USER ||--o{ LIKE : creates
+    USER ||--o{ BOOKMARK : saves
     USER ||--o{ COMMENT : writes
     USER ||--o{ FOLLOW : follows
     USER ||--o{ FOLLOW : followed_by
     USER ||--o{ NOTIFICATION : receives
 
     POST ||--o{ LIKE : has
+    POST ||--o{ BOOKMARK : saved_in
     POST ||--o{ COMMENT : has
     COMMENT ||--o{ COMMENT : replies_to
 
@@ -57,6 +60,12 @@ erDiagram
     }
 
     LIKE {
+        string user_id FK
+        string post_id FK
+        datetime created_at
+    }
+
+    BOOKMARK {
         string user_id FK
         string post_id FK
         datetime created_at
@@ -94,6 +103,7 @@ erDiagram
 
 - `post.visibility` is `public` or `followers-only`.
 - A `like` is unique on (`user_id`, `post_id`).
+- A `bookmark` is unique on (`user_id`, `post_id`) and is only ever listed for its owner (`GET /api/users/me/bookmarks`).
 - A `follow` is unique on (`follower_id`, `followee_id`) and cannot have identical follower/followee IDs.
 - A reply must reference a comment on the same post.
 - Only one reply level is allowed.

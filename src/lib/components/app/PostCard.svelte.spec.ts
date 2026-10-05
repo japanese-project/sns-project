@@ -39,6 +39,7 @@ function make_post(overrides: Partial<PostView> = {}): PostView {
 		like_count: 0,
 		comment_count: 0,
 		liked_by_me: false,
+		bookmarked_by_me: false,
 		is_owner: false,
 		...overrides,
 	}
@@ -401,5 +402,74 @@ describe('PostCard action menu', () => {
 
 		const tag = page.getByRole('link', { name: '#tech' })
 		await expect.element(tag).toBeInTheDocument()
+	})
+})
+
+describe('PostCard favorites and share', () => {
+	beforeEach(() => {
+		vi.mocked(api).mockReset()
+	})
+
+	function with_share(value: unknown) {
+		const original = Object.getOwnPropertyDescriptor(navigator, 'share')
+		Object.defineProperty(navigator, 'share', { value, configurable: true })
+		return () => {
+			if (original) Object.defineProperty(navigator, 'share', original)
+			else delete (navigator as { share?: unknown }).share
+		}
+	}
+
+	it('adds and removes a post from favorites', async () => {
+		vi.mocked(api)
+			.mockResolvedValueOnce({ bookmarked: true })
+			.mockResolvedValueOnce({ bookmarked: false })
+		render(PostCard, { post: make_post({ id: 'p9' }) })
+
+		const save = page.getByTestId('bookmark-button')
+		await expect.element(save).toHaveAttribute('aria-pressed', 'false')
+		await save.click()
+		await expect.element(save).toHaveAttribute('aria-pressed', 'true')
+		expect(api).toHaveBeenLastCalledWith('/api/posts/p9/bookmark', { method: 'PUT' })
+
+		await save.click()
+		await expect.element(save).toHaveAttribute('aria-pressed', 'false')
+		expect(api).toHaveBeenLastCalledWith('/api/posts/p9/bookmark', { method: 'DELETE' })
+	})
+
+	it('rolls the favorite back and shows an error when saving fails', async () => {
+		vi.mocked(api).mockRejectedValueOnce(new Error('Post not found'))
+		render(PostCard, { post: make_post() })
+
+		const save = page.getByTestId('bookmark-button')
+		await save.click()
+		await expect.element(page.getByText('Post not found')).toBeVisible()
+		await expect.element(save).toHaveAttribute('aria-pressed', 'false')
+	})
+
+	it('opens the native share sheet with the post link when available', async () => {
+		const share = vi.fn(async () => {})
+		const restore = with_share(share)
+		try {
+			render(PostCard, { post: make_post({ id: 'p42' }) })
+			await page.getByRole('button', { name: 'Share post' }).click()
+			expect(share).toHaveBeenCalledWith(
+				expect.objectContaining({ url: expect.stringContaining('/posts/p42') }),
+			)
+		} finally {
+			restore()
+		}
+	})
+
+	it('falls back to copying the link when there is no share sheet', async () => {
+		const restore = with_share(undefined)
+		const write_text = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined)
+		try {
+			render(PostCard, { post: make_post({ id: 'p42' }) })
+			await page.getByRole('button', { name: 'Share post' }).click()
+			expect(write_text).toHaveBeenCalledWith(expect.stringContaining('/posts/p42'))
+			await expect.element(page.getByText('Link copied')).toBeVisible()
+		} finally {
+			restore()
+		}
 	})
 })

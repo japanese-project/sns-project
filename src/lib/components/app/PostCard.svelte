@@ -95,6 +95,8 @@
 	let like_count = $derived(like_override?.like_count ?? active_post.like_count)
 	let comment_count = $derived(comment_override ?? active_post.comment_count)
 	let like_pending = $state(false)
+	let bookmarked = $derived(active_post.bookmarked_by_me)
+	let bookmark_pending = $state(false)
 	let comments_override = $state<boolean | null>(null)
 	let show_comments = $derived(comments_override ?? initial_open_comments)
 	let error_message = $state<string | null>(null)
@@ -216,6 +218,34 @@
 		}
 	})
 
+	function permalink() {
+		return `${window.location.origin}${resolve('/posts/[id]', { id: post.id })}`
+	}
+
+	let share_status = $state<'idle' | 'copied' | 'failed'>('idle')
+
+	// Native share sheet where the browser has one (mostly mobile); otherwise copy the link.
+	async function share_post() {
+		const url = permalink()
+		if (typeof navigator.share === 'function') {
+			try {
+				await navigator.share({ title: `Post by ${post.author.name}`, url })
+				return
+			} catch (e) {
+				// The user closing the share sheet is not an error worth reporting.
+				if (e instanceof DOMException && e.name === 'AbortError') return
+			}
+		}
+		try {
+			if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable')
+			await navigator.clipboard.writeText(url)
+			share_status = 'copied'
+		} catch {
+			share_status = 'failed'
+		}
+		setTimeout(() => (share_status = 'idle'), 2000)
+	}
+
 	async function handle_copy_link(event: MouseEvent) {
 		event.stopPropagation()
 		if (!navigator?.clipboard?.writeText) {
@@ -225,9 +255,8 @@
 			}, 2000)
 			return
 		}
-		const post_url = `${window.location.origin}${resolve('/posts/[id]', { id: post.id })}`
 		try {
-			await navigator.clipboard.writeText(post_url)
+			await navigator.clipboard.writeText(permalink())
 			copy_status = 'copied'
 			setTimeout(() => {
 				copy_status = 'idle'
@@ -263,6 +292,25 @@
 			error_message = e instanceof Error ? e.message : 'Could not update like'
 		} finally {
 			like_pending = false
+		}
+	}
+
+	async function toggle_bookmark() {
+		if (bookmark_pending) return
+		const previous = bookmarked
+		bookmark_pending = true
+		error_message = null
+		bookmarked = !bookmarked
+		try {
+			const result = await api<{ bookmarked: boolean }>(`/api/posts/${post.id}/bookmark`, {
+				method: bookmarked ? 'PUT' : 'DELETE',
+			})
+			bookmarked = result.bookmarked
+		} catch (e) {
+			bookmarked = previous
+			error_message = e instanceof Error ? e.message : 'Could not update favorites'
+		} finally {
+			bookmark_pending = false
 		}
 	}
 
@@ -322,6 +370,92 @@
 		}
 	}
 </script>
+
+{#snippet more_menu()}
+	<div class="relative" bind:this={menu_container_el}>
+		<button
+			type="button"
+			aria-label="More options"
+			aria-haspopup="menu"
+			aria-expanded={menu_open}
+			aria-controls={menu_open ? `menu-${post.id}` : undefined}
+			bind:this={menu_button_el}
+			class="flex size-9 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+			onkeydown={handle_button_keydown}
+			onclick={(e) => {
+				e.stopPropagation()
+				if (menu_open) close_menu(false)
+				else open_menu('first')
+			}}
+		>
+			<i class="ph-bold ph-dots-three text-xl"></i>
+		</button>
+		{#if menu_open}
+			<div
+				bind:this={menu_el}
+				id="menu-{post.id}"
+				role="menu"
+				tabindex="-1"
+				aria-label="Post actions"
+				onkeydown={handle_menu_keydown}
+				class="glass-surface absolute top-full right-0 z-50 mt-2 min-w-[155px] overflow-hidden rounded-2xl border border-white/80 py-1.5 shadow-xl shadow-black/10 focus:outline-none"
+			>
+				<button
+					type="button"
+					role="menuitem"
+					tabindex="-1"
+					onclick={handle_copy_link}
+					class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50 focus:bg-white/50"
+				>
+					{#if copy_status === 'copied'}
+						<i class="ph-fill ph-check-circle text-base text-emerald-600"></i>
+						<span class="text-emerald-600">Copied!</span>
+					{:else if copy_status === 'failed'}
+						<i class="ph-fill ph-x-circle text-base text-rose-600"></i>
+						<span class="text-rose-600">Failed to copy</span>
+					{:else}
+						<i class="ph ph-copy text-base text-slate-400"></i>
+						<span>Copy link</span>
+					{/if}
+				</button>
+
+				{#if post.is_owner}
+					<button
+						type="button"
+						role="menuitem"
+						tabindex="-1"
+						onclick={(e) => {
+							e.stopPropagation()
+							close_menu(false)
+							draft = active_post.content
+							draft_visibility = active_post.visibility
+							editing = true
+						}}
+						class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50 focus:bg-white/50"
+					>
+						<i class="ph ph-pencil-simple text-base text-slate-400"></i>
+						<span>Edit post</span>
+					</button>
+
+					<button
+						type="button"
+						role="menuitem"
+						tabindex="-1"
+						onclick={(e) => {
+							e.stopPropagation()
+							close_menu(false)
+							confirming_delete = true
+						}}
+						class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-rose-600 transition hover:bg-rose-50 focus:bg-rose-50"
+					>
+						<i class="ph ph-trash text-base text-rose-500"></i>
+						<span>Delete post</span>
+					</button>
+				{/if}
+			</div>
+		{/if}
+	</div>
+{/snippet}
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <article
@@ -402,31 +536,34 @@
 	{:else}
 		<div class="flex flex-col">
 			<!-- Header -->
-			<button
-				class="group/author flex items-center gap-3 text-left transition-opacity hover:opacity-80"
-				onclick={(e) => {
-					e.stopPropagation()
-					goto(
-						resolve('/u/[handle]', {
-							handle: post.author.handle || post.author.username || post.author.id || 'user',
-						}),
-					)
-				}}
-			>
-				<div
-					class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-100 bg-slate-50"
+			<div class="flex items-start justify-between gap-3">
+				<button
+					class="group/author flex items-center gap-3 text-left transition-opacity hover:opacity-80"
+					onclick={(e) => {
+						e.stopPropagation()
+						goto(
+							resolve('/u/[handle]', {
+								handle: post.author.handle || post.author.username || post.author.id || 'user',
+							}),
+						)
+					}}
 				>
-					<Avatar user={post.author} size={44} />
-				</div>
-				<div class="flex flex-col leading-tight">
-					<span class="text-[15px] font-bold text-slate-900">{post.author.name}</span>
-					<span class="mt-0.5 text-[13px] text-slate-500">
-						@{post.author.username || post.author.handle || post.author.id} • {relative_time(
-							active_post.created_at,
-						)}
-					</span>
-				</div>
-			</button>
+					<div
+						class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-100 bg-slate-50"
+					>
+						<Avatar user={post.author} size={44} />
+					</div>
+					<div class="flex flex-col leading-tight">
+						<span class="text-[15px] font-bold text-slate-900">{post.author.name}</span>
+						<span class="mt-0.5 text-[13px] text-slate-500">
+							@{post.author.username || post.author.handle || post.author.id} • {relative_time(
+								active_post.created_at,
+							)}
+						</span>
+					</div>
+				</button>
+				{@render more_menu()}
+			</div>
 
 			<!-- Text Content -->
 			{#if display_segments.length > 0}
@@ -549,89 +686,48 @@
 					></i>
 					<span class="text-sm font-medium text-slate-600">{comment_count}</span>
 				</button>
-				<div class="relative flex items-center" bind:this={menu_container_el}>
-					<button
-						type="button"
-						aria-label="More options"
-						aria-haspopup="menu"
-						aria-expanded={menu_open}
-						aria-controls={menu_open ? `menu-${post.id}` : undefined}
-						bind:this={menu_button_el}
-						class="flex items-center transition-colors hover:text-black"
-						onkeydown={handle_button_keydown}
-						onclick={(e) => {
-							e.stopPropagation()
-							if (menu_open) close_menu(false)
-							else open_menu('first')
-						}}
-					>
-						<i class="ph ph-export text-xl text-slate-400 transition-colors hover:text-black"></i>
-					</button>
-					{#if menu_open}
-						<div
-							bind:this={menu_el}
-							id="menu-{post.id}"
-							role="menu"
-							tabindex="-1"
-							aria-label="Post actions"
-							onkeydown={handle_menu_keydown}
-							class="glass-surface absolute right-0 bottom-full z-50 mb-2 min-w-[155px] overflow-hidden rounded-2xl border border-white/80 py-1.5 shadow-xl shadow-black/10 focus:outline-none"
+				<button
+					type="button"
+					class="group/btn flex items-center transition-colors hover:text-amber-500"
+					aria-label={bookmarked ? 'Remove from favorites' : 'Add to favorites'}
+					aria-pressed={bookmarked}
+					data-testid="bookmark-button"
+					onclick={(e) => {
+						e.stopPropagation()
+						toggle_bookmark()
+					}}
+				>
+					<i
+						class="text-xl transition-colors {bookmarked
+							? 'ph-fill ph-bookmark-simple text-amber-500'
+							: 'ph ph-bookmark-simple text-slate-400 group-hover/btn:text-amber-500'}"
+					></i>
+				</button>
+				<button
+					type="button"
+					class="group/btn relative flex items-center transition-colors hover:text-black"
+					aria-label="Share post"
+					data-testid="share-button"
+					onclick={(e) => {
+						e.stopPropagation()
+						share_post()
+					}}
+				>
+					<i
+						class="ph ph-share-network text-xl text-slate-400 transition-colors group-hover/btn:text-black"
+					></i>
+					{#if share_status !== 'idle'}
+						<span
+							role="status"
+							class="absolute bottom-full left-1/2 mb-3 -translate-x-1/2 rounded-full px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap text-white shadow-md {share_status ===
+							'copied'
+								? 'bg-slate-900'
+								: 'bg-rose-600'}"
 						>
-							<button
-								type="button"
-								role="menuitem"
-								tabindex="-1"
-								onclick={handle_copy_link}
-								class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50 focus:bg-white/50"
-							>
-								{#if copy_status === 'copied'}
-									<i class="ph-fill ph-check-circle text-base text-emerald-600"></i>
-									<span class="text-emerald-600">Copied!</span>
-								{:else if copy_status === 'failed'}
-									<i class="ph-fill ph-x-circle text-base text-rose-600"></i>
-									<span class="text-rose-600">Failed to copy</span>
-								{:else}
-									<i class="ph ph-copy text-base text-slate-400"></i>
-									<span>Copy link</span>
-								{/if}
-							</button>
-
-							{#if post.is_owner}
-								<button
-									type="button"
-									role="menuitem"
-									tabindex="-1"
-									onclick={(e) => {
-										e.stopPropagation()
-										close_menu(false)
-										draft = active_post.content
-										draft_visibility = active_post.visibility
-										editing = true
-									}}
-									class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50 focus:bg-white/50"
-								>
-									<i class="ph ph-pencil-simple text-base text-slate-400"></i>
-									<span>Edit post</span>
-								</button>
-
-								<button
-									type="button"
-									role="menuitem"
-									tabindex="-1"
-									onclick={(e) => {
-										e.stopPropagation()
-										close_menu(false)
-										confirming_delete = true
-									}}
-									class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-rose-600 transition hover:bg-rose-50 focus:bg-rose-50"
-								>
-									<i class="ph ph-trash text-base text-rose-500"></i>
-									<span>Delete post</span>
-								</button>
-							{/if}
-						</div>
+							{share_status === 'copied' ? 'Link copied' : 'Could not share'}
+						</span>
 					{/if}
-				</div>
+				</button>
 			</div>
 		</div>
 	{/if}

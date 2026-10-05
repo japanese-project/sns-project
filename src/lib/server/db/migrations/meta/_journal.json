@@ -36,6 +36,13 @@
       "when": 1790996284787,
       "tag": "0004_small_the_santerians",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1791171222783,
+      "tag": "0005_add_bookmark",
+      "breakpoints": true
     }
   ]
 }

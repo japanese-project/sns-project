@@ -1,7 +1,7 @@
 import { and, desc, eq, gte, lt, ne, or, sql, type SQL } from 'drizzle-orm'
 import { error } from '@sveltejs/kit'
 import type { Db } from '../db'
-import { comment, follow, like, post, user } from '../db/schema'
+import { bookmark, comment, follow, like, post, user } from '../db/schema'
 import { MAX_POST_LENGTH, MAX_TRENDING_LIMIT, TRENDING_SCAN_LIMIT } from '$lib/limits'
 import type { Page, PostView, TrendingPeriod } from '$lib/types'
 import { clamp_limit, decode_cursor, encode_cursor, like_pattern, new_id } from './cursor'
@@ -41,6 +41,7 @@ const post_columns = (viewer_id: string) => ({
 	like_count: sql<number>`(select count(*) from ${like} where ${like.postId} = ${post.id})`,
 	comment_count: sql<number>`(select count(*) from ${comment} where ${comment.postId} = ${post.id})`,
 	liked_by_me: sql<number>`exists(select 1 from ${like} where ${like.postId} = ${post.id} and ${like.userId} = ${viewer_id})`,
+	bookmarked_by_me: sql<number>`exists(select 1 from ${bookmark} where ${bookmark.postId} = ${post.id} and ${bookmark.userId} = ${viewer_id})`,
 })
 
 type PostRow = Awaited<ReturnType<typeof select_posts>>[number]
@@ -72,6 +73,7 @@ function to_post_view(row: PostRow, viewer_id: string): PostView {
 		like_count: Number(row.like_count),
 		comment_count: Number(row.comment_count),
 		liked_by_me: Boolean(row.liked_by_me),
+		bookmarked_by_me: Boolean(row.bookmarked_by_me),
 		is_owner: viewer_id === row.user_id,
 	}
 }
@@ -227,6 +229,59 @@ export function list_posts_by_user(
 ) {
 	return paginate(db, viewer_id, [eq(post.userId, author_id)], opts)
 }
+
+/**
+ * The viewer's own liked or bookmarked posts, newest like/bookmark first (not newest post
+ * first), so the cursor is keyed on the like/bookmark time. Posts the viewer can no longer
+ * read (e.g. they unfollowed a followers-only author) are left out.
+ */
+async function list_collected(
+	db: Db,
+	viewer_id: string,
+	collection: typeof like | typeof bookmark,
+	opts: { cursor?: string | null; limit?: number },
+): Promise<Page<PostView>> {
+	const limit = clamp_limit(opts.limit)
+	const cursor = decode_cursor(opts.cursor)
+	const rows = await db
+		.select({ ...post_columns(viewer_id), collected_at: collection.createdAt })
+		.from(collection)
+		.innerJoin(post, eq(post.id, collection.postId))
+		.innerJoin(user, eq(user.id, post.userId))
+		.where(
+			and(
+				eq(collection.userId, viewer_id),
+				visible_to(viewer_id),
+				cursor
+					? or(
+							lt(collection.createdAt, cursor.date),
+							and(eq(collection.createdAt, cursor.date), lt(post.id, cursor.id)),
+						)
+					: undefined,
+			),
+		)
+		.orderBy(desc(collection.createdAt), desc(post.id))
+		.limit(limit + 1)
+	const has_more = rows.length > limit
+	const page = has_more ? rows.slice(0, limit) : rows
+	const last = page.at(-1)
+	return {
+		items: page.map((row) => to_post_view(row, viewer_id)),
+		next_cursor: has_more && last ? encode_cursor(last.collected_at, last.id) : null,
+	}
+}
+
+export const list_liked_posts = (
+	db: Db,
+	viewer_id: string,
+	opts: { cursor?: string | null; limit?: number } = {},
+) => list_collected(db, viewer_id, like, opts)
+
+export const list_bookmarked_posts = (
+	db: Db,
+	viewer_id: string,
+	opts: { cursor?: string | null; limit?: number } = {},
+) => list_collected(db, viewer_id, bookmark, opts)
 
 /**
  * Design note: search is a case-insensitive `LIKE '%query%'` over post content, ANDed with the

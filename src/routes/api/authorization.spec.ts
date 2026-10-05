@@ -41,6 +41,7 @@ import * as media_api from './media/+server'
 import * as media_key_api from './media/[key]/+server'
 import * as media_stats_api from './media/stats/+server'
 import * as media_cleanup_api from './media/cleanup/+server'
+import * as post_bookmark_api from './posts/[id]/bookmark/+server'
 import * as post_like_api from './posts/[id]/like/+server'
 import * as post_api from './posts/[id]/+server'
 import * as posts_api from './posts/+server'
@@ -53,6 +54,8 @@ import * as followers_api from './users/[handle]/followers/+server'
 import * as following_api from './users/[handle]/following/+server'
 import * as user_posts_api from './users/[handle]/posts/+server'
 import * as me_api from './users/me/+server'
+import * as my_bookmarks_api from './users/me/bookmarks/+server'
+import * as my_likes_api from './users/me/likes/+server'
 import * as onboard_api from './users/onboard/+server'
 
 type Handler = (event: never) => unknown
@@ -151,6 +154,8 @@ describe('requests without a session', () => {
 			['GET /api/users/:handle/posts', user_posts_api.GET, { params: { handle: 'alice' } }],
 			['GET /api/users/:handle/followers', followers_api.GET, { params: { handle: 'alice' } }],
 			['GET /api/users/:handle/following', following_api.GET, { params: { handle: 'alice' } }],
+			['GET /api/users/me/likes', my_likes_api.GET, {}],
+			['GET /api/users/me/bookmarks', my_bookmarks_api.GET, {}],
 			['GET /api/notifications', notifications_api.GET, {}],
 			['GET /api/notifications/unread-count', unread_count_api.GET, {}],
 			['GET /api/media/:key', media_key_api.GET, { params: { key: 'test.jpg' } }],
@@ -174,6 +179,16 @@ describe('requests without a session', () => {
 			[
 				'DELETE /api/posts/:id/like',
 				post_like_api.DELETE,
+				{ method: 'DELETE', params: { id: p.id } },
+			],
+			[
+				'PUT /api/posts/:id/bookmark',
+				post_bookmark_api.PUT,
+				{ method: 'PUT', params: { id: p.id } },
+			],
+			[
+				'DELETE /api/posts/:id/bookmark',
+				post_bookmark_api.DELETE,
 				{ method: 'DELETE', params: { id: p.id } },
 			],
 			[
@@ -513,6 +528,39 @@ describe('follow and unfollow', () => {
 
 		await del(bob, 'alice')
 		expect((await read_as_bob()).status).toBe(404)
+	})
+})
+
+// ---------------------------------------------------------------------------
+// Liked and favorite (bookmarked) collections are private to their owner
+// ---------------------------------------------------------------------------
+describe('liked and favorite lists', () => {
+	it("only ever return the signed-in user's own collection", async () => {
+		const p = await create_post(db, alice, { content: 'save me' })
+		await call(post_like_api.PUT, { as: bob, method: 'PUT', params: { id: p.id } })
+		const saved = await call(post_bookmark_api.PUT, {
+			as: bob,
+			method: 'PUT',
+			params: { id: p.id },
+		})
+		expect(saved).toEqual({ status: 200, body: { bookmarked: true } })
+
+		for (const api of [my_likes_api, my_bookmarks_api]) {
+			expect(ids((await call(api.GET, { as: bob })).body.items)).toEqual([p.id])
+			for (const other of [alice, carol]) {
+				expect((await call(api.GET, { as: other })).body.items).toEqual([])
+			}
+		}
+	})
+
+	it('returns 404 when saving a post the user cannot see', async () => {
+		const priv = await create_post(db, alice, { content: 'secret', visibility: 'followers-only' })
+		const res = await call(post_bookmark_api.PUT, {
+			as: bob,
+			method: 'PUT',
+			params: { id: priv.id },
+		})
+		expect(res.status).toBe(404)
 	})
 })
 

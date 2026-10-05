@@ -1,4 +1,4 @@
-// Application (SNS) tables: post, comment, like, follow.
+// Application (SNS) tables: post, comment, like, bookmark, follow.
 // See docs/database.md for the ERD and constraints this schema implements.
 import {
 	sqliteTable,
@@ -94,6 +94,27 @@ export const like = sqliteTable(
 	(table) => [
 		primaryKey({ columns: [table.userId, table.postId] }),
 		index('like_post_id_idx').on(table.postId),
+	],
+)
+
+// A user's private "favorites" collection. Same shape as `like`, but never counted or shown
+// to anyone except the owner, and never produces a notification.
+export const bookmark = sqliteTable(
+	'bookmark',
+	{
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		postId: text('post_id')
+			.notNull()
+			.references(() => post.id, { onDelete: 'cascade' }),
+		createdAt: integer('created_at', { mode: 'timestamp' })
+			.notNull()
+			.default(sql`(unixepoch())`),
+	},
+	(table) => [
+		primaryKey({ columns: [table.userId, table.postId] }),
+		index('bookmark_post_id_idx').on(table.postId),
 	],
 )
 
