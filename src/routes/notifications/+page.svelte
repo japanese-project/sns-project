@@ -2,6 +2,7 @@
 	import BellIcon from '@lucide/svelte/icons/bell'
 	import HeartIcon from '@lucide/svelte/icons/heart'
 	import MessageCircleIcon from '@lucide/svelte/icons/message-circle'
+	import Repeat2Icon from '@lucide/svelte/icons/repeat-2'
 	import UserPlusIcon from '@lucide/svelte/icons/user'
 	import { onMount } from 'svelte'
 	import { resolve } from '$app/paths'
@@ -85,9 +86,11 @@
 	function message(note: NotificationView) {
 		return note.type === 'like'
 			? 'liked your post.'
-			: note.type === 'comment'
-				? 'commented on your post.'
-				: 'started following you.'
+			: note.type === 'repost'
+				? 'reposted your post.'
+				: note.type === 'comment'
+					? 'commented on your post.'
+					: 'started following you.'
 	}
 </script>
 
@@ -137,7 +140,7 @@
 			<div class="px-4 py-12 text-center">
 				<BellIcon class="mx-auto mb-3 size-8 text-slate-300" />
 				<p class="text-sm text-slate-500">
-					You're all caught up. Likes, comments, and new followers will show up here.
+					You're all caught up. Likes, reposts, comments, and new followers will show up here.
 				</p>
 			</div>
 		{:else}
@@ -163,12 +166,16 @@
 									class="absolute -right-1 -bottom-1 flex size-5 items-center justify-center rounded-full ring-2 ring-white {note.type ===
 									'like'
 										? 'bg-rose-500 text-white'
-										: note.type === 'comment'
-											? 'bg-emerald-500 text-white'
-											: 'bg-indigo-600 text-white'}"
+										: note.type === 'repost'
+											? 'bg-teal-500 text-white'
+											: note.type === 'comment'
+												? 'bg-emerald-500 text-white'
+												: 'bg-indigo-600 text-white'}"
 								>
 									{#if note.type === 'like'}<HeartIcon
 											class="size-3 fill-current"
+										/>{:else if note.type === 'repost'}<Repeat2Icon
+											class="size-3"
 										/>{:else if note.type === 'comment'}<MessageCircleIcon
 											class="size-3"
 										/>{:else}<UserPlusIcon class="size-3" />{/if}

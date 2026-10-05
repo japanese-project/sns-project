@@ -43,6 +43,7 @@ import * as media_stats_api from './media/stats/+server'
 import * as media_cleanup_api from './media/cleanup/+server'
 import * as post_bookmark_api from './posts/[id]/bookmark/+server'
 import * as post_like_api from './posts/[id]/like/+server'
+import * as post_repost_api from './posts/[id]/repost/+server'
 import * as post_api from './posts/[id]/+server'
 import * as posts_api from './posts/+server'
 import * as search_api from './search/+server'
@@ -179,6 +180,12 @@ describe('requests without a session', () => {
 			[
 				'DELETE /api/posts/:id/like',
 				post_like_api.DELETE,
+				{ method: 'DELETE', params: { id: p.id } },
+			],
+			['PUT /api/posts/:id/repost', post_repost_api.PUT, { method: 'PUT', params: { id: p.id } }],
+			[
+				'DELETE /api/posts/:id/repost',
+				post_repost_api.DELETE,
 				{ method: 'DELETE', params: { id: p.id } },
 			],
 			[

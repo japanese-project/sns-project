@@ -56,6 +56,9 @@ const routes: [string, string, RateCategory | null][] = [
 	['/api/posts/abc/like', 'DELETE', 'likes'],
 	['/api/posts/abc/bookmark', 'PUT', 'likes'],
 	['/api/posts/abc/bookmark', 'DELETE', 'likes'],
+	// A repost creates a post row, so it counts against the post-writing budget.
+	['/api/posts/abc/repost', 'PUT', 'posts_write'],
+	['/api/posts/abc/repost', 'DELETE', 'posts_write'],
 	['/api/users/bob/follow', 'DELETE', 'follows'],
 	['/api/media/photo.jpg', 'GET', 'read'],
 	['/api/users/bob/followers', 'GET', 'read'],

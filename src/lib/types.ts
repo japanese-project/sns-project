@@ -30,6 +30,10 @@ export interface PostView {
 	comment_count: number
 	liked_by_me: boolean
 	bookmarked_by_me: boolean
+	repost_count: number
+	reposted_by_me: boolean
+	/** Set when this item is a repost: the post that was reposted (this item's author reposted it). */
+	repost_of: PostView | null
 	is_owner: boolean
 }
 
@@ -47,7 +51,7 @@ export interface CommentView {
 
 export interface NotificationView {
 	id: string
-	type: 'like' | 'comment' | 'follow'
+	type: 'like' | 'comment' | 'follow' | 'repost'
 	read: boolean
 	created_at: string
 	actor: UserSummary

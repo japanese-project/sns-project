@@ -40,6 +40,9 @@ function make_post(overrides: Partial<PostView> = {}): PostView {
 		comment_count: 0,
 		liked_by_me: false,
 		bookmarked_by_me: false,
+		repost_count: 0,
+		reposted_by_me: false,
+		repost_of: null,
 		is_owner: false,
 		...overrides,
 	}
@@ -405,19 +408,10 @@ describe('PostCard action menu', () => {
 	})
 })
 
-describe('PostCard favorites and share', () => {
+describe('PostCard favorites and reposts', () => {
 	beforeEach(() => {
 		vi.mocked(api).mockReset()
 	})
-
-	function with_share(value: unknown) {
-		const original = Object.getOwnPropertyDescriptor(navigator, 'share')
-		Object.defineProperty(navigator, 'share', { value, configurable: true })
-		return () => {
-			if (original) Object.defineProperty(navigator, 'share', original)
-			else delete (navigator as { share?: unknown }).share
-		}
-	}
 
 	it('adds and removes a post from favorites', async () => {
 		vi.mocked(api)
@@ -446,30 +440,66 @@ describe('PostCard favorites and share', () => {
 		await expect.element(save).toHaveAttribute('aria-pressed', 'false')
 	})
 
-	it('opens the native share sheet with the post link when available', async () => {
-		const share = vi.fn(async () => {})
-		const restore = with_share(share)
-		try {
-			render(PostCard, { post: make_post({ id: 'p42' }) })
-			await page.getByRole('button', { name: 'Share post' }).click()
-			expect(share).toHaveBeenCalledWith(
-				expect.objectContaining({ url: expect.stringContaining('/posts/p42') }),
-			)
-		} finally {
-			restore()
-		}
+	it('reposts and undoes a repost, updating the count', async () => {
+		vi.mocked(api)
+			.mockResolvedValueOnce({ reposted: true, repost_count: 3 })
+			.mockResolvedValueOnce({ reposted: false, repost_count: 2 })
+		render(PostCard, { post: make_post({ id: 'p7', repost_count: 2 }) })
+
+		const repost = page.getByTestId('repost-button')
+		await repost.click()
+		await expect.element(repost).toHaveAttribute('aria-pressed', 'true')
+		await expect.element(page.getByTestId('repost-count')).toHaveTextContent('3')
+		expect(api).toHaveBeenLastCalledWith('/api/posts/p7/repost', { method: 'PUT' })
+
+		await repost.click()
+		await expect.element(repost).toHaveAttribute('aria-pressed', 'false')
+		await expect.element(page.getByTestId('repost-count')).toHaveTextContent('2')
+		expect(api).toHaveBeenLastCalledWith('/api/posts/p7/repost', { method: 'DELETE' })
 	})
 
-	it('falls back to copying the link when there is no share sheet', async () => {
-		const restore = with_share(undefined)
-		const write_text = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined)
-		try {
-			render(PostCard, { post: make_post({ id: 'p42' }) })
-			await page.getByRole('button', { name: 'Share post' }).click()
-			expect(write_text).toHaveBeenCalledWith(expect.stringContaining('/posts/p42'))
-			await expect.element(page.getByText('Link copied')).toBeVisible()
-		} finally {
-			restore()
-		}
+	it('rolls the repost back and shows an error when it fails', async () => {
+		vi.mocked(api).mockRejectedValueOnce(new Error('Only public posts can be reposted'))
+		render(PostCard, { post: make_post({ repost_count: 1 }) })
+
+		await page.getByTestId('repost-button').click()
+		await expect.element(page.getByText('Only public posts can be reposted')).toBeVisible()
+		await expect.element(page.getByTestId('repost-button')).toHaveAttribute('aria-pressed', 'false')
+		await expect.element(page.getByTestId('repost-count')).toHaveTextContent('1')
+	})
+
+	it('disables reposting a followers-only post', async () => {
+		render(PostCard, { post: make_post({ visibility: 'followers-only' }) })
+		await expect.element(page.getByTestId('repost-button')).toBeDisabled()
+	})
+
+	it('shows who reposted above the original post', async () => {
+		const original = make_post({ id: 'orig', content: 'The original words' })
+		const repost = make_post({
+			id: 'r1',
+			content: '',
+			author: { id: 'u2', name: 'Bob', username: 'bob', handle: 'bob', image: null },
+			repost_of: original,
+		})
+		render(PostCard, { post: repost })
+
+		await expect.element(page.getByText('Bob reposted')).toBeVisible()
+		await expect.element(page.getByText('The original words')).toBeVisible()
+		await expect
+			.element(page.getByRole('link', { name: 'Bob reposted' }))
+			.toHaveAttribute('href', '/u/bob')
+	})
+
+	it('acts on the original post and drops your own repost item when you undo it', async () => {
+		vi.mocked(api).mockResolvedValueOnce({ reposted: false, repost_count: 0 })
+		const on_deleted = vi.fn()
+		const original = make_post({ id: 'orig', reposted_by_me: true, repost_count: 1 })
+		const repost = make_post({ id: 'r1', content: '', is_owner: true, repost_of: original })
+		render(PostCard, { post: repost, on_deleted })
+
+		await expect.element(page.getByText('You reposted')).toBeVisible()
+		await page.getByTestId('repost-button').click()
+		expect(api).toHaveBeenLastCalledWith('/api/posts/orig/repost', { method: 'DELETE' })
+		await vi.waitFor(() => expect(on_deleted).toHaveBeenCalledWith('r1'))
 	})
 })

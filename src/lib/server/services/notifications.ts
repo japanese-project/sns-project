@@ -7,7 +7,7 @@ import { clamp_limit, decode_cursor, encode_cursor, new_id } from './cursor'
 import { to_user_summary } from './users'
 
 export interface NewNotification {
-	type: 'like' | 'comment' | 'follow'
+	type: 'like' | 'comment' | 'follow' | 'repost'
 	recipient_id: string
 	actor_id: string
 	post_id?: string
@@ -18,6 +18,7 @@ export interface NewNotification {
  * De-duplication policy (also documented in docs/database.md):
  *  - like:    one notification per (actor, post). Unliking removes it, so like -> unlike -> like
  *             yields exactly one entry again.
+ *  - repost:  one notification per (actor, post). Undoing the repost removes it.
  *  - follow:  one notification per (actor, recipient). Unfollowing removes it.
  *  - comment: one notification per comment (never de-duplicated).
  * Nobody is notified about their own actions.
@@ -25,8 +26,8 @@ export interface NewNotification {
 export async function create_notification(db: Db, input: NewNotification) {
 	if (input.recipient_id === input.actor_id) return
 	const dedupe_key =
-		input.type === 'like'
-			? `like:${input.actor_id}:${input.post_id}`
+		input.type === 'like' || input.type === 'repost'
+			? `${input.type}:${input.actor_id}:${input.post_id}`
 			: input.type === 'follow'
 				? `follow:${input.actor_id}:${input.recipient_id}`
 				: null

@@ -2,6 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import type { Db } from '../db'
 import { bookmark, comment, follow, like, notification, post, user } from '../db/schema'
 import { bookmark_post, unbookmark_post } from './bookmarks'
+import { repost_post, unrepost_post } from './reposts'
 import { create_comment, delete_comment, list_comments, update_comment } from './comments'
 import { follow_user, list_followers, list_following, unfollow_user } from './follows'
 import { like_post, unlike_post } from './likes'
@@ -13,6 +14,7 @@ import {
 	list_feed,
 	list_liked_posts,
 	list_posts_by_user,
+	update_post,
 } from './posts'
 import { parse_query, search_all, search_users } from './search'
 import { create_test_db, make_follow, make_user } from './test-db'
@@ -153,6 +155,72 @@ describe('bookmarks', () => {
 		await bookmark_post(db, bob, p.id)
 		await delete_post(db, alice, p.id)
 		expect(await db.select().from(bookmark)).toHaveLength(0)
+	})
+})
+
+describe('reposts', () => {
+	it("show on the reposter's profile and followers' following feed, not the global feed", async () => {
+		const p = await create_post(db, alice, { content: 'worth sharing' })
+		expect(await repost_post(db, bob, p.id)).toEqual({ reposted: true, repost_count: 1 })
+		expect(await repost_post(db, bob, p.id)).toEqual({ reposted: true, repost_count: 1 })
+
+		const [item] = (await list_posts_by_user(db, carol, bob)).items
+		expect(item.author.id).toBe(bob)
+		expect(item.repost_of?.id).toBe(p.id)
+		expect(item.repost_of?.content).toBe('worth sharing')
+
+		await make_follow(db, carol, bob)
+		const [following] = (await list_feed(db, carol, { feed: 'following' })).items
+		expect([following.author.id, following.repost_of?.id]).toEqual([bob, p.id])
+		expect((await list_feed(db, carol)).items.map((i) => i.id)).toEqual([p.id])
+
+		const [original] = (await list_posts_by_user(db, bob, alice)).items
+		expect([original.repost_count, original.reposted_by_me]).toEqual([1, true])
+	})
+
+	it('notify the author once; undoing removes the repost and its notification', async () => {
+		const p = await create_post(db, alice, { content: 'notify me' })
+		await repost_post(db, bob, p.id)
+		await repost_post(db, bob, p.id)
+		await repost_post(db, alice, p.id) // reposting your own post notifies nobody
+		const notes = (await list_notifications(db, alice)).items
+		expect(notes.map((n) => [n.type, n.actor.id, n.post_id])).toEqual([['repost', bob, p.id]])
+
+		expect(await unrepost_post(db, bob, p.id)).toEqual({ reposted: false, repost_count: 1 })
+		expect((await list_notifications(db, alice)).items).toEqual([])
+		expect((await list_posts_by_user(db, carol, bob)).items).toEqual([])
+	})
+
+	it('of a repost reposts the original', async () => {
+		const p = await create_post(db, alice, { content: 'original' })
+		await repost_post(db, bob, p.id)
+		const [bob_repost] = (await list_posts_by_user(db, carol, bob)).items
+		expect((await repost_post(db, carol, bob_repost.id)).repost_count).toBe(2)
+		const [carol_item] = (await list_posts_by_user(db, carol, carol)).items
+		expect(carol_item.repost_of?.id).toBe(p.id)
+	})
+
+	it('refuse followers-only posts and hide once the original is no longer visible', async () => {
+		const priv = await create_post(db, alice, { content: 'inner', visibility: 'followers-only' })
+		await make_follow(db, bob, alice)
+		expect(await status_of(repost_post(db, bob, priv.id))).toBe(403)
+		expect(await status_of(repost_post(db, carol, priv.id))).toBe(404)
+
+		const pub = await create_post(db, alice, { content: 'public for now' })
+		await repost_post(db, bob, pub.id)
+		expect((await list_posts_by_user(db, carol, bob)).items).toHaveLength(1)
+		await update_post(db, alice, pub.id, { visibility: 'followers-only' })
+		expect((await list_posts_by_user(db, carol, bob)).items).toHaveLength(0)
+		expect((await list_posts_by_user(db, bob, bob)).items).toHaveLength(1)
+	})
+
+	it('cannot be edited, and are deleted along with the original', async () => {
+		const p = await create_post(db, alice, { content: 'temporary' })
+		await repost_post(db, bob, p.id)
+		const [item] = (await list_posts_by_user(db, bob, bob)).items
+		expect(await status_of(update_post(db, bob, item.id, { content: 'hijack' }))).toBe(400)
+		await delete_post(db, alice, p.id)
+		expect(await db.select().from(post)).toHaveLength(0)
 	})
 })
 

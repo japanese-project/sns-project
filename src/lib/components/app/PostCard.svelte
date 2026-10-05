@@ -11,6 +11,7 @@
 	import Avatar from './Avatar.svelte'
 	import Comments from './Comments.svelte'
 	import LinkPreviewCard from './LinkPreviewCard.svelte'
+	import PostCard from './PostCard.svelte'
 	import PencilIcon from '@lucide/svelte/icons/pencil'
 	import GlobeIcon from '@lucide/svelte/icons/globe'
 	import LockIcon from '@lucide/svelte/icons/lock'
@@ -20,11 +21,13 @@
 		initial_open_comments = false,
 		on_deleted,
 		on_updated,
+		on_repost_change,
 	}: {
 		initial_open_comments?: boolean
 		post: PostView
 		on_deleted?: (id: string) => void
 		on_updated?: (post: PostView) => void
+		on_repost_change?: (reposted: boolean) => void
 	} = $props()
 
 	function extract_aspect_ratio_hint(url: string | null | undefined): number | null {
@@ -97,6 +100,11 @@
 	let like_pending = $state(false)
 	let bookmarked = $derived(active_post.bookmarked_by_me)
 	let bookmark_pending = $state(false)
+	let reposted = $derived(active_post.reposted_by_me)
+	let repost_count = $derived(active_post.repost_count)
+	let repost_pending = $state(false)
+	// Followers-only posts can't be reposted (it would widen their audience); undo stays possible.
+	let can_repost = $derived(active_post.visibility === 'public' || reposted)
 	let comments_override = $state<boolean | null>(null)
 	let show_comments = $derived(comments_override ?? initial_open_comments)
 	let error_message = $state<string | null>(null)
@@ -218,34 +226,6 @@
 		}
 	})
 
-	function permalink() {
-		return `${window.location.origin}${resolve('/posts/[id]', { id: post.id })}`
-	}
-
-	let share_status = $state<'idle' | 'copied' | 'failed'>('idle')
-
-	// Native share sheet where the browser has one (mostly mobile); otherwise copy the link.
-	async function share_post() {
-		const url = permalink()
-		if (typeof navigator.share === 'function') {
-			try {
-				await navigator.share({ title: `Post by ${post.author.name}`, url })
-				return
-			} catch (e) {
-				// The user closing the share sheet is not an error worth reporting.
-				if (e instanceof DOMException && e.name === 'AbortError') return
-			}
-		}
-		try {
-			if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable')
-			await navigator.clipboard.writeText(url)
-			share_status = 'copied'
-		} catch {
-			share_status = 'failed'
-		}
-		setTimeout(() => (share_status = 'idle'), 2000)
-	}
-
 	async function handle_copy_link(event: MouseEvent) {
 		event.stopPropagation()
 		if (!navigator?.clipboard?.writeText) {
@@ -256,7 +236,8 @@
 			return
 		}
 		try {
-			await navigator.clipboard.writeText(permalink())
+			const post_url = `${window.location.origin}${resolve('/posts/[id]', { id: post.id })}`
+			await navigator.clipboard.writeText(post_url)
 			copy_status = 'copied'
 			setTimeout(() => {
 				copy_status = 'idle'
@@ -292,6 +273,30 @@
 			error_message = e instanceof Error ? e.message : 'Could not update like'
 		} finally {
 			like_pending = false
+		}
+	}
+
+	async function toggle_repost() {
+		if (repost_pending || !can_repost) return
+		const previous = { reposted, repost_count }
+		repost_pending = true
+		error_message = null
+		reposted = !reposted
+		repost_count += reposted ? 1 : -1
+		try {
+			const result = await api<{ reposted: boolean; repost_count: number }>(
+				`/api/posts/${post.id}/repost`,
+				{ method: reposted ? 'PUT' : 'DELETE' },
+			)
+			reposted = result.reposted
+			repost_count = result.repost_count
+			on_repost_change?.(result.reposted)
+		} catch (e) {
+			reposted = previous.reposted
+			repost_count = previous.repost_count
+			error_message = e instanceof Error ? e.message : 'Could not update repost'
+		} finally {
+			repost_pending = false
 		}
 	}
 
@@ -457,322 +462,342 @@
 	</div>
 {/snippet}
 
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<article
-	class="post-card group relative rounded-3xl border border-slate-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md sm:p-6 {!editing
-		? 'cursor-pointer'
-		: ''}"
-	data-testid="post-card"
-	onclick={handle_card_click}
-	onkeydown={handle_card_keydown}
->
-	{#if editing}
-		<div class="w-full">
-			<form onsubmit={save_edit} class="space-y-3">
-				<div class="flex items-center justify-between text-xs">
-					<span class="flex items-center gap-1.5 font-semibold text-slate-400">
-						<PencilIcon class="size-3.5 text-indigo-500" />
-						Editing
-					</span>
-					<div class="flex items-center gap-1">
-						<button
-							type="button"
-							onclick={() => (draft_visibility = 'public')}
-							class="flex items-center gap-1 rounded-full px-2.5 py-1 transition {draft_visibility ===
-							'public'
-								? 'bg-slate-100 font-semibold text-slate-900'
-								: 'text-slate-400 hover:text-slate-600'}"
-						>
-							<GlobeIcon class="size-3.5" /> Public
-						</button>
-						<button
-							type="button"
-							onclick={() => (draft_visibility = 'followers-only')}
-							class="flex items-center gap-1 rounded-full px-2.5 py-1 transition {draft_visibility ===
-							'followers-only'
-								? 'bg-slate-100 font-semibold text-slate-900'
-								: 'text-slate-400 hover:text-slate-600'}"
-						>
-							<LockIcon class="size-3.5" /> Followers
-						</button>
-					</div>
-				</div>
-
-				<textarea
-					bind:value={draft}
-					rows="3"
-					aria-label="Edit post text"
-					class="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-[15px] leading-relaxed [overflow-wrap:anywhere] break-words text-slate-900 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-				></textarea>
-
-				<div class="flex items-center justify-between text-xs">
-					<span
-						class="tabular-nums {draft.length > MAX_POST_LENGTH
-							? 'font-bold text-rose-600'
-							: 'text-slate-400'}"
-					>
-						{MAX_POST_LENGTH - draft.length} characters left
-					</span>
-					<div class="flex items-center gap-2">
-						<button
-							type="button"
-							onclick={() => (editing = false)}
-							class="px-3 py-1.5 font-medium text-slate-500 transition hover:text-slate-800"
-							>Cancel</button
-						>
-						<button
-							type="submit"
-							disabled={saving ||
-								(draft.trim().length === 0 && !active_post.image_url) ||
-								draft.length > MAX_POST_LENGTH}
-							class="rounded-full bg-slate-900 px-4 py-1.5 font-medium text-white transition hover:bg-slate-800 disabled:opacity-50"
-						>
-							{saving ? 'Saving…' : 'Save changes'}
-						</button>
-					</div>
-				</div>
-			</form>
-		</div>
-	{:else}
-		<div class="flex flex-col">
-			<!-- Header -->
-			<div class="flex items-start justify-between gap-3">
-				<button
-					class="group/author flex items-center gap-3 text-left transition-opacity hover:opacity-80"
-					onclick={(e) => {
-						e.stopPropagation()
-						goto(
-							resolve('/u/[handle]', {
-								handle: post.author.handle || post.author.username || post.author.id || 'user',
-							}),
-						)
-					}}
-				>
-					<div
-						class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-100 bg-slate-50"
-					>
-						<Avatar user={post.author} size={44} />
-					</div>
-					<div class="flex flex-col leading-tight">
-						<span class="text-[15px] font-bold text-slate-900">{post.author.name}</span>
-						<span class="mt-0.5 text-[13px] text-slate-500">
-							@{post.author.username || post.author.handle || post.author.id} • {relative_time(
-								active_post.created_at,
-							)}
+{#if post.repost_of}
+	<!-- A repost: who reposted it, then the original post (all actions apply to the original). -->
+	<div data-testid="repost">
+		<a
+			href={resolve('/u/[handle]', { handle: post.author.handle })}
+			class="mb-2 ml-5 flex w-fit items-center gap-1.5 text-xs font-semibold text-slate-500 transition hover:text-slate-800"
+		>
+			<i class="ph-bold ph-repeat text-sm"></i>
+			{post.is_owner ? 'You reposted' : `${post.author.name} reposted`}
+		</a>
+		<PostCard
+			post={post.repost_of}
+			{initial_open_comments}
+			on_deleted={() => on_deleted?.(post.id)}
+			on_updated={(updated) => on_updated?.({ ...post, repost_of: updated })}
+			on_repost_change={(now_reposted) => {
+				// Undoing your own repost removes this item from the list.
+				if (!now_reposted && post.is_owner) on_deleted?.(post.id)
+			}}
+		/>
+	</div>
+{:else}
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+	<article
+		class="post-card group relative rounded-3xl border border-slate-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md sm:p-6 {!editing
+			? 'cursor-pointer'
+			: ''}"
+		data-testid="post-card"
+		onclick={handle_card_click}
+		onkeydown={handle_card_keydown}
+	>
+		{#if editing}
+			<div class="w-full">
+				<form onsubmit={save_edit} class="space-y-3">
+					<div class="flex items-center justify-between text-xs">
+						<span class="flex items-center gap-1.5 font-semibold text-slate-400">
+							<PencilIcon class="size-3.5 text-indigo-500" />
+							Editing
 						</span>
-					</div>
-				</button>
-				{@render more_menu()}
-			</div>
-
-			<!-- Text Content -->
-			{#if display_segments.length > 0}
-				<p
-					class="mt-4 text-[15px] leading-relaxed [overflow-wrap:anywhere] whitespace-pre-wrap text-slate-800"
-				>
-					{#each display_segments as segment, i (i)}
-						{#if segment.type === 'tag'}
-							<a
-								href="{resolve('/explore')}?q={encodeURIComponent(segment.text)}"
-								class="font-medium text-blue-600 hover:underline"
-								onclick={(e) => e.stopPropagation()}>{segment.text}</a
+						<div class="flex items-center gap-1">
+							<button
+								type="button"
+								onclick={() => (draft_visibility = 'public')}
+								class="flex items-center gap-1 rounded-full px-2.5 py-1 transition {draft_visibility ===
+								'public'
+									? 'bg-slate-100 font-semibold text-slate-900'
+									: 'text-slate-400 hover:text-slate-600'}"
 							>
-						{:else if segment.type === 'link'}
-							<a
-								href={segment.href}
-								target="_blank"
-								rel="noopener noreferrer"
-								class="font-medium [overflow-wrap:anywhere] break-all text-blue-600 hover:underline"
-								onclick={(e) => e.stopPropagation()}>{segment.text}</a
+								<GlobeIcon class="size-3.5" /> Public
+							</button>
+							<button
+								type="button"
+								onclick={() => (draft_visibility = 'followers-only')}
+								class="flex items-center gap-1 rounded-full px-2.5 py-1 transition {draft_visibility ===
+								'followers-only'
+									? 'bg-slate-100 font-semibold text-slate-900'
+									: 'text-slate-400 hover:text-slate-600'}"
 							>
-						{:else}
-							{segment.text}
-						{/if}
-					{/each}
-				</p>
-			{/if}
-
-			<!-- Media -->
-			{#if active_post.image_url}
-				<div
-					data-testid="post-image-container"
-					data-aspect-ratio={effective_aspect_ratio}
-					class="relative mt-4 flex max-h-[320px] w-full items-center justify-center overflow-hidden rounded-2xl border border-slate-100 bg-slate-50 sm:max-h-[400px] md:max-h-[500px]"
-					style={effective_aspect_ratio
-						? `aspect-ratio: ${effective_aspect_ratio};`
-						: 'min-height: 200px;'}
-				>
-					{#if image_load_failed}
-						<div
-							data-testid="broken-image-fallback"
-							class="flex min-h-[200px] w-full flex-col items-center justify-center gap-2 p-6 text-slate-400"
-						>
-							<i class="ph ph-image-broken text-3xl"></i>
-							<span class="text-xs font-medium">Media unavailable</span>
+								<LockIcon class="size-3.5" /> Followers
+							</button>
 						</div>
-					{:else}
-						{#if !image_loaded}
-							<div
-								class="absolute inset-0 z-0 flex animate-pulse items-center justify-center bg-slate-100 text-slate-300"
-							>
-								<i class="ph ph-image text-3xl"></i>
-							</div>
-						{/if}
-						<img
-							src={active_post.image_url}
-							alt=""
-							class="absolute inset-0 z-0 h-full w-full scale-110 object-cover opacity-40 blur-xl transition-opacity duration-700 {!image_loaded
-								? 'opacity-0'
-								: ''}"
-							style="position: absolute; width: 100%; height: 100%; object-fit: cover;"
-							aria-hidden="true"
-						/>
-						<img
-							src={active_post.image_url}
-							alt="Post attachment"
-							class="relative z-10 h-full w-full object-contain transition-transform duration-700 hover:scale-[1.02] {!image_loaded
-								? 'opacity-0'
-								: 'opacity-100'}"
-							style="position: relative; width: 100%; height: 100%; object-fit: contain;"
-							loading="lazy"
-							use:check_image_cached
-							onload={handle_image_load}
-							onerror={() => {
-								image_load_failed = true
-								image_loaded = true
-							}}
-						/>
-					{/if}
-				</div>
-			{/if}
+					</div>
 
-			<!-- Link Preview -->
-			{#if preview_url}
-				<div class="mt-4">
-					<LinkPreviewCard url={preview_url} compact={!!active_post.image_url} />
-				</div>
-			{/if}
+					<textarea
+						bind:value={draft}
+						rows="3"
+						aria-label="Edit post text"
+						class="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-[15px] leading-relaxed [overflow-wrap:anywhere] break-words text-slate-900 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+					></textarea>
 
-			<!-- Integrated Action Capsule (Floating inside card) -->
-			<div
-				class="glass-surface absolute right-8 -bottom-7 z-20 flex items-center gap-6 rounded-full border border-white/50 px-5 py-2.5 opacity-100 shadow-lg transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 md:-translate-y-2 md:opacity-0"
-			>
-				<button
-					class="group/btn flex items-center gap-2 transition-colors hover:text-system-pink"
-					onclick={(e) => {
-						e.stopPropagation()
-						toggle_like()
-					}}
-				>
-					<i
-						class="like-anim text-xl transition-colors {liked
-							? 'ph-fill ph-heart scale-110 text-system-pink'
-							: 'ph ph-heart text-slate-400 group-hover/btn:text-system-pink'}"
-					></i>
-					<span
-						class="like-count text-sm font-medium text-slate-600 tabular-nums"
-						data-testid="like-count">{like_count}</span
-					>
-				</button>
-				<button
-					class="group/btn flex items-center gap-2 transition-colors hover:text-black"
-					onclick={(e) => {
-						e.stopPropagation()
-						comments_override = !show_comments
-					}}
-				>
-					<i
-						class="ph ph-chat-circle text-xl text-slate-400 transition-colors group-hover/btn:text-black"
-					></i>
-					<span class="text-sm font-medium text-slate-600">{comment_count}</span>
-				</button>
-				<button
-					type="button"
-					class="group/btn flex items-center transition-colors hover:text-amber-500"
-					aria-label={bookmarked ? 'Remove from favorites' : 'Add to favorites'}
-					aria-pressed={bookmarked}
-					data-testid="bookmark-button"
-					onclick={(e) => {
-						e.stopPropagation()
-						toggle_bookmark()
-					}}
-				>
-					<i
-						class="text-xl transition-colors {bookmarked
-							? 'ph-fill ph-bookmark-simple text-amber-500'
-							: 'ph ph-bookmark-simple text-slate-400 group-hover/btn:text-amber-500'}"
-					></i>
-				</button>
-				<button
-					type="button"
-					class="group/btn relative flex items-center transition-colors hover:text-black"
-					aria-label="Share post"
-					data-testid="share-button"
-					onclick={(e) => {
-						e.stopPropagation()
-						share_post()
-					}}
-				>
-					<i
-						class="ph ph-share-network text-xl text-slate-400 transition-colors group-hover/btn:text-black"
-					></i>
-					{#if share_status !== 'idle'}
+					<div class="flex items-center justify-between text-xs">
 						<span
-							role="status"
-							class="absolute bottom-full left-1/2 mb-3 -translate-x-1/2 rounded-full px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap text-white shadow-md {share_status ===
-							'copied'
-								? 'bg-slate-900'
-								: 'bg-rose-600'}"
+							class="tabular-nums {draft.length > MAX_POST_LENGTH
+								? 'font-bold text-rose-600'
+								: 'text-slate-400'}"
 						>
-							{share_status === 'copied' ? 'Link copied' : 'Could not share'}
+							{MAX_POST_LENGTH - draft.length} characters left
 						</span>
-					{/if}
-				</button>
+						<div class="flex items-center gap-2">
+							<button
+								type="button"
+								onclick={() => (editing = false)}
+								class="px-3 py-1.5 font-medium text-slate-500 transition hover:text-slate-800"
+								>Cancel</button
+							>
+							<button
+								type="submit"
+								disabled={saving ||
+									(draft.trim().length === 0 && !active_post.image_url) ||
+									draft.length > MAX_POST_LENGTH}
+								class="rounded-full bg-slate-900 px-4 py-1.5 font-medium text-white transition hover:bg-slate-800 disabled:opacity-50"
+							>
+								{saving ? 'Saving…' : 'Save changes'}
+							</button>
+						</div>
+					</div>
+				</form>
 			</div>
-		</div>
-	{/if}
+		{:else}
+			<div class="flex flex-col">
+				<!-- Header -->
+				<div class="flex items-start justify-between gap-3">
+					<button
+						class="group/author flex items-center gap-3 text-left transition-opacity hover:opacity-80"
+						onclick={(e) => {
+							e.stopPropagation()
+							goto(
+								resolve('/u/[handle]', {
+									handle: post.author.handle || post.author.username || post.author.id || 'user',
+								}),
+							)
+						}}
+					>
+						<div
+							class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-100 bg-slate-50"
+						>
+							<Avatar user={post.author} size={44} />
+						</div>
+						<div class="flex flex-col leading-tight">
+							<span class="text-[15px] font-bold text-slate-900">{post.author.name}</span>
+							<span class="mt-0.5 text-[13px] text-slate-500">
+								@{post.author.username || post.author.handle || post.author.id} • {relative_time(
+									active_post.created_at,
+								)}
+							</span>
+						</div>
+					</button>
+					{@render more_menu()}
+				</div>
 
-	{#if confirming_delete}
-		<div
-			class="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-rose-50 p-3 text-sm text-rose-800"
-			role="alertdialog"
-		>
-			<span>Delete this post and its comments?</span>
-			<span class="flex gap-2">
-				<button
-					type="button"
-					onclick={(e) => {
-						e.stopPropagation()
-						confirming_delete = false
-					}}
-					class="rounded-full px-3 py-1 hover:bg-rose-100">Cancel</button
+				<!-- Text Content -->
+				{#if display_segments.length > 0}
+					<p
+						class="mt-4 text-[15px] leading-relaxed [overflow-wrap:anywhere] whitespace-pre-wrap text-slate-800"
+					>
+						{#each display_segments as segment, i (i)}
+							{#if segment.type === 'tag'}
+								<a
+									href="{resolve('/explore')}?q={encodeURIComponent(segment.text)}"
+									class="font-medium text-blue-600 hover:underline"
+									onclick={(e) => e.stopPropagation()}>{segment.text}</a
+								>
+							{:else if segment.type === 'link'}
+								<a
+									href={segment.href}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="font-medium [overflow-wrap:anywhere] break-all text-blue-600 hover:underline"
+									onclick={(e) => e.stopPropagation()}>{segment.text}</a
+								>
+							{:else}
+								{segment.text}
+							{/if}
+						{/each}
+					</p>
+				{/if}
+
+				<!-- Media -->
+				{#if active_post.image_url}
+					<div
+						data-testid="post-image-container"
+						data-aspect-ratio={effective_aspect_ratio}
+						class="relative mt-4 flex max-h-[320px] w-full items-center justify-center overflow-hidden rounded-2xl border border-slate-100 bg-slate-50 sm:max-h-[400px] md:max-h-[500px]"
+						style={effective_aspect_ratio
+							? `aspect-ratio: ${effective_aspect_ratio};`
+							: 'min-height: 200px;'}
+					>
+						{#if image_load_failed}
+							<div
+								data-testid="broken-image-fallback"
+								class="flex min-h-[200px] w-full flex-col items-center justify-center gap-2 p-6 text-slate-400"
+							>
+								<i class="ph ph-image-broken text-3xl"></i>
+								<span class="text-xs font-medium">Media unavailable</span>
+							</div>
+						{:else}
+							{#if !image_loaded}
+								<div
+									class="absolute inset-0 z-0 flex animate-pulse items-center justify-center bg-slate-100 text-slate-300"
+								>
+									<i class="ph ph-image text-3xl"></i>
+								</div>
+							{/if}
+							<img
+								src={active_post.image_url}
+								alt=""
+								class="absolute inset-0 z-0 h-full w-full scale-110 object-cover opacity-40 blur-xl transition-opacity duration-700 {!image_loaded
+									? 'opacity-0'
+									: ''}"
+								style="position: absolute; width: 100%; height: 100%; object-fit: cover;"
+								aria-hidden="true"
+							/>
+							<img
+								src={active_post.image_url}
+								alt="Post attachment"
+								class="relative z-10 h-full w-full object-contain transition-transform duration-700 hover:scale-[1.02] {!image_loaded
+									? 'opacity-0'
+									: 'opacity-100'}"
+								style="position: relative; width: 100%; height: 100%; object-fit: contain;"
+								loading="lazy"
+								use:check_image_cached
+								onload={handle_image_load}
+								onerror={() => {
+									image_load_failed = true
+									image_loaded = true
+								}}
+							/>
+						{/if}
+					</div>
+				{/if}
+
+				<!-- Link Preview -->
+				{#if preview_url}
+					<div class="mt-4">
+						<LinkPreviewCard url={preview_url} compact={!!active_post.image_url} />
+					</div>
+				{/if}
+
+				<!-- Integrated Action Capsule (Floating inside card) -->
+				<div
+					class="glass-surface absolute right-8 -bottom-7 z-20 flex items-center gap-6 rounded-full border border-white/50 px-5 py-2.5 opacity-100 shadow-lg transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 md:-translate-y-2 md:opacity-0"
 				>
-				<button
-					type="button"
-					disabled={deleting}
-					onclick={(e) => {
-						e.stopPropagation()
-						confirm_delete()
-					}}
-					class="rounded-full bg-rose-600 px-3 py-1 text-white disabled:opacity-60"
-					>{deleting ? 'Deleting…' : 'Delete'}</button
-				>
-			</span>
-		</div>
-	{/if}
+					<button
+						class="group/btn flex items-center gap-2 transition-colors hover:text-system-pink"
+						onclick={(e) => {
+							e.stopPropagation()
+							toggle_like()
+						}}
+					>
+						<i
+							class="like-anim text-xl transition-colors {liked
+								? 'ph-fill ph-heart scale-110 text-system-pink'
+								: 'ph ph-heart text-slate-400 group-hover/btn:text-system-pink'}"
+						></i>
+						<span
+							class="like-count text-sm font-medium text-slate-600 tabular-nums"
+							data-testid="like-count">{like_count}</span
+						>
+					</button>
+					<button
+						class="group/btn flex items-center gap-2 transition-colors hover:text-black"
+						onclick={(e) => {
+							e.stopPropagation()
+							comments_override = !show_comments
+						}}
+					>
+						<i
+							class="ph ph-chat-circle text-xl text-slate-400 transition-colors group-hover/btn:text-black"
+						></i>
+						<span class="text-sm font-medium text-slate-600">{comment_count}</span>
+					</button>
+					<button
+						type="button"
+						class="group/btn flex items-center gap-2 transition-colors hover:text-emerald-600 disabled:cursor-not-allowed disabled:opacity-40"
+						aria-label={reposted ? 'Undo repost' : 'Repost'}
+						aria-pressed={reposted}
+						title={can_repost ? undefined : 'Only public posts can be reposted'}
+						disabled={!can_repost}
+						data-testid="repost-button"
+						onclick={(e) => {
+							e.stopPropagation()
+							toggle_repost()
+						}}
+					>
+						<i
+							class="ph-bold ph-repeat text-xl transition-colors {reposted
+								? 'text-emerald-500'
+								: 'text-slate-400 group-hover/btn:text-emerald-600'}"
+						></i>
+						<span class="text-sm font-medium text-slate-600 tabular-nums" data-testid="repost-count"
+							>{repost_count}</span
+						>
+					</button>
+					<button
+						type="button"
+						class="group/btn flex items-center transition-colors hover:text-amber-500"
+						aria-label={bookmarked ? 'Remove from favorites' : 'Add to favorites'}
+						aria-pressed={bookmarked}
+						data-testid="bookmark-button"
+						onclick={(e) => {
+							e.stopPropagation()
+							toggle_bookmark()
+						}}
+					>
+						<i
+							class="text-xl transition-colors {bookmarked
+								? 'ph-fill ph-bookmark-simple text-amber-500'
+								: 'ph ph-bookmark-simple text-slate-400 group-hover/btn:text-amber-500'}"
+						></i>
+					</button>
+				</div>
+			</div>
+		{/if}
 
-	{#if error_message}<p class="mt-2 text-sm text-rose-600" role="alert">
-			{error_message}
-		</p>{/if}
+		{#if confirming_delete}
+			<div
+				class="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-rose-50 p-3 text-sm text-rose-800"
+				role="alertdialog"
+			>
+				<span>Delete this post and its comments?</span>
+				<span class="flex gap-2">
+					<button
+						type="button"
+						onclick={(e) => {
+							e.stopPropagation()
+							confirming_delete = false
+						}}
+						class="rounded-full px-3 py-1 hover:bg-rose-100">Cancel</button
+					>
+					<button
+						type="button"
+						disabled={deleting}
+						onclick={(e) => {
+							e.stopPropagation()
+							confirm_delete()
+						}}
+						class="rounded-full bg-rose-600 px-3 py-1 text-white disabled:opacity-60"
+						>{deleting ? 'Deleting…' : 'Delete'}</button
+					>
+				</span>
+			</div>
+		{/if}
 
-	{#if show_comments}
-		<div
-			class="mt-6 border-t border-slate-100 pt-4"
-			onclick={(e) => e.stopPropagation()}
-			onkeydown={(e) => e.stopPropagation()}
-			role="presentation"
-		>
-			<Comments post_id={post.id} on_count={(n) => (comment_override = n)} />
-		</div>
-	{/if}
-</article>
+		{#if error_message}<p class="mt-2 text-sm text-rose-600" role="alert">
+				{error_message}
+			</p>{/if}
+
+		{#if show_comments}
+			<div
+				class="mt-6 border-t border-slate-100 pt-4"
+				onclick={(e) => e.stopPropagation()}
+				onkeydown={(e) => e.stopPropagation()}
+				role="presentation"
+			>
+				<Comments post_id={post.id} on_count={(n) => (comment_override = n)} />
+			</div>
+		{/if}
+	</article>
+{/if}

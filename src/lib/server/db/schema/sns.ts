@@ -8,6 +8,7 @@ import {
 	index,
 	uniqueIndex,
 	check,
+	type AnySQLiteColumn,
 } from 'drizzle-orm/sqlite-core'
 import { sql } from 'drizzle-orm'
 import { user } from './auth'
@@ -37,6 +38,11 @@ export const post = sqliteTable(
 			.notNull()
 			.default('public'),
 		imageUrl: text('image_url'),
+		// Set on a repost: an empty, always-public row by the reposter that points at the original.
+		// Readable only while the original is (see visible_to); deleted along with it.
+		repostOfId: text('repost_of_id').references((): AnySQLiteColumn => post.id, {
+			onDelete: 'cascade',
+		}),
 		createdAt: integer('created_at', { mode: 'timestamp' })
 			.notNull()
 			.default(sql`(unixepoch())`),
@@ -47,6 +53,9 @@ export const post = sqliteTable(
 	(table) => [
 		index('post_user_id_idx').on(table.userId),
 		index('post_created_at_idx').on(table.createdAt),
+		// One repost per user per post; also serves the per-post repost count. Ordinary posts have
+		// a NULL repost_of_id, and SQLite treats NULLs as distinct, so they never collide.
+		uniqueIndex('post_repost_of_user_unique').on(table.repostOfId, table.userId),
 	],
 )
 
@@ -168,11 +177,11 @@ export const notification = sqliteTable(
 		actorId: text('actor_id')
 			.notNull()
 			.references(() => user.id, { onDelete: 'cascade' }),
-		type: text('type', { enum: ['like', 'comment', 'follow'] }).notNull(),
+		type: text('type', { enum: ['like', 'comment', 'follow', 'repost'] }).notNull(),
 		postId: text('post_id').references(() => post.id, { onDelete: 'cascade' }),
 		commentId: text('comment_id').references(() => comment.id, { onDelete: 'cascade' }),
 		// De-duplication policy (docs/database.md): like and follow notifications carry a
-		// key of `<type>:<actor>:<target>` so repeating the action never creates a second
+		// key of `<type>:<actor>:<target>` (repost too) so repeating the action never creates a second
 		// entry. Comment notifications have a NULL key (every comment notifies).
 		dedupeKey: text('dedupe_key'),
 		read: integer('read', { mode: 'boolean' }).notNull().default(false),
