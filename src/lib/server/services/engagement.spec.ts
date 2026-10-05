@@ -178,6 +178,25 @@ describe('reposts', () => {
 		expect([original.repost_count, original.reposted_by_me]).toEqual([1, true])
 	})
 
+	it('carry an optional caption that can be changed by reposting again', async () => {
+		const p = await create_post(db, alice, { content: 'worth sharing' })
+		await repost_post(db, bob, p.id, { content: '  Totally agree  ' })
+		const caption = async () => (await list_posts_by_user(db, carol, bob)).items[0].content
+		expect(await caption()).toBe('Totally agree')
+
+		// No content => caption untouched; new content => caption replaced; still one repost.
+		expect((await repost_post(db, bob, p.id)).repost_count).toBe(1)
+		expect(await caption()).toBe('Totally agree')
+		await repost_post(db, bob, p.id, { content: 'On second thought' })
+		expect(await caption()).toBe('On second thought')
+		await repost_post(db, bob, p.id, { content: '' })
+		expect(await caption()).toBe('')
+		expect((await list_notifications(db, alice)).items).toHaveLength(1)
+
+		expect(await status_of(repost_post(db, bob, p.id, { content: 'x'.repeat(10_000) }))).toBe(400)
+		expect(await status_of(repost_post(db, bob, p.id, { content: 42 }))).toBe(400)
+	})
+
 	it('notify the author once; undoing removes the repost and its notification', async () => {
 		const p = await create_post(db, alice, { content: 'notify me' })
 		await repost_post(db, bob, p.id)

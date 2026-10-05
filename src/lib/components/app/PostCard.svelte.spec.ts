@@ -440,7 +440,7 @@ describe('PostCard favorites and reposts', () => {
 		await expect.element(save).toHaveAttribute('aria-pressed', 'false')
 	})
 
-	it('reposts and undoes a repost, updating the count', async () => {
+	it('reposts instantly from the menu and undoes it, updating the count', async () => {
 		vi.mocked(api)
 			.mockResolvedValueOnce({ reposted: true, repost_count: 3 })
 			.mockResolvedValueOnce({ reposted: false, repost_count: 2 })
@@ -448,14 +448,66 @@ describe('PostCard favorites and reposts', () => {
 
 		const repost = page.getByTestId('repost-button')
 		await repost.click()
+		await page.getByRole('menuitem', { name: 'Repost', exact: true }).click()
 		await expect.element(repost).toHaveAttribute('aria-pressed', 'true')
 		await expect.element(page.getByTestId('repost-count')).toHaveTextContent('3')
-		expect(api).toHaveBeenLastCalledWith('/api/posts/p7/repost', { method: 'PUT' })
+		expect(api).toHaveBeenLastCalledWith('/api/posts/p7/repost', {
+			method: 'PUT',
+			body: undefined,
+		})
 
 		await repost.click()
+		await page.getByRole('menuitem', { name: 'Undo repost' }).click()
 		await expect.element(repost).toHaveAttribute('aria-pressed', 'false')
 		await expect.element(page.getByTestId('repost-count')).toHaveTextContent('2')
 		expect(api).toHaveBeenLastCalledWith('/api/posts/p7/repost', { method: 'DELETE' })
+	})
+
+	it('reposts with a caption', async () => {
+		vi.mocked(api).mockResolvedValueOnce({ reposted: true, repost_count: 1 })
+		render(PostCard, { post: make_post({ id: 'p8' }) })
+
+		await page.getByTestId('repost-button').click()
+		await page.getByRole('menuitem', { name: 'Repost with caption' }).click()
+		await page.getByLabelText('Repost caption').fill('This is so true')
+		await page.getByRole('button', { name: 'Repost', exact: true }).nth(1).click()
+
+		expect(api).toHaveBeenLastCalledWith('/api/posts/p8/repost', {
+			method: 'PUT',
+			body: { content: 'This is so true' },
+		})
+		await expect.element(page.getByLabelText('Repost caption')).not.toBeInTheDocument()
+		await expect.element(page.getByTestId('repost-button')).toHaveAttribute('aria-pressed', 'true')
+	})
+
+	it('prefills and saves a new caption on your own repost', async () => {
+		vi.mocked(api).mockResolvedValueOnce({ reposted: true, repost_count: 1 })
+		const original = make_post({ id: 'orig', reposted_by_me: true, repost_count: 1 })
+		const repost = make_post({
+			id: 'r1',
+			content: 'old caption',
+			is_owner: true,
+			repost_of: original,
+		})
+		const on_updated = vi.fn()
+		render(PostCard, { post: repost, on_updated })
+
+		await page.getByTestId('repost-button').click()
+		await page.getByRole('menuitem', { name: 'Edit caption' }).click()
+		const box = page.getByLabelText('Repost caption')
+		await expect.element(box).toHaveValue('old caption')
+		await box.fill('new caption')
+		await page.getByRole('button', { name: 'Save caption' }).click()
+
+		expect(api).toHaveBeenLastCalledWith('/api/posts/orig/repost', {
+			method: 'PUT',
+			body: { content: 'new caption' },
+		})
+		await vi.waitFor(() =>
+			expect(on_updated).toHaveBeenCalledWith(
+				expect.objectContaining({ id: 'r1', content: 'new caption' }),
+			),
+		)
 	})
 
 	it('rolls the repost back and shows an error when it fails', async () => {
@@ -463,6 +515,7 @@ describe('PostCard favorites and reposts', () => {
 		render(PostCard, { post: make_post({ repost_count: 1 }) })
 
 		await page.getByTestId('repost-button').click()
+		await page.getByRole('menuitem', { name: 'Repost', exact: true }).click()
 		await expect.element(page.getByText('Only public posts can be reposted')).toBeVisible()
 		await expect.element(page.getByTestId('repost-button')).toHaveAttribute('aria-pressed', 'false')
 		await expect.element(page.getByTestId('repost-count')).toHaveTextContent('1')
@@ -481,8 +534,9 @@ describe('PostCard favorites and reposts', () => {
 			author: { id: 'u2', name: 'Bob', username: 'bob', handle: 'bob', image: null },
 			repost_of: original,
 		})
-		render(PostCard, { post: repost })
+		render(PostCard, { post: { ...repost, content: 'Bob says hi' } })
 
+		await expect.element(page.getByTestId('repost-caption')).toHaveTextContent('Bob says hi')
 		await expect.element(page.getByText('Bob reposted')).toBeVisible()
 		await expect.element(page.getByText('The original words')).toBeVisible()
 		await expect
@@ -499,6 +553,7 @@ describe('PostCard favorites and reposts', () => {
 
 		await expect.element(page.getByText('You reposted')).toBeVisible()
 		await page.getByTestId('repost-button').click()
+		await page.getByRole('menuitem', { name: 'Undo repost' }).click()
 		expect(api).toHaveBeenLastCalledWith('/api/posts/orig/repost', { method: 'DELETE' })
 		await vi.waitFor(() => expect(on_deleted).toHaveBeenCalledWith('r1'))
 	})

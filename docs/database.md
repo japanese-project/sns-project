@@ -11,7 +11,7 @@ The `notification` table and `user.username` were added in migration `0001`.
 - **user** — Better Auth user identity and profile basics.
 - **account** — Better Auth OAuth/provider account linkage.
 - **session** — Better Auth persistent sessions when database session storage is selected.
-- **post** — text content, author, visibility, timestamps, and optional image URL. A repost is an empty, public post row whose `repost_of_id` points at the original; it is only readable while the original is, and is deleted with it.
+- **post** — text content, author, visibility, timestamps, and optional image URL. A repost is a public post row whose `repost_of_id` points at the original and whose `content` is an optional caption (empty for a plain repost); it is only readable while the original is, and is deleted with it.
 - **like** — one user-to-post like; unique per user/post pair.
 - **bookmark** — a post saved to the user's private Favorites; unique per user/post pair, never counted publicly or notified.
 - **comment** — a post comment or one-level reply; replies use `parent_comment_id`.

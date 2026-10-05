@@ -1,5 +1,6 @@
 import { and, eq, sql } from 'drizzle-orm'
 import { error } from '@sveltejs/kit'
+import { MAX_POST_LENGTH } from '$lib/limits'
 import type { Db } from '../db'
 import { post } from '../db/schema'
 import { new_id } from './cursor'
@@ -22,36 +23,68 @@ async function require_original(db: Db, user_id: string, post_id: string) {
 	return visible.repost_of ?? visible
 }
 
+function parse_caption(raw: unknown): string | undefined {
+	if (raw === undefined) return undefined
+	if (raw === null) return ''
+	if (typeof raw !== 'string') error(400, 'content must be a string')
+	const caption = raw.trim()
+	if (caption.length > MAX_POST_LENGTH) {
+		error(400, `Caption must be at most ${MAX_POST_LENGTH} characters`)
+	}
+	return caption
+}
+
 /**
- * Idempotent repost: inserts an empty, public post row pointing at the original, so it shows up
- * on the reposter's profile and in their followers' following feed. The unique
- * (repost_of_id, user_id) index makes repeats a no-op.
+ * Idempotent repost: inserts a public post row pointing at the original, so it shows up on the
+ * reposter's profile and in their followers' following feed. The row's `content` is the optional
+ * caption ("" for a plain repost). Reposting again never creates a second row; it only changes
+ * the caption when one is supplied (omitting `content` leaves it as is).
  */
-export async function repost_post(db: Db, user_id: string, post_id: string) {
+export async function repost_post(
+	db: Db,
+	user_id: string,
+	post_id: string,
+	input: { content?: unknown } = {},
+) {
 	const original = await require_original(db, user_id, post_id)
 	// Followers-only posts stay with the author's followers; a repost would widen the audience.
 	if (original.visibility !== 'public') error(403, 'Only public posts can be reposted')
-	const now = new Date()
-	const inserted = await db
-		.insert(post)
-		.values({
-			id: new_id(),
-			userId: user_id,
-			content: '',
-			visibility: 'public',
-			repostOfId: original.id,
-			createdAt: now,
-			updatedAt: now,
-		})
-		.onConflictDoNothing()
-		.returning({ id: post.id })
-	if (inserted.length > 0) {
-		await create_notification(db, {
-			type: 'repost',
-			recipient_id: original.author.id,
-			actor_id: user_id,
-			post_id: original.id,
-		})
+	const caption = parse_caption(input.content)
+	const existing = await db
+		.select({ id: post.id })
+		.from(post)
+		.where(and(eq(post.userId, user_id), eq(post.repostOfId, original.id)))
+		.get()
+	if (existing) {
+		if (caption !== undefined) {
+			await db
+				.update(post)
+				.set({ content: caption, updatedAt: new Date() })
+				.where(eq(post.id, existing.id))
+		}
+	} else {
+		const now = new Date()
+		const inserted = await db
+			.insert(post)
+			.values({
+				id: new_id(),
+				userId: user_id,
+				content: caption ?? '',
+				visibility: 'public',
+				repostOfId: original.id,
+				createdAt: now,
+				updatedAt: now,
+			})
+			.onConflictDoNothing()
+			.returning({ id: post.id })
+		if (inserted.length > 0) {
+			await create_notification(db, {
+				type: 'repost',
+				recipient_id: original.author.id,
+				actor_id: user_id,
+				post_id: original.id,
+			})
+		}
 	}
 	return { reposted: true, repost_count: await repost_count(db, original.id) }
 }

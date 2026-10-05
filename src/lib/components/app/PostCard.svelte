@@ -22,12 +22,15 @@
 		on_deleted,
 		on_updated,
 		on_repost_change,
+		my_repost_caption = '',
 	}: {
 		initial_open_comments?: boolean
 		post: PostView
 		on_deleted?: (id: string) => void
 		on_updated?: (post: PostView) => void
-		on_repost_change?: (reposted: boolean) => void
+		on_repost_change?: (reposted: boolean, caption: string) => void
+		/** The signed-in user's existing repost caption, used to prefill "Edit caption". */
+		my_repost_caption?: string
 	} = $props()
 
 	function extract_aspect_ratio_hint(url: string | null | undefined): number | null {
@@ -103,6 +106,9 @@
 	let reposted = $derived(active_post.reposted_by_me)
 	let repost_count = $derived(active_post.repost_count)
 	let repost_pending = $state(false)
+	let repost_menu_open = $state(false)
+	let captioning = $state(false)
+	let caption_draft = $state('')
 	// Followers-only posts can't be reposted (it would widen their audience); undo stays possible.
 	let can_repost = $derived(active_post.visibility === 'public' || reposted)
 	let comments_override = $state<boolean | null>(null)
@@ -276,21 +282,24 @@
 		}
 	}
 
-	async function toggle_repost() {
+	// Reposts (optionally with a caption) and undoing one. Optimistic, rolled back on failure.
+	async function send_repost(caption?: string) {
 		if (repost_pending || !can_repost) return
 		const previous = { reposted, repost_count }
 		repost_pending = true
 		error_message = null
-		reposted = !reposted
-		repost_count += reposted ? 1 : -1
+		repost_menu_open = false
+		if (!reposted) repost_count += 1
+		reposted = true
 		try {
 			const result = await api<{ reposted: boolean; repost_count: number }>(
 				`/api/posts/${post.id}/repost`,
-				{ method: reposted ? 'PUT' : 'DELETE' },
+				{ method: 'PUT', body: caption === undefined ? undefined : { content: caption } },
 			)
 			reposted = result.reposted
 			repost_count = result.repost_count
-			on_repost_change?.(result.reposted)
+			captioning = false
+			on_repost_change?.(true, caption ?? my_repost_caption)
 		} catch (e) {
 			reposted = previous.reposted
 			repost_count = previous.repost_count
@@ -299,6 +308,49 @@
 			repost_pending = false
 		}
 	}
+
+	async function undo_repost() {
+		if (repost_pending) return
+		const previous = { reposted, repost_count }
+		repost_pending = true
+		error_message = null
+		repost_menu_open = false
+		reposted = false
+		repost_count -= 1
+		try {
+			const result = await api<{ reposted: boolean; repost_count: number }>(
+				`/api/posts/${post.id}/repost`,
+				{ method: 'DELETE' },
+			)
+			reposted = result.reposted
+			repost_count = result.repost_count
+			on_repost_change?.(false, '')
+		} catch (e) {
+			reposted = previous.reposted
+			repost_count = previous.repost_count
+			error_message = e instanceof Error ? e.message : 'Could not update repost'
+		} finally {
+			repost_pending = false
+		}
+	}
+
+	function open_caption_form() {
+		repost_menu_open = false
+		caption_draft = my_repost_caption
+		captioning = true
+	}
+
+	$effect(() => {
+		if (!repost_menu_open) return
+		const close = () => (repost_menu_open = false)
+		const on_key = (e: KeyboardEvent) => e.key === 'Escape' && close()
+		window.addEventListener('click', close)
+		window.addEventListener('keydown', on_key)
+		return () => {
+			window.removeEventListener('click', close)
+			window.removeEventListener('keydown', on_key)
+		}
+	})
 
 	async function toggle_bookmark() {
 		if (bookmark_pending) return
@@ -472,14 +524,42 @@
 			<i class="ph-bold ph-repeat text-sm"></i>
 			{post.is_owner ? 'You reposted' : `${post.author.name} reposted`}
 		</a>
+		{#if post.content}
+			<p
+				class="mb-3 ml-5 text-[15px] leading-relaxed [overflow-wrap:anywhere] whitespace-pre-wrap text-slate-800"
+				data-testid="repost-caption"
+			>
+				{#each parse_content(post.content) as segment, i (i)}
+					{#if segment.type === 'tag'}
+						<a
+							href="{resolve('/explore')}?q={encodeURIComponent(segment.text)}"
+							class="font-medium text-blue-600 hover:underline">{segment.text}</a
+						>
+					{:else if segment.type === 'link'}
+						<a
+							href={segment.href}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="font-medium [overflow-wrap:anywhere] break-all text-blue-600 hover:underline"
+							>{segment.text}</a
+						>
+					{:else}
+						{segment.text}
+					{/if}
+				{/each}
+			</p>
+		{/if}
 		<PostCard
 			post={post.repost_of}
 			{initial_open_comments}
+			my_repost_caption={post.is_owner ? post.content : ''}
 			on_deleted={() => on_deleted?.(post.id)}
 			on_updated={(updated) => on_updated?.({ ...post, repost_of: updated })}
-			on_repost_change={(now_reposted) => {
-				// Undoing your own repost removes this item from the list.
-				if (!now_reposted && post.is_owner) on_deleted?.(post.id)
+			on_repost_change={(now_reposted, caption) => {
+				if (!post.is_owner) return
+				// Undoing your own repost removes this item; a new caption updates it in place.
+				if (now_reposted) on_updated?.({ ...post, content: caption })
+				else on_deleted?.(post.id)
 			}}
 		/>
 	</div>
@@ -713,28 +793,92 @@
 						></i>
 						<span class="text-sm font-medium text-slate-600">{comment_count}</span>
 					</button>
-					<button
-						type="button"
-						class="group/btn flex items-center gap-2 transition-colors hover:text-emerald-600 disabled:cursor-not-allowed disabled:opacity-40"
-						aria-label={reposted ? 'Undo repost' : 'Repost'}
-						aria-pressed={reposted}
-						title={can_repost ? undefined : 'Only public posts can be reposted'}
-						disabled={!can_repost}
-						data-testid="repost-button"
-						onclick={(e) => {
-							e.stopPropagation()
-							toggle_repost()
-						}}
-					>
-						<i
-							class="ph-bold ph-repeat text-xl transition-colors {reposted
-								? 'text-emerald-500'
-								: 'text-slate-400 group-hover/btn:text-emerald-600'}"
-						></i>
-						<span class="text-sm font-medium text-slate-600 tabular-nums" data-testid="repost-count"
-							>{repost_count}</span
+					<div class="relative flex items-center">
+						<button
+							type="button"
+							class="group/btn flex items-center gap-2 transition-colors hover:text-emerald-600 disabled:cursor-not-allowed disabled:opacity-40"
+							aria-label={reposted ? 'Reposted, open repost options' : 'Repost'}
+							aria-haspopup="menu"
+							aria-expanded={repost_menu_open}
+							aria-pressed={reposted}
+							title={can_repost ? undefined : 'Only public posts can be reposted'}
+							disabled={!can_repost}
+							data-testid="repost-button"
+							onclick={(e) => {
+								e.stopPropagation()
+								repost_menu_open = !repost_menu_open
+							}}
 						>
-					</button>
+							<i
+								class="ph-bold ph-repeat text-xl transition-colors {reposted
+									? 'text-emerald-500'
+									: 'text-slate-400 group-hover/btn:text-emerald-600'}"
+							></i>
+							<span
+								class="text-sm font-medium text-slate-600 tabular-nums"
+								data-testid="repost-count">{repost_count}</span
+							>
+						</button>
+						{#if repost_menu_open}
+							<div
+								role="menu"
+								aria-label="Repost options"
+								class="glass-surface absolute bottom-full left-1/2 z-50 mb-3 min-w-[180px] -translate-x-1/2 overflow-hidden rounded-2xl border border-white/80 py-1.5 shadow-xl shadow-black/10"
+							>
+								{#if reposted}
+									<button
+										type="button"
+										role="menuitem"
+										onclick={(e) => {
+											e.stopPropagation()
+											open_caption_form()
+										}}
+										class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50"
+									>
+										<i class="ph ph-pencil-simple text-base text-slate-400"></i>
+										<span>Edit caption</span>
+									</button>
+									<button
+										type="button"
+										role="menuitem"
+										onclick={(e) => {
+											e.stopPropagation()
+											undo_repost()
+										}}
+										class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-rose-600 transition hover:bg-rose-50"
+									>
+										<i class="ph ph-arrow-u-up-left text-base text-rose-500"></i>
+										<span>Undo repost</span>
+									</button>
+								{:else}
+									<button
+										type="button"
+										role="menuitem"
+										onclick={(e) => {
+											e.stopPropagation()
+											send_repost()
+										}}
+										class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50"
+									>
+										<i class="ph ph-repeat text-base text-slate-400"></i>
+										<span>Repost</span>
+									</button>
+									<button
+										type="button"
+										role="menuitem"
+										onclick={(e) => {
+											e.stopPropagation()
+											open_caption_form()
+										}}
+										class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50"
+									>
+										<i class="ph ph-note-pencil text-base text-slate-400"></i>
+										<span>Repost with caption</span>
+									</button>
+								{/if}
+							</div>
+						{/if}
+					</div>
 					<button
 						type="button"
 						class="group/btn flex items-center transition-colors hover:text-amber-500"
@@ -754,6 +898,49 @@
 					</button>
 				</div>
 			</div>
+		{/if}
+
+		{#if captioning}
+			<form
+				class="mt-8 space-y-2 rounded-2xl bg-slate-50 p-3"
+				onclick={(e) => e.stopPropagation()}
+				onkeydown={(e) => e.stopPropagation()}
+				onsubmit={(e) => {
+					e.preventDefault()
+					void send_repost(caption_draft)
+				}}
+			>
+				<textarea
+					bind:value={caption_draft}
+					rows="2"
+					placeholder="Add a caption…"
+					aria-label="Repost caption"
+					class="w-full resize-none rounded-xl border border-slate-200 bg-white p-3 text-[15px] leading-relaxed outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+				></textarea>
+				<div class="flex items-center justify-between text-xs">
+					<span
+						class="tabular-nums {caption_draft.length > MAX_POST_LENGTH
+							? 'font-bold text-rose-600'
+							: 'text-slate-400'}"
+					>
+						{MAX_POST_LENGTH - caption_draft.length} characters left
+					</span>
+					<span class="flex items-center gap-2">
+						<button
+							type="button"
+							onclick={() => (captioning = false)}
+							class="px-3 py-1.5 font-medium text-slate-500 hover:text-slate-800">Cancel</button
+						>
+						<button
+							type="submit"
+							disabled={repost_pending || caption_draft.length > MAX_POST_LENGTH}
+							class="rounded-full bg-slate-900 px-4 py-1.5 font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+						>
+							{reposted ? 'Save caption' : 'Repost'}
+						</button>
+					</span>
+				</div>
+			</form>
 		{/if}
 
 		{#if confirming_delete}
