@@ -537,10 +537,11 @@ describe('PostCard favorites and reposts', () => {
 		render(PostCard, { post: { ...repost, content: 'Bob says hi' } })
 
 		await expect.element(page.getByTestId('repost-caption')).toHaveTextContent('Bob says hi')
-		await expect.element(page.getByText('Bob reposted')).toBeVisible()
+		await expect.element(page.getByTestId('repost')).toHaveTextContent('Bob')
+		await expect.element(page.getByTestId('repost')).toHaveTextContent('reposted')
 		await expect.element(page.getByText('The original words')).toBeVisible()
 		await expect
-			.element(page.getByRole('link', { name: 'Bob reposted' }))
+			.element(page.getByRole('link', { name: /Bob/ }).first())
 			.toHaveAttribute('href', '/u/bob')
 	})
 
@@ -551,7 +552,7 @@ describe('PostCard favorites and reposts', () => {
 		const repost = make_post({ id: 'r1', content: '', is_owner: true, repost_of: original })
 		render(PostCard, { post: repost, on_deleted })
 
-		await expect.element(page.getByText('You reposted')).toBeVisible()
+		await expect.element(page.getByTestId('repost')).toHaveTextContent('You')
 		await page.getByTestId('repost-button').click()
 		await page.getByRole('menuitem', { name: 'Undo repost' }).click()
 		expect(api).toHaveBeenLastCalledWith('/api/posts/orig/repost', { method: 'DELETE' })

@@ -23,6 +23,7 @@
 		on_updated,
 		on_repost_change,
 		my_repost_caption = '',
+		embedded = false,
 	}: {
 		initial_open_comments?: boolean
 		post: PostView
@@ -31,6 +32,8 @@
 		on_repost_change?: (reposted: boolean, caption: string) => void
 		/** The signed-in user's existing repost caption, used to prefill "Edit caption". */
 		my_repost_caption?: string
+		/** Rendered inside a repost: a flat, bordered card instead of a standalone raised one. */
+		embedded?: boolean
 	} = $props()
 
 	function extract_aspect_ratio_hint(url: string | null | undefined): number | null {
@@ -515,18 +518,36 @@
 {/snippet}
 
 {#if post.repost_of}
-	<!-- A repost: who reposted it, then the original post (all actions apply to the original). -->
-	<div data-testid="repost">
-		<a
-			href={resolve('/u/[handle]', { handle: post.author.handle })}
-			class="mb-2 ml-5 flex w-fit items-center gap-1.5 text-xs font-semibold text-slate-500 transition hover:text-slate-800"
-		>
-			<i class="ph-bold ph-repeat text-sm"></i>
-			{post.is_owner ? 'You reposted' : `${post.author.name} reposted`}
-		</a>
+	<!-- A repost is one card: who reposted (and their caption) on top, the original embedded below. -->
+	<div
+		class="rounded-3xl border border-slate-100 bg-white p-5 pb-9 shadow-sm sm:p-6 sm:pb-9"
+		data-testid="repost"
+	>
+		<div class="mb-3 flex items-center gap-3">
+			<a
+				href={resolve('/u/[handle]', { handle: post.author.handle })}
+				class="flex min-w-0 items-center gap-3 transition-opacity hover:opacity-80"
+			>
+				<span class="shrink-0 overflow-hidden rounded-full border border-slate-100">
+					<Avatar user={post.author} size={36} />
+				</span>
+				<span class="flex min-w-0 flex-col leading-tight">
+					<span class="flex items-center gap-1.5 text-[15px] font-bold text-slate-900">
+						<span class="truncate">{post.is_owner ? 'You' : post.author.name}</span>
+						<span
+							class="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-emerald-600"
+						>
+							<i class="ph-bold ph-repeat text-sm"></i>
+							reposted
+						</span>
+					</span>
+					<span class="mt-0.5 text-[13px] text-slate-500">{relative_time(post.created_at)}</span>
+				</span>
+			</a>
+		</div>
 		{#if post.content}
 			<p
-				class="mb-3 ml-5 text-[15px] leading-relaxed [overflow-wrap:anywhere] whitespace-pre-wrap text-slate-800"
+				class="mb-3 text-[15px] leading-relaxed [overflow-wrap:anywhere] whitespace-pre-wrap text-slate-800"
 				data-testid="repost-caption"
 			>
 				{#each parse_content(post.content) as segment, i (i)}
@@ -550,6 +571,7 @@
 			</p>
 		{/if}
 		<PostCard
+			embedded
 			post={post.repost_of}
 			{initial_open_comments}
 			my_repost_caption={post.is_owner ? post.content : ''}
@@ -566,7 +588,9 @@
 {:else}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<article
-		class="post-card group relative rounded-3xl border border-slate-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md sm:p-6 {!editing
+		class="post-card group relative border border-slate-100 {embedded
+			? 'rounded-2xl bg-slate-50/60 p-4'
+			: 'rounded-3xl bg-white p-5 shadow-sm transition-shadow hover:shadow-md sm:p-6'} {!editing
 			? 'cursor-pointer'
 			: ''}"
 		data-testid="post-card"
