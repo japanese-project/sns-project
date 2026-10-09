@@ -98,13 +98,13 @@
 	<div class="mx-auto w-full max-w-2xl">
 		{#if unread > 0}
 			<div class="mb-4 flex items-center justify-between px-1">
-				<span class="text-xs font-bold tracking-wider text-slate-500 uppercase">
+				<span class="text-xs font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400">
 					Notifications ({unread} unread)
 				</span>
 				<button
 					type="button"
 					onclick={mark_all}
-					class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50"
+					class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
 				>
 					Mark all as read
 				</button>
@@ -112,14 +112,18 @@
 		{/if}
 
 		{#if loading}
-			<div class="divide-y divide-slate-100" aria-busy="true" aria-label="Loading notifications">
+			<div
+				class="divide-y divide-slate-100 dark:divide-slate-800"
+				aria-busy="true"
+				aria-label="Loading notifications"
+			>
 				{#each [0, 1, 2] as n (n)}
 					<div class="h-16 animate-pulse px-2 py-4">
 						<div class="flex items-center gap-3.5">
-							<div class="size-10 rounded-full bg-slate-200/80"></div>
+							<div class="size-10 rounded-full bg-slate-200/80 dark:bg-slate-700/80"></div>
 							<div class="flex-1 space-y-1.5 py-1">
-								<div class="h-3.5 w-1/2 rounded bg-slate-200/80"></div>
-								<div class="h-3 w-1/4 rounded bg-slate-200/60"></div>
+								<div class="h-3.5 w-1/2 rounded bg-slate-200/80 dark:bg-slate-700/80"></div>
+								<div class="h-3 w-1/4 rounded bg-slate-200/60 dark:bg-slate-700/60"></div>
 							</div>
 						</div>
 					</div>
@@ -139,13 +143,15 @@
 		{:else if items.length === 0}
 			<div class="px-4 py-12 text-center">
 				<BellIcon class="mx-auto mb-3 size-8 text-slate-300" />
-				<p class="text-sm text-slate-500">
+				<p class="text-sm text-slate-500 dark:text-slate-400">
 					You're all caught up. Likes, reposts, comments, and new followers will show up here.
 				</p>
 			</div>
 		{:else}
 			{#if error_message}<p class="mb-3 text-sm text-rose-600" role="alert">{error_message}</p>{/if}
-			<ul class="divide-y divide-slate-100 border-b border-slate-200/60">
+			<ul
+				class="divide-y divide-slate-100 border-b border-slate-200/60 dark:divide-slate-800 dark:border-slate-800"
+			>
 				{#each items as note (note.id)}
 					<li>
 						<a
@@ -155,7 +161,7 @@
 									? resolve('/posts/[id]', { id: note.post_id })
 									: resolve('/')}
 							onclick={() => mark_one(note)}
-							class="flex items-center gap-3.5 p-4 transition hover:bg-slate-50 {!note.read
+							class="flex items-center gap-3.5 p-4 transition hover:bg-slate-50 dark:hover:bg-slate-800/60 {!note.read
 								? 'bg-indigo-50/20'
 								: ''}"
 							data-unread={!note.read}
@@ -182,14 +188,14 @@
 								</span>
 							</span>
 							<span class="min-w-0 flex-1">
-								<span class="block text-sm text-slate-900"
+								<span class="block text-sm text-slate-900 dark:text-slate-100"
 									><strong>{note.actor.name}</strong> {message(note)}</span
 								>
 								{#if note.snippet}<span
-										class="mt-1 block truncate border-l-2 border-slate-200 pl-2 text-xs text-slate-500"
+										class="mt-1 block truncate border-l-2 border-slate-200 pl-2 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400"
 										>“{note.snippet}”</span
 									>{/if}
-								<span class="mt-1 block text-xs text-slate-400"
+								<span class="mt-1 block text-xs text-slate-400 dark:text-slate-500"
 									>{relative_time(note.created_at)}</span
 								>
 							</span>
@@ -207,7 +213,7 @@
 						type="button"
 						onclick={() => load(false)}
 						disabled={loading_more}
-						class="rounded-full border border-slate-200 bg-white px-5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 disabled:opacity-60"
+						class="rounded-full border border-slate-200 bg-white px-5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
 						>{loading_more ? 'Loading…' : 'Load more'}</button
 					>
 				</div>

@@ -24,8 +24,8 @@
 							class="flex items-center space-x-2 rounded-md px-3 py-2 text-sm font-medium transition-colors {$page.url.pathname.startsWith(
 								item.href,
 							)
-								? 'bg-black text-white'
-								: 'text-slate-500 hover:bg-slate-100 hover:text-black'}"
+								? 'bg-black text-white dark:bg-white dark:text-black'
+								: 'text-slate-500 hover:bg-slate-100 hover:text-black dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'}"
 						>
 							<item.icon class="h-4 w-4" />
 							<span>{item.label}</span>

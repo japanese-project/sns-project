@@ -10,7 +10,7 @@
 </script>
 
 <div
-	class="group flex w-36 shrink-0 flex-col items-center justify-between rounded-2xl border border-slate-200/80 bg-white p-3 text-center shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-sm sm:w-40"
+	class="group flex w-36 shrink-0 flex-col items-center justify-between rounded-2xl border border-slate-200/80 bg-white p-3 text-center shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-sm sm:w-40 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700"
 >
 	<a
 		href={resolve('/u/[handle]', { handle: person.handle })}
@@ -28,14 +28,16 @@
 		</div>
 
 		<div class="mt-2 w-full min-w-0">
-			<span class="block truncate text-xs font-bold text-slate-900 group-hover:text-indigo-600">
+			<span
+				class="block truncate text-xs font-bold text-slate-900 group-hover:text-indigo-600 dark:text-slate-100"
+			>
 				{person.name}
 			</span>
-			<span class="block truncate text-[10px] text-slate-400">
+			<span class="block truncate text-[10px] text-slate-400 dark:text-slate-500">
 				{person.username ? `@${person.username}` : ''}
 			</span>
 			{#if person.bio}
-				<p class="mt-1 line-clamp-2 text-[10px] leading-tight text-slate-500">
+				<p class="mt-1 line-clamp-2 text-[10px] leading-tight text-slate-500 dark:text-slate-400">
 					{person.bio}
 				</p>
 			{/if}

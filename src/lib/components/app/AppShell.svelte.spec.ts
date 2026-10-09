@@ -1,6 +1,7 @@
 import { page } from 'vitest/browser'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render } from 'vitest-browser-svelte'
+import { goto } from '$app/navigation'
 import { api } from '$lib/api'
 import { sign_out } from '$lib/auth-client'
 import AppShellHost from './AppShell.test-host.svelte'
@@ -39,6 +40,7 @@ describe('AppShell', () => {
 	beforeEach(() => {
 		vi.mocked(api).mockClear()
 		vi.mocked(sign_out).mockClear()
+		vi.mocked(goto).mockClear()
 	})
 
 	it('uses consistent content width max-w-2xl and centered alignment', async () => {

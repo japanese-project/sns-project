@@ -53,7 +53,7 @@
 		disabled={pending}
 		aria-pressed={following}
 		class="inline-flex shrink-0 items-center justify-center rounded-full px-3.5 py-1 text-xs font-semibold whitespace-nowrap transition disabled:opacity-60 {following
-			? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+			? 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
 			: follows_you
 				? 'bg-indigo-600 text-white shadow-xs hover:bg-indigo-700'
 				: 'bg-black text-white hover:bg-slate-800'}"

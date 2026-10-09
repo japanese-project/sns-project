@@ -47,6 +47,10 @@ export default defineConfig({
 					environment: 'node',
 					include: ['src/**/*.{test,spec}.{js,ts}'],
 					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}'],
+					// beforeAll spins up a wrangler platform proxy (workerd) and replays every
+					// migration against it. That takes well over the 10s default once several
+					// files run in parallel, so give the DB setup room.
+					hookTimeout: 60_000,
 				},
 			},
 		],

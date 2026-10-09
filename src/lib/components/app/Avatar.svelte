@@ -14,7 +14,7 @@
 </script>
 
 <span
-	class="inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 font-semibold text-slate-600 {ring
+	class="inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300 {ring
 		? 'ring-2 ring-blue-500 ring-offset-2'
 		: ''}"
 	style="width:{size}px;height:{size}px;font-size:{size * 0.4}px"

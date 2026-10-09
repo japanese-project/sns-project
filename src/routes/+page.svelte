@@ -19,7 +19,7 @@
 	{#snippet header_content()}
 		<!-- Integrated Global / Following Switcher in Top Pill -->
 		<div
-			class="inline-flex items-center rounded-full bg-slate-100/90 p-0.5 text-xs font-semibold shadow-inner"
+			class="inline-flex items-center rounded-full bg-slate-100/90 p-0.5 text-xs font-semibold shadow-inner dark:bg-slate-800/90"
 			role="tablist"
 			aria-label="Feed selection"
 		>
@@ -31,7 +31,7 @@
 				class="flex items-center gap-1.5 rounded-full px-3 py-1 transition-all duration-200 active:scale-95 {active_tab ===
 				'global'
 					? 'bg-black font-bold text-white shadow-xs'
-					: 'text-slate-600 hover:bg-slate-200/50 hover:text-slate-900'}"
+					: 'text-slate-600 hover:bg-slate-200/50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-700/50 dark:hover:text-slate-100'}"
 			>
 				<GlobeIcon class="size-3.5" />
 				<span>Global</span>
@@ -45,7 +45,7 @@
 				class="flex items-center gap-1.5 rounded-full px-3 py-1 transition-all duration-200 active:scale-95 {active_tab ===
 				'following'
 					? 'bg-black font-bold text-white shadow-xs'
-					: 'text-slate-600 hover:bg-slate-200/50 hover:text-slate-900'}"
+					: 'text-slate-600 hover:bg-slate-200/50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-700/50 dark:hover:text-slate-100'}"
 			>
 				<UsersIcon class="size-3.5" />
 				<span>Following</span>

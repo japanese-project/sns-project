@@ -66,10 +66,12 @@
 		class="relative my-2 flex items-center gap-3 py-1 transition-opacity hover:opacity-80"
 		onclick={(e) => e.stopPropagation()}
 	>
-		<div class="size-10 shrink-0 animate-pulse rounded-xl bg-slate-200/70"></div>
+		<div
+			class="size-10 shrink-0 animate-pulse rounded-xl bg-slate-200/70 dark:bg-slate-700/70"
+		></div>
 		<div class="min-w-0 flex-1 space-y-1.5">
-			<div class="h-3 w-1/3 animate-pulse rounded-md bg-slate-200/70"></div>
-			<div class="h-3.5 w-3/4 animate-pulse rounded-md bg-slate-200/50"></div>
+			<div class="h-3 w-1/3 animate-pulse rounded-md bg-slate-200/70 dark:bg-slate-700/70"></div>
+			<div class="h-3.5 w-3/4 animate-pulse rounded-md bg-slate-200/50 dark:bg-slate-700/50"></div>
 		</div>
 	</a>
 {:else if preview}
@@ -99,7 +101,7 @@
 		>
 			{#if preview.image && !image_failed}
 				<div
-					class="relative w-full overflow-hidden bg-slate-100 {compact
+					class="relative w-full overflow-hidden bg-slate-100 dark:bg-slate-800 {compact
 						? 'max-h-36 rounded-xl sm:max-h-44'
 						: 'max-h-64 rounded-2xl'}"
 				>
@@ -128,7 +130,9 @@
 					{/if}
 					<span class="truncate">{preview.site_name || domain()}</span>
 					<span class="text-slate-300">•</span>
-					<span class="truncate text-[11px] font-normal text-slate-400">{display_url()}</span>
+					<span class="truncate text-[11px] font-normal text-slate-400 dark:text-slate-500"
+						>{display_url()}</span
+					>
 					<ExternalLinkIcon
 						class="ml-auto size-3 opacity-0 transition-opacity group-hover:opacity-100"
 					/>
@@ -136,14 +140,14 @@
 
 				<!-- Title -->
 				<h4
-					class="line-clamp-2 text-sm font-bold text-slate-900 transition-colors group-hover:text-indigo-600 sm:text-[15px]"
+					class="line-clamp-2 text-sm font-bold text-slate-900 transition-colors group-hover:text-indigo-600 sm:text-[15px] dark:text-slate-100"
 				>
 					{preview.title || domain()}
 				</h4>
 
 				<!-- Description -->
 				{#if preview.description}
-					<p class="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-500">
+					<p class="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
 						{preview.description}
 					</p>
 				{/if}
@@ -179,7 +183,7 @@
 			<GlobeIcon class="size-4 shrink-0 text-slate-400" />
 			<span class="truncate text-xs font-semibold text-indigo-600">{domain()}</span>
 			<span class="text-slate-300">•</span>
-			<span class="truncate text-[11px] text-slate-400">{display_url()}</span>
+			<span class="truncate text-[11px] text-slate-400 dark:text-slate-500">{display_url()}</span>
 			<ExternalLinkIcon class="ml-auto size-3 text-slate-400 opacity-60" />
 		</a>
 	</div>

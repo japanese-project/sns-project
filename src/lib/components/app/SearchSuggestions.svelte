@@ -23,14 +23,14 @@
 </script>
 
 <div
-	class="absolute top-full right-0 left-0 z-50 mt-1.5 overflow-hidden rounded-2xl border border-slate-200/90 bg-white/95 p-2 shadow-lg shadow-slate-900/5 backdrop-blur-md transition-all duration-150"
+	class="absolute top-full right-0 left-0 z-50 mt-1.5 overflow-hidden rounded-2xl border border-slate-200/90 bg-white/95 p-2 shadow-lg shadow-slate-900/5 backdrop-blur-md transition-all duration-150 dark:border-slate-800 dark:bg-slate-900/95"
 	role="listbox"
 	data-testid="search-suggestions"
 >
 	{#if has_history}
 		<div class="mb-2">
 			<div
-				class="flex items-center justify-between px-2.5 py-1 text-[11px] font-semibold text-slate-400"
+				class="flex items-center justify-between px-2.5 py-1 text-[11px] font-semibold text-slate-400 dark:text-slate-500"
 			>
 				<span class="flex items-center gap-1.5">
 					<ClockIcon class="size-3 text-slate-400" />
@@ -39,7 +39,7 @@
 				<button
 					type="button"
 					onclick={() => search_history.clear()}
-					class="transition hover:text-slate-700 active:scale-95"
+					class="transition hover:text-slate-700 active:scale-95 dark:hover:text-slate-200"
 				>
 					Clear all
 				</button>
@@ -47,14 +47,16 @@
 			<div class="space-y-0.5">
 				{#each search_history.items as query (query)}
 					<div
-						class="group flex items-center justify-between rounded-xl px-2.5 py-1.5 transition-colors hover:bg-slate-100"
+						class="group flex items-center justify-between rounded-xl px-2.5 py-1.5 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
 					>
 						<button
 							type="button"
 							onclick={() => select_query(query)}
-							class="flex flex-1 items-center gap-2.5 text-left text-xs font-semibold text-slate-700 transition group-hover:text-slate-900"
+							class="flex flex-1 items-center gap-2.5 text-left text-xs font-semibold text-slate-700 transition group-hover:text-slate-900 dark:text-slate-200 dark:group-hover:text-slate-50"
 						>
-							<SearchIcon class="size-3.5 text-slate-400 group-hover:text-slate-600" />
+							<SearchIcon
+								class="size-3.5 text-slate-400 group-hover:text-slate-600 dark:text-slate-500 dark:group-hover:text-slate-300"
+							/>
 							<span class="truncate">{query}</span>
 						</button>
 						<button
@@ -64,7 +66,7 @@
 								e.stopPropagation()
 								search_history.remove(query)
 							}}
-							class="rounded p-1 text-slate-400 transition hover:bg-slate-200 hover:text-slate-700"
+							class="rounded p-1 text-slate-400 transition hover:bg-slate-200 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-200"
 						>
 							<XIcon class="size-3" />
 						</button>
@@ -76,7 +78,9 @@
 
 	{#if has_trending}
 		<div>
-			<div class="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-slate-400">
+			<div
+				class="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-slate-400 dark:text-slate-500"
+			>
 				<SparklesIcon class="size-3 text-slate-400" />
 				<span>Popular topics</span>
 			</div>
@@ -86,7 +90,7 @@
 					<button
 						type="button"
 						onclick={() => select_query(`#${tag}`)}
-						class="group flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-left text-xs font-semibold text-slate-700 transition group-hover:text-slate-900 hover:bg-slate-100"
+						class="group flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-left text-xs font-semibold text-slate-700 transition group-hover:text-slate-900 hover:bg-slate-100 dark:text-slate-200 dark:group-hover:text-slate-50 dark:hover:bg-slate-800"
 					>
 						<span class="truncate">#{tag}</span>
 						<span class="text-[10px] font-medium text-slate-400">trending</span>
