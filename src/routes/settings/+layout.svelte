@@ -3,15 +3,16 @@
 	import { resolve } from '$app/paths'
 	import ShieldIcon from '@lucide/svelte/icons/shield'
 	import AppShell from '$lib/components/app/AppShell.svelte'
+	import { t } from '$lib/i18n'
 
 	let { data, children } = $props()
 
 	const nav_items = [
-		{ href: '/settings/privacy', label: 'Privacy & Safety', icon: ShieldIcon },
+		{ href: '/settings/privacy', label_key: 'settings.privacy_label', icon: ShieldIcon },
 	] as const
 </script>
 
-<AppShell user={data.user} title="Settings">
+<AppShell user={data.user} title={$t('settings.title')}>
 	<div class="py-6 md:py-10">
 		<div class="flex flex-col space-y-8 md:flex-row md:space-y-0 md:space-x-8">
 			<aside class="md:w-1/4">
@@ -28,7 +29,7 @@
 								: 'text-slate-500 hover:bg-slate-100 hover:text-black'}"
 						>
 							<item.icon class="h-4 w-4" />
-							<span>{item.label}</span>
+							<span>{$t(item.label_key)}</span>
 						</a>
 					{/each}
 				</nav>

@@ -40,6 +40,9 @@ const resolve = vi.fn().mockResolvedValue(new Response('OK'))
 // exempt. Doubles as the per-category blocking sample: the first entry per category is used.
 const routes: [string, string, RateCategory | null][] = [
 	['/api/auth/sign-in/social', 'POST', 'auth'],
+	// Session reads are metered as `read`, not `auth`: charging them to the tighter budget meant
+	// a handful of page reloads exhausted the sign-in allowance.
+	['/api/auth/get-session', 'GET', 'read'],
 	['/api/report', 'POST', 'reports'],
 	['/api/media', 'POST', 'uploads'],
 	['/api/posts', 'POST', 'posts_write'],
@@ -122,6 +125,24 @@ describe('Rate Limiter', () => {
 
 		const res = await handle({
 			event: fake_event('/api/users/bob/follow', ip, 'test', 'PUT'),
+			resolve,
+		})
+		expect(res.status).toBe(200)
+	})
+
+	it('does not spend the sign-in budget on session reads', async () => {
+		const ip = next_ip()
+
+		// Exactly test_limit reads — the count that used to exhaust the `auth` budget — then a
+		// sign-in. This is the reported failure: reloading the page until "Continue with Google"
+		// started returning a 429. Stay at test_limit rather than more, since the reads now draw on
+		// the `read` budget and a higher count would trip that instead of proving anything.
+		for (let i = 0; i < test_limit; i++) {
+			await handle({ event: fake_event('/api/auth/get-session', ip, 'test'), resolve })
+		}
+
+		const res = await handle({
+			event: fake_event('/api/auth/sign-in/social', ip, 'test', 'POST'),
 			resolve,
 		})
 		expect(res.status).toBe(200)

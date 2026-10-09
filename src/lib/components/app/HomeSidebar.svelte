@@ -12,6 +12,7 @@
 	import Avatar from './Avatar.svelte'
 	import FollowButton from './FollowButton.svelte'
 	import SearchSuggestions from './SearchSuggestions.svelte'
+	import { t } from '$lib/i18n'
 	import { search_history } from '$lib/search-history.svelte'
 
 	let {
@@ -67,7 +68,7 @@
 				type="search"
 				bind:value={search_input}
 				onfocus={() => (is_focused = true)}
-				placeholder="Search Loop…"
+				placeholder={$t('sidebar.search_placeholder')}
 				class="w-full rounded-full border border-slate-200/80 bg-white/90 py-2.5 pr-4 pl-10 text-xs text-slate-900 shadow-xs transition placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:ring-1 focus:ring-slate-900 focus:outline-none [&::-webkit-search-cancel-button]:appearance-none"
 			/>
 		</form>
@@ -100,14 +101,14 @@
 				<div class="flex items-center gap-1.5">
 					<FlameIcon class="size-4 text-orange-500" />
 					<h2 id="trending-heading" class="text-sm font-bold tracking-tight text-slate-900">
-						Trending Now
+						{$t('sidebar.trending_now')}
 					</h2>
 				</div>
 				<!-- Period Pills: Today / Week / Month -->
 				<div
 					class="inline-flex items-center rounded-full bg-slate-100 p-0.5 text-[10px] font-semibold"
 					role="tablist"
-					aria-label="Trending time frame"
+					aria-label={$t('sidebar.trending_window')}
 				>
 					<button
 						type="button"
@@ -118,7 +119,7 @@
 							? 'bg-white text-slate-900 shadow-xs'
 							: 'text-slate-500 hover:text-slate-900'}"
 					>
-						Today
+						{$t('sidebar.today')}
 					</button>
 					<button
 						type="button"
@@ -129,7 +130,7 @@
 							? 'bg-white text-slate-900 shadow-xs'
 							: 'text-slate-500 hover:text-slate-900'}"
 					>
-						Week
+						{$t('sidebar.week')}
 					</button>
 					<button
 						type="button"
@@ -140,7 +141,7 @@
 							? 'bg-white text-slate-900 shadow-xs'
 							: 'text-slate-500 hover:text-slate-900'}"
 					>
-						Month
+						{$t('sidebar.month')}
 					</button>
 				</div>
 			</div>
@@ -150,11 +151,11 @@
 			>
 				{#if displayed_topics.length === 0}
 					<p class="py-3 text-center text-xs text-slate-400">
-						No topics trending {active_period === 'today'
-							? 'today'
+						{active_period === 'today'
+							? $t('sidebar.no_trending_today')
 							: active_period === 'week'
-								? 'this week'
-								: 'this month'}.
+								? $t('sidebar.no_trending_week')
+								: $t('sidebar.no_trending_month')}
 					</p>
 				{:else}
 					{#each displayed_topics as topic (typeof topic === 'string' ? topic : topic.tag)}
@@ -172,8 +173,7 @@
 								</p>
 								{#if post_count}
 									<p class="mt-0.5 text-[11px] text-slate-400">
-										{post_count}
-										{post_count === 1 ? 'post' : 'posts'}
+										{$t('sidebar.post_count', { values: { count: post_count } })}
 									</p>
 								{/if}
 							</div>
@@ -191,7 +191,7 @@
 					class="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 transition hover:text-indigo-700"
 				>
 					<CompassIcon class="size-3.5" />
-					<span>Explore all trending topics</span>
+					<span>{$t('sidebar.explore_all')}</span>
 				</a>
 			</div>
 		</section>
@@ -204,7 +204,7 @@
 	>
 		<div class="flex items-center justify-between pb-2">
 			<h2 id="who-to-follow-heading" class="text-sm font-bold tracking-tight text-slate-900">
-				Who to Follow
+				{$t('sidebar.who_to_follow')}
 			</h2>
 			<SparklesIcon class="size-4 text-amber-500" />
 		</div>
@@ -240,12 +240,12 @@
 			</ul>
 		{:else}
 			<div class="py-3 text-center text-xs text-slate-400">
-				<p>No new user suggestions right now.</p>
+				<p>{$t('sidebar.no_suggestions')}</p>
 				<a
 					href={resolve('/explore')}
 					class="mt-1 inline-block font-semibold text-indigo-600 hover:underline"
 				>
-					Discover people on Explore →
+					{$t('sidebar.discover_on_explore')}
 				</a>
 			</div>
 		{/if}
@@ -255,7 +255,7 @@
 				href={resolve('/explore')}
 				class="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 transition hover:text-indigo-700"
 			>
-				<span>Show more suggestions</span>
+				<span>{$t('sidebar.show_more')}</span>
 			</a>
 		</div>
 	</section>
@@ -263,7 +263,9 @@
 	<!-- Footer Info -->
 	<footer class="px-2 text-[11px] leading-relaxed text-slate-400">
 		<p class="flex flex-wrap gap-x-3 gap-y-1">
-			<a href={resolve('/explore')} class="hover:text-slate-600 hover:underline">Explore</a>
+			<a href={resolve('/explore')} class="hover:text-slate-600 hover:underline"
+				>{$t('nav.explore')}</a
+			>
 			<span>© 2026 Loop</span>
 		</p>
 	</footer>

@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte'
 	import { resolve } from '$app/paths'
 	import { api } from '$lib/api'
+	import { t } from '$lib/i18n'
 	import type { Page, UserListItem, UserSummary } from '$lib/types'
 	import UserRow from './UserRow.svelte'
 
@@ -25,7 +26,7 @@
 			people = initial ? page.items : [...people, ...page.items]
 			next_cursor = page.next_cursor
 		} catch (e) {
-			error_message = e instanceof Error ? e.message : 'Could not load list'
+			error_message = e instanceof Error ? e.message : $t('user_list.error')
 		} finally {
 			loading = false
 			loading_more = false
@@ -44,7 +45,7 @@
 			← {owner.name}
 		</a>
 		<span class="text-xs font-bold tracking-wider text-slate-400 uppercase">
-			{kind}
+			{kind === 'followers' ? $t('user_list.followers') : $t('user_list.following')}
 		</span>
 	</div>
 
@@ -70,13 +71,13 @@
 				onclick={() => load(true)}
 				class="mt-4 rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
 			>
-				Try again
+				{$t('common.try_again')}
 			</button>
 		</div>
 	{:else if people.length === 0}
 		<div class="px-4 py-12 text-center">
 			<p class="text-sm text-slate-500">
-				{kind === 'followers' ? 'No followers yet.' : 'Not following anyone yet.'}
+				{kind === 'followers' ? $t('user_list.no_followers') : $t('user_list.no_following')}
 			</p>
 		</div>
 	{:else}
@@ -98,7 +99,7 @@
 					disabled={loading_more}
 					class="rounded-full border border-slate-200 bg-white px-5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 disabled:opacity-60"
 				>
-					{loading_more ? 'Loading…' : 'Load more'}
+					{loading_more ? $t('common.loading') : $t('common.load_more')}
 				</button>
 			</div>
 		{/if}

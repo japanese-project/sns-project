@@ -11,7 +11,11 @@ const per_minute = (n: number): { IP: Rate; IPUA: Rate } => ({
 })
 
 export const RATE_LIMITS = {
-	auth: per_minute(10),
+	// 30/min, not the tighter 10/min the other write budgets use: a single sign-in is ~3 requests
+	// (sign-in, provider callback, session), and behind a shared egress IP — a CI runner, an
+	// office NAT, or a forwarded codespace — one user's retries otherwise lock everyone out. Still
+	// well inside the RL_30 binding, so no new Cloudflare binding is needed.
+	auth: per_minute(30),
 	uploads: per_minute(10),
 	reports: per_minute(10),
 	posts_write: per_minute(20),
@@ -26,11 +30,19 @@ export type RateCategory = keyof typeof RATE_LIMITS
 
 type Limits = typeof RATE_LIMITS
 
+// Read-only auth endpoints, metered as `read` rather than `auth`. Sign-in, sign-out and the
+// provider callback stay on the tighter `auth` budget because they mutate credentials.
+const auth_read_paths = ['/api/auth/get-session', '/api/auth/session']
+
 // Returns null for service-to-service endpoints: the deploy pipeline polls /api/health and the
 // bot runs on a schedule, so throttling them would break deploys and the bot.
 export function rate_limit_for(pathname: string, method: string): RateCategory | null {
 	if (pathname.startsWith('/api/health') || pathname.startsWith('/api/internal/')) return null
-	if (pathname.startsWith('/api/auth')) return 'auth'
+	// Only the credential-touching endpoints are `auth`. Session reads are cheap and happen on
+	// every page load; charging them to the same budget meant a handful of reloads exhausted the
+	// sign-in allowance and locked the user out of retrying (429 rendered as a sign-in failure).
+	if (pathname.startsWith('/api/auth'))
+		return auth_read_paths.some((path) => pathname.startsWith(path)) ? 'read' : 'auth'
 	if (pathname.startsWith('/api/search')) return 'search'
 	if (pathname.startsWith('/api/report')) return 'reports'
 	if (pathname.startsWith('/api/media') && method === 'POST') return 'uploads'

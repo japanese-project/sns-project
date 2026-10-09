@@ -1,4 +1,8 @@
 allowBuilds:
+  # Pulled in transitively by svelte-i18n via cli-color. Its postinstall only prints an
+  # install notice and is wrapped in a try/catch that swallows failures, so there is nothing to
+  # build and nothing to run.
+  es5-ext: false
   esbuild: true
   lefthook: true
   workerd: false

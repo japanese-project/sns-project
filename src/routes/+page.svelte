@@ -4,6 +4,7 @@
 	import AppShell from '$lib/components/app/AppShell.svelte'
 	import HomeSidebar from '$lib/components/app/HomeSidebar.svelte'
 	import PostList from '$lib/components/app/PostList.svelte'
+	import { t } from '$lib/i18n'
 
 	let { data } = $props()
 
@@ -15,13 +16,13 @@
 	}
 </script>
 
-<AppShell user={data.user} title="Home">
+<AppShell user={data.user} title={$t('nav.home')}>
 	{#snippet header_content()}
 		<!-- Integrated Global / Following Switcher in Top Pill -->
 		<div
 			class="inline-flex items-center rounded-full bg-slate-100/90 p-0.5 text-xs font-semibold shadow-inner"
 			role="tablist"
-			aria-label="Feed selection"
+			aria-label={$t('home.feed_selection')}
 		>
 			<button
 				type="button"
@@ -34,7 +35,7 @@
 					: 'text-slate-600 hover:bg-slate-200/50 hover:text-slate-900'}"
 			>
 				<GlobeIcon class="size-3.5" />
-				<span>Global</span>
+				<span>{$t('home.global')}</span>
 			</button>
 
 			<button
@@ -48,7 +49,7 @@
 					: 'text-slate-600 hover:bg-slate-200/50 hover:text-slate-900'}"
 			>
 				<UsersIcon class="size-3.5" />
-				<span>Following</span>
+				<span>{$t('home.following')}</span>
 			</button>
 		</div>
 	{/snippet}
@@ -65,7 +66,7 @@
 		<PostList
 			endpoint="/api/posts?feed=global"
 			accepts_new_posts
-			empty_message="No posts yet. Be the first to share something."
+			empty_message={$t('home.empty_global')}
 		/>
 	</div>
 
@@ -74,7 +75,7 @@
 		<PostList
 			endpoint="/api/posts?feed=following"
 			accepts_new_posts
-			empty_message="You aren't following anyone yet. Discover people on Explore or switch to the Global feed!"
+			empty_message={$t('home.empty_following')}
 		/>
 	</div>
 </AppShell>

@@ -6,6 +6,7 @@
 	import { onMount, onDestroy } from 'svelte'
 	import { api } from '$lib/api'
 	import { composer } from '$lib/composer-state.svelte'
+	import { t } from '$lib/i18n'
 	import { MAX_POST_LENGTH, MAX_MEDIA_SIZE_BYTES } from '$lib/limits'
 	import type { PostView } from '$lib/types'
 	import { extract_first_url } from '$lib/link-preview-client'
@@ -84,7 +85,7 @@
 
 	function request_close() {
 		if (selected_image || (content.trim() && content.trim() !== localStorage.getItem(draft_key))) {
-			if (confirm('You have unsaved changes. Are you sure you want to discard them?')) {
+			if (confirm($t('composer.confirm_unsaved'))) {
 				remove_image()
 				composer.hide()
 			}
@@ -98,7 +99,9 @@
 		const file = target.files?.[0]
 		if (file) {
 			if (file.size > MAX_MEDIA_SIZE_BYTES) {
-				error_message = `Image exceeds maximum size of ${MAX_MEDIA_SIZE_BYTES / (1024 * 1024)}MB`
+				error_message = $t('composer.image_too_large', {
+					values: { size: MAX_MEDIA_SIZE_BYTES / (1024 * 1024) },
+				})
 				if (image_input) image_input.value = ''
 				return
 			}
@@ -145,7 +148,7 @@
 				})
 				if (!response.ok) {
 					const res_body = (await response.json().catch(() => null)) as { message?: string } | null
-					throw new Error(res_body?.message ?? 'Failed to upload image')
+					throw new Error(res_body?.message ?? $t('composer.upload_failed'))
 				}
 				const data = (await response.json()) as { url: string }
 				if (image_dims) {
@@ -171,7 +174,7 @@
 			}
 			composer.hide()
 		} catch (e) {
-			error_message = e instanceof Error ? e.message : 'Could not publish your post'
+			error_message = e instanceof Error ? e.message : $t('composer.publish_failed')
 		} finally {
 			submitting = false
 		}
@@ -194,7 +197,7 @@
 >
 	<form
 		onsubmit={submit}
-		aria-label="New post"
+		aria-label={$t('composer.label')}
 		class="flex max-h-[90vh] w-full max-w-[600px] flex-col overflow-hidden rounded-t-[2rem] bg-white shadow-2xl transition-transform sm:max-h-[85vh] sm:rounded-3xl"
 	>
 		<!-- Header -->
@@ -203,21 +206,21 @@
 		>
 			<button
 				type="button"
-				aria-label="Cancel"
+				aria-label={$t('composer.cancel')}
 				onclick={request_close}
 				class="text-[15px] font-medium text-slate-500 transition hover:text-slate-900"
 			>
-				Cancel
+				{$t('composer.cancel')}
 			</button>
 
-			<h2 class="text-[15px] font-bold tracking-tight text-slate-900">New Post</h2>
+			<h2 class="text-[15px] font-bold tracking-tight text-slate-900">{$t('composer.title')}</h2>
 
 			<button
 				type="submit"
 				disabled={invalid || submitting}
 				class="rounded-full bg-slate-900 px-5 py-1.5 text-sm font-bold text-white shadow-sm transition enabled:hover:bg-black enabled:active:scale-95 disabled:bg-slate-200 disabled:text-slate-400"
 			>
-				{submitting ? 'Posting…' : 'Post'}
+				{submitting ? $t('composer.posting') : $t('composer.post')}
 			</button>
 		</div>
 
@@ -237,10 +240,10 @@
 						>
 							{#if visibility === 'public'}
 								<GlobeIcon class="size-3.5 text-indigo-500" />
-								<span>Everyone</span>
+								<span>{$t('composer.everyone')}</span>
 							{:else}
 								<LockIcon class="size-3.5 text-amber-500" />
-								<span>Followers only</span>
+								<span>{$t('composer.followers_only')}</span>
 							{/if}
 						</button>
 					</div>
@@ -250,8 +253,8 @@
 						bind:value={content}
 						oninput={adjust_textarea_height}
 						rows="4"
-						placeholder="What's on your mind?"
-						aria-label="Post text"
+						placeholder={$t('composer.placeholder')}
+						aria-label={$t('composer.post_text')}
 						class="w-full resize-none border-0 bg-transparent p-0 text-[17px] leading-relaxed text-slate-900 placeholder:text-slate-400 focus:ring-0"
 					></textarea>
 
@@ -260,14 +263,14 @@
 						<div class="group relative mt-3 w-fit">
 							<img
 								src={image_preview}
-								alt="Attached media"
+								alt={$t('composer.attached_media')}
 								class="max-h-[320px] max-w-full rounded-2xl border border-slate-100 object-contain shadow-xs"
 							/>
 							<button
 								type="button"
 								onclick={remove_image}
 								class="absolute top-2 right-2 flex size-8 items-center justify-center rounded-full bg-slate-900/60 text-white backdrop-blur-md transition hover:bg-slate-900 active:scale-95"
-								aria-label="Remove image"
+								aria-label={$t('composer.remove_image')}
 							>
 								<XIcon class="size-4" />
 							</button>
@@ -298,7 +301,7 @@
 						class="flex size-9 cursor-pointer items-center justify-center rounded-full text-indigo-500 transition hover:bg-indigo-50 hover:text-indigo-600 active:scale-95"
 					>
 						<ImageIcon class="size-[22px]" />
-						<span class="sr-only">Add image</span>
+						<span class="sr-only">{$t('composer.add_image')}</span>
 						<input
 							type="file"
 							accept="image/jpeg,image/png,image/webp,image/gif"
@@ -315,12 +318,12 @@
 							type="button"
 							class="ml-2 text-[13px] font-semibold text-slate-400 transition hover:text-rose-600"
 							onclick={() => {
-								if (confirm('Are you sure you want to discard this draft?')) {
+								if (confirm($t('composer.confirm_discard_draft'))) {
 									discard_draft()
 								}
 							}}
 						>
-							Discard
+							{$t('composer.discard')}
 						</button>
 					{/if}
 				</div>

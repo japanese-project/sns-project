@@ -3,12 +3,16 @@
 
 import type { User, Session } from 'better-auth/types'
 import type { Db } from '$lib/server/db'
+import type { Locale } from '$lib/i18n/locales'
 
 declare global {
 	namespace App {
 		// interface Error {}
 		interface Locals {
 			db: Db
+			/** Locale negotiated from the request's Accept-Language header; drives SSR markup and
+			 *  the `lang` attribute on <html>. */
+			locale: Locale
 			user:
 				| (User & {
 						username?: string | null

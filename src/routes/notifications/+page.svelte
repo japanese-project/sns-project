@@ -8,8 +8,9 @@
 	import { resolve } from '$app/paths'
 	import AppShell from '$lib/components/app/AppShell.svelte'
 	import Avatar from '$lib/components/app/Avatar.svelte'
+	import RelativeTime from '$lib/components/app/RelativeTime.svelte'
 	import { api } from '$lib/api'
-	import { relative_time } from '$lib/time'
+	import { t } from '$lib/i18n'
 	import type { NotificationView, Page } from '$lib/types'
 
 	let { data } = $props()
@@ -34,7 +35,7 @@
 			next_cursor = page.next_cursor
 			unread = page.unread_count
 		} catch (e) {
-			error_message = e instanceof Error ? e.message : 'Could not load notifications'
+			error_message = e instanceof Error ? e.message : $t('notifications.error_load')
 		} finally {
 			loading = false
 			loading_more = false
@@ -64,7 +65,7 @@
 		} catch (e) {
 			note.read = false
 			unread += 1
-			error_message = e instanceof Error ? e.message : 'Could not mark as read'
+			error_message = e instanceof Error ? e.message : $t('notifications.error_mark_one')
 		}
 	}
 
@@ -79,40 +80,44 @@
 		} catch (e) {
 			items.forEach((n, i) => (n.read = snapshot[i]))
 			unread = previous_unread
-			error_message = e instanceof Error ? e.message : 'Could not mark all as read'
+			error_message = e instanceof Error ? e.message : $t('notifications.error_mark_all')
 		}
 	}
 
 	function message(note: NotificationView) {
 		return note.type === 'like'
-			? 'liked your post.'
+			? $t('notifications.msg_like')
 			: note.type === 'repost'
-				? 'reposted your post.'
+				? $t('notifications.msg_repost')
 				: note.type === 'comment'
-					? 'commented on your post.'
-					: 'started following you.'
+					? $t('notifications.msg_comment')
+					: $t('notifications.msg_follow')
 	}
 </script>
 
-<AppShell user={data.user} title="Activity">
+<AppShell user={data.user} title={$t('notifications.title')}>
 	<div class="mx-auto w-full max-w-2xl">
 		{#if unread > 0}
 			<div class="mb-4 flex items-center justify-between px-1">
 				<span class="text-xs font-bold tracking-wider text-slate-500 uppercase">
-					Notifications ({unread} unread)
+					{$t('notifications.unread', { values: { count: unread } })}
 				</span>
 				<button
 					type="button"
 					onclick={mark_all}
 					class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50"
 				>
-					Mark all as read
+					{$t('notifications.mark_all')}
 				</button>
 			</div>
 		{/if}
 
 		{#if loading}
-			<div class="divide-y divide-slate-100" aria-busy="true" aria-label="Loading notifications">
+			<div
+				class="divide-y divide-slate-100"
+				aria-busy="true"
+				aria-label={$t('notifications.loading')}
+			>
 				{#each [0, 1, 2] as n (n)}
 					<div class="h-16 animate-pulse px-2 py-4">
 						<div class="flex items-center gap-3.5">
@@ -133,14 +138,14 @@
 					onclick={() => load(true)}
 					class="mt-4 rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
 				>
-					Try again
+					{$t('common.try_again')}
 				</button>
 			</div>
 		{:else if items.length === 0}
 			<div class="px-4 py-12 text-center">
 				<BellIcon class="mx-auto mb-3 size-8 text-slate-300" />
 				<p class="text-sm text-slate-500">
-					You're all caught up. Likes, reposts, comments, and new followers will show up here.
+					{$t('notifications.empty')}
 				</p>
 			</div>
 		{:else}
@@ -190,12 +195,12 @@
 										>“{note.snippet}”</span
 									>{/if}
 								<span class="mt-1 block text-xs text-slate-400"
-									>{relative_time(note.created_at)}</span
+									><RelativeTime iso={note.created_at} /></span
 								>
 							</span>
 							{#if !note.read}<span
 									class="my-auto size-2 shrink-0 rounded-full bg-indigo-600"
-									aria-label="Unread notification"
+									aria-label={$t('notifications.unread_badge')}
 								></span>{/if}
 						</a>
 					</li>
@@ -208,7 +213,7 @@
 						onclick={() => load(false)}
 						disabled={loading_more}
 						class="rounded-full border border-slate-200 bg-white px-5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 disabled:opacity-60"
-						>{loading_more ? 'Loading…' : 'Load more'}</button
+						>{loading_more ? $t('common.loading') : $t('common.load_more')}</button
 					>
 				</div>
 			{/if}

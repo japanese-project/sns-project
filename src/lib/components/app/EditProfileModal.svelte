@@ -5,6 +5,7 @@
 	import { api } from '$lib/api'
 	import { BANNER_THEMES, get_banner_class } from '$lib/banner-themes'
 	import { MAX_BIO_LENGTH, MAX_NAME_LENGTH } from '$lib/limits'
+	import { t } from '$lib/i18n'
 	import type { UserSummary } from '$lib/types'
 
 	let {
@@ -90,16 +91,15 @@
 		const trimmed_bio = bio.trim()
 
 		if (!trimmed_name || trimmed_name.length > MAX_NAME_LENGTH) {
-			error_message = `Name must be between 1 and ${MAX_NAME_LENGTH} characters.`
+			error_message = $t('edit_profile.error_name', { values: { max: MAX_NAME_LENGTH } })
 			return
 		}
 		if (trimmed_username && !/^[a-z0-9_]{3,30}$/.test(trimmed_username)) {
-			error_message =
-				'Username must be 3–30 characters and contain only lowercase letters, numbers, and underscores.'
+			error_message = $t('edit_profile.error_username')
 			return
 		}
 		if (trimmed_bio.length > MAX_BIO_LENGTH) {
-			error_message = `Bio cannot exceed ${MAX_BIO_LENGTH} characters.`
+			error_message = $t('edit_profile.error_bio', { values: { max: MAX_BIO_LENGTH } })
 			return
 		}
 
@@ -140,7 +140,7 @@
 				void goto(resolve('/u/[handle]', { handle: updated.handle }), { replaceState: true })
 			}
 		} catch (e) {
-			error_message = e instanceof Error ? e.message : 'Failed to update profile.'
+			error_message = e instanceof Error ? e.message : $t('edit_profile.error_failed')
 		} finally {
 			saving = false
 		}
@@ -173,11 +173,13 @@
 	>
 		<!-- Header bar -->
 		<div class="flex items-center justify-between border-b border-slate-200/60 px-5 py-4">
-			<h2 id="edit-profile-title" class="text-base font-bold text-slate-900">Edit Profile</h2>
+			<h2 id="edit-profile-title" class="text-base font-bold text-slate-900">
+				{$t('edit_profile.title')}
+			</h2>
 			<button
 				type="button"
 				onclick={on_close}
-				aria-label="Close"
+				aria-label={$t('common.close')}
 				class="flex size-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
 			>
 				<XIcon class="size-4" />
@@ -193,7 +195,7 @@
 						for="profile-name"
 						class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase"
 					>
-						Display Name
+						{$t('edit_profile.display_name')}
 					</label>
 					<input
 						id="profile-name"
@@ -211,7 +213,7 @@
 						for="profile-username"
 						class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase"
 					>
-						Username
+						{$t('edit_profile.username')}
 					</label>
 					<div class="relative mt-2">
 						<span
@@ -223,13 +225,12 @@
 							type="text"
 							bind:value={username}
 							maxlength={30}
-							placeholder="username"
+							placeholder={$t('edit_profile.username_placeholder')}
 							class="w-full border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 pl-5 text-sm text-slate-900 transition outline-none focus:border-slate-900 focus:ring-0 focus:outline-none"
 						/>
 					</div>
 					<p class="mt-1 text-[0.68rem] text-slate-400">
-						Lowercase letters, numbers, and underscores. Changing it breaks existing links to your
-						profile.
+						{$t('edit_profile.username_help')}
 					</p>
 				</div>
 
@@ -240,7 +241,7 @@
 							for="profile-bio"
 							class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase"
 						>
-							Bio
+							{$t('edit_profile.bio')}
 						</label>
 						<span
 							class="text-xs tabular-nums {bio.length > MAX_BIO_LENGTH
@@ -255,7 +256,7 @@
 						bind:value={bio}
 						rows="3"
 						maxlength={MAX_BIO_LENGTH}
-						placeholder="Tell people a little bit about yourself…"
+						placeholder={$t('edit_profile.bio_placeholder')}
 						class="mt-2 w-full resize-none border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 text-sm leading-relaxed text-slate-900 transition outline-none focus:border-slate-900 focus:ring-0 focus:outline-none"
 					></textarea>
 				</div>
@@ -263,10 +264,10 @@
 				<!-- Header Banner Theme -->
 				<div>
 					<span class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase">
-						Header Banner Theme
+						{$t('edit_profile.banner_theme')}
 					</span>
 					<p class="mt-0.5 text-[0.68rem] text-slate-400">
-						Choose a color gradient for your profile banner.
+						{$t('edit_profile.banner_theme_desc')}
 					</p>
 					<div
 						data-testid="banner-preview"
@@ -279,7 +280,9 @@
 							<button
 								type="button"
 								onclick={() => (banner_color = theme.id)}
-								aria-label="{theme.name} banner theme"
+								aria-label={$t('profile.banner_theme_aria', {
+									values: { name: $t(`banner_theme.${theme.id}`) },
+								})}
 								class="group relative flex h-9 items-center justify-center rounded-lg border-2 transition {banner_color ===
 								theme.id
 									? 'border-slate-900 ring-2 ring-slate-900/20'
@@ -297,9 +300,9 @@
 				<!-- Interests / Hashtag Topics -->
 				<div>
 					<p class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase">
-						Topics you enjoy
+						{$t('edit_profile.topics')}
 					</p>
-					<p class="mt-0.5 text-[0.68rem] text-slate-400">These appear as #tags on your profile.</p>
+					<p class="mt-0.5 text-[0.68rem] text-slate-400">{$t('edit_profile.topics_desc')}</p>
 					<div class="mt-3 flex flex-wrap gap-2">
 						{#each available_interests as topic (topic)}
 							{@const is_selected = selected_interests.includes(topic)}
@@ -322,7 +325,7 @@
 									type="button"
 									onclick={() => remove_custom(topic)}
 									class="ml-0.5 opacity-70 hover:opacity-100"
-									aria-label="Remove {topic}">✕</button
+									aria-label={$t('edit_profile.remove_topic', { values: { topic } })}>✕</button
 								>
 							</span>
 						{/each}
@@ -338,7 +341,7 @@
 									add_custom()
 								}
 							}}
-							placeholder="Add your own…"
+							placeholder={$t('edit_profile.add_own')}
 							maxlength={30}
 							class="flex-1 border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-slate-900 focus:ring-0 focus:outline-none"
 						/>
@@ -347,7 +350,7 @@
 							onclick={add_custom}
 							class="rounded-full px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
 						>
-							Add
+							{$t('common.add')}
 						</button>
 					</div>
 				</div>
@@ -368,14 +371,14 @@
 					onclick={on_close}
 					class="rounded-full px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
 				>
-					Cancel
+					{$t('common.cancel')}
 				</button>
 				<button
 					type="submit"
 					disabled={saving || !name.trim()}
 					class="rounded-full bg-black px-6 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50"
 				>
-					{saving ? 'Saving…' : 'Save'}
+					{saving ? $t('common.saving') : $t('common.save')}
 				</button>
 			</div>
 		</form>

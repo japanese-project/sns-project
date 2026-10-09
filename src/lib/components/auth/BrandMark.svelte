@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { resolve } from '$app/paths'
+	import { t } from '$lib/i18n'
 
 	let { light = false }: { light?: boolean } = $props()
 </script>
 
 <a
 	href={resolve('/')}
-	aria-label="Loop home"
+	aria-label={$t('login.brand_home')}
 	class="inline-flex items-center gap-3 no-underline {light ? 'text-white' : 'text-[#17233c]'}"
 >
 	<span

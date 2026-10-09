@@ -62,11 +62,16 @@ export function create_auth(d1: D1Database, kv: KVNamespace) {
 					}),
 				],
 
+		// Better Auth rejects state-changing requests whose Origin is not in this list. The four
+		// built-in entries cover local dev and the deployed workers; TRUSTED_ORIGINS adds more
+		// (comma-separated) for environments whose host is not known ahead of time, such as a
+		// forwarded dev codespace URL, so it does not have to be a source edit.
 		trustedOrigins: [
 			current_url,
 			production_url,
 			'https://*.sreng087.workers.dev',
 			'http://localhost:5555',
+			...extra_origins(),
 		],
 	})
 }
@@ -81,6 +86,16 @@ function env_or_throw(name: string): string {
 
 function env_or_default(name: string, fallback: string): string {
 	return env[name] || process.env[name] || fallback
+}
+
+// Comma-separated origins to trust in addition to the built-in list. Blank entries are dropped so
+// a trailing comma or an unset variable cannot add an empty (and always-rejected) origin.
+function extra_origins(): string[] {
+	const raw = env.TRUSTED_ORIGINS ?? process.env.TRUSTED_ORIGINS ?? ''
+	return raw
+		.split(',')
+		.map((origin) => origin.trim())
+		.filter(Boolean)
 }
 
 export type Auth = ReturnType<typeof create_auth>

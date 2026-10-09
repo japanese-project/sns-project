@@ -3,11 +3,12 @@
 	import AppShell from '$lib/components/app/AppShell.svelte'
 	import HomeSidebar from '$lib/components/app/HomeSidebar.svelte'
 	import PostCard from '$lib/components/app/PostCard.svelte'
+	import { t } from '$lib/i18n'
 
 	let { data } = $props()
 </script>
 
-<AppShell user={data.user} title="Post">
+<AppShell user={data.user} title={$t('nav.home')}>
 	{#snippet right_sidebar()}
 		<HomeSidebar
 			suggested_users={data.suggested_users ?? []}
@@ -21,7 +22,7 @@
 				href={resolve('/')}
 				class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 transition hover:text-slate-900"
 			>
-				← Back to feed
+				← {$t('nav.home')}
 			</a>
 		</div>
 

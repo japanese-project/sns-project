@@ -4,7 +4,7 @@
 	import { resolve } from '$app/paths'
 	import { api } from '$lib/api'
 	import { MAX_POST_LENGTH } from '$lib/limits'
-	import { relative_time } from '$lib/time'
+	import { t } from '$lib/i18n'
 	import type { PostView } from '$lib/types'
 	import { parse_content } from '$lib/content'
 	import { extract_first_url } from '$lib/link-preview-client'
@@ -12,6 +12,7 @@
 	import Comments from './Comments.svelte'
 	import LinkPreviewCard from './LinkPreviewCard.svelte'
 	import PostCard from './PostCard.svelte'
+	import RelativeTime from './RelativeTime.svelte'
 	import PencilIcon from '@lucide/svelte/icons/pencil'
 	import GlobeIcon from '@lucide/svelte/icons/globe'
 	import LockIcon from '@lucide/svelte/icons/lock'
@@ -134,7 +135,7 @@
 			editing_caption = false
 			on_updated?.({ ...post, content: edit_draft.trim() })
 		} catch (e) {
-			edit_error = e instanceof Error ? e.message : 'Could not save caption'
+			edit_error = e instanceof Error ? e.message : $t('post.error_save_caption')
 		} finally {
 			edit_saving = false
 		}
@@ -306,7 +307,7 @@
 		} catch (e) {
 			liked = previous.liked
 			like_count = previous.like_count
-			error_message = e instanceof Error ? e.message : 'Could not update like'
+			error_message = e instanceof Error ? e.message : $t('post.error_like')
 		} finally {
 			like_pending = false
 		}
@@ -333,7 +334,7 @@
 		} catch (e) {
 			reposted = previous.reposted
 			repost_count = previous.repost_count
-			error_message = e instanceof Error ? e.message : 'Could not update repost'
+			error_message = e instanceof Error ? e.message : $t('post.error_repost')
 		} finally {
 			repost_pending = false
 		}
@@ -358,7 +359,7 @@
 		} catch (e) {
 			reposted = previous.reposted
 			repost_count = previous.repost_count
-			error_message = e instanceof Error ? e.message : 'Could not update repost'
+			error_message = e instanceof Error ? e.message : $t('post.error_repost')
 		} finally {
 			repost_pending = false
 		}
@@ -396,7 +397,7 @@
 			bookmarked = result.bookmarked
 		} catch (e) {
 			bookmarked = previous
-			error_message = e instanceof Error ? e.message : 'Could not update favorites'
+			error_message = e instanceof Error ? e.message : $t('post.error_favorites')
 		} finally {
 			bookmark_pending = false
 		}
@@ -417,7 +418,7 @@
 			editing = false
 			on_updated?.(updated)
 		} catch (e) {
-			error_message = e instanceof Error ? e.message : 'Could not save changes'
+			error_message = e instanceof Error ? e.message : $t('post.error_save')
 		} finally {
 			saving = false
 		}
@@ -430,7 +431,7 @@
 			await api(`/api/posts/${post.id}`, { method: 'DELETE' })
 			on_deleted?.(post.id)
 		} catch (e) {
-			error_message = e instanceof Error ? e.message : 'Could not delete post'
+			error_message = e instanceof Error ? e.message : $t('post.error_delete')
 			deleting = false
 			confirming_delete = false
 		}
@@ -463,7 +464,7 @@
 	<div class="relative" bind:this={menu_container_el}>
 		<button
 			type="button"
-			aria-label="More options"
+			aria-label={$t('post.more_options')}
 			aria-haspopup="menu"
 			aria-expanded={menu_open}
 			aria-controls={menu_open ? `menu-${post.id}` : undefined}
@@ -484,7 +485,7 @@
 				id="menu-{post.id}"
 				role="menu"
 				tabindex="-1"
-				aria-label="Post actions"
+				aria-label={$t('post.actions_label')}
 				onkeydown={handle_menu_keydown}
 				class="glass-surface absolute top-full right-0 z-50 mt-2 min-w-[155px] overflow-hidden rounded-2xl border border-white/80 py-1.5 shadow-xl shadow-black/10 focus:outline-none"
 			>
@@ -497,13 +498,13 @@
 				>
 					{#if copy_status === 'copied'}
 						<i class="ph-fill ph-check-circle text-base text-emerald-600"></i>
-						<span class="text-emerald-600">Copied!</span>
+						<span class="text-emerald-600">{$t('post.copied')}</span>
 					{:else if copy_status === 'failed'}
 						<i class="ph-fill ph-x-circle text-base text-rose-600"></i>
-						<span class="text-rose-600">Failed to copy</span>
+						<span class="text-rose-600">{$t('post.copy_failed')}</span>
 					{:else}
 						<i class="ph ph-copy text-base text-slate-400"></i>
-						<span>Copy link</span>
+						<span>{$t('post.copy_link')}</span>
 					{/if}
 				</button>
 
@@ -522,7 +523,7 @@
 						class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50 focus:bg-white/50"
 					>
 						<i class="ph ph-pencil-simple text-base text-slate-400"></i>
-						<span>Edit post</span>
+						<span>{$t('post.edit_post')}</span>
 					</button>
 
 					<button
@@ -537,7 +538,7 @@
 						class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-rose-600 transition hover:bg-rose-50 focus:bg-rose-50"
 					>
 						<i class="ph ph-trash text-base text-rose-500"></i>
-						<span>Delete post</span>
+						<span>{$t('post.delete_post')}</span>
 					</button>
 				{/if}
 			</div>
@@ -561,15 +562,17 @@
 				</span>
 				<span class="flex min-w-0 flex-col leading-tight">
 					<span class="flex items-center gap-1.5 text-[15px] font-bold text-slate-900">
-						<span class="truncate">{post.is_owner ? 'You' : post.author.name}</span>
+						<span class="truncate">{post.is_owner ? $t('common.you') : post.author.name}</span>
 						<span
 							class="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-emerald-600"
 						>
 							<i class="ph-bold ph-repeat text-sm"></i>
-							reposted
+							{$t('post.reposted')}
 						</span>
 					</span>
-					<span class="mt-0.5 text-[13px] text-slate-500">{relative_time(post.created_at)}</span>
+					<span class="mt-0.5 text-[13px] text-slate-500"
+						><RelativeTime iso={post.created_at} /></span
+					>
 				</span>
 			</a>
 		</div>
@@ -578,8 +581,8 @@
 				<textarea
 					bind:value={edit_draft}
 					rows="2"
-					placeholder="Add a caption…"
-					aria-label="Repost caption"
+					placeholder={$t('post.add_caption')}
+					aria-label={$t('post.caption_label')}
 					class="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-[15px] leading-relaxed outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
 				></textarea>
 				{#if edit_error}<p class="text-xs text-rose-600" role="alert">{edit_error}</p>{/if}
@@ -589,19 +592,20 @@
 							? 'font-bold text-rose-600'
 							: 'text-slate-400'}"
 					>
-						{MAX_POST_LENGTH - edit_draft.length} characters left
+						{$t('post.characters_left', { values: { count: MAX_POST_LENGTH - edit_draft.length } })}
 					</span>
 					<span class="flex items-center gap-2">
 						<button
 							type="button"
 							onclick={() => (editing_caption = false)}
-							class="px-3 py-1.5 font-medium text-slate-500 hover:text-slate-800">Cancel</button
+							class="px-3 py-1.5 font-medium text-slate-500 hover:text-slate-800"
+							>{$t('common.cancel')}</button
 						>
 						<button
 							type="submit"
 							disabled={edit_saving || edit_draft.length > MAX_POST_LENGTH}
 							class="rounded-full bg-slate-900 px-4 py-1.5 font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-							>{edit_saving ? 'Saving…' : 'Save caption'}</button
+							>{edit_saving ? $t('common.saving') : $t('post.save_caption')}</button
 						>
 					</span>
 				</div>
@@ -678,8 +682,8 @@
 				<textarea
 					bind:value={caption_draft}
 					rows="2"
-					placeholder="Add a caption…"
-					aria-label="Repost caption"
+					placeholder={$t('post.add_caption')}
+					aria-label={$t('post.caption_label')}
 					class="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-[15px] leading-relaxed outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
 				></textarea>
 				<div class="flex items-center justify-between text-xs">
@@ -688,20 +692,23 @@
 							? 'font-bold text-rose-600'
 							: 'text-slate-400'}"
 					>
-						{MAX_POST_LENGTH - caption_draft.length} characters left
+						{$t('post.characters_left', {
+							values: { count: MAX_POST_LENGTH - caption_draft.length },
+						})}
 					</span>
 					<span class="flex items-center gap-2">
 						<button
 							type="button"
 							onclick={() => (captioning = false)}
-							class="px-3 py-1.5 font-medium text-slate-500 hover:text-slate-800">Cancel</button
+							class="px-3 py-1.5 font-medium text-slate-500 hover:text-slate-800"
+							>{$t('common.cancel')}</button
 						>
 						<button
 							type="submit"
 							disabled={repost_pending || caption_draft.length > MAX_POST_LENGTH}
 							class="rounded-full bg-slate-900 px-4 py-1.5 font-medium text-white hover:bg-slate-800 disabled:opacity-50"
 						>
-							{reposted ? 'Save caption' : 'Repost'}
+							{reposted ? $t('post.save_caption') : $t('post.repost')}
 						</button>
 					</span>
 				</div>
@@ -714,7 +721,7 @@
 					<div class="flex items-center justify-between text-xs">
 						<span class="flex items-center gap-1.5 font-semibold text-slate-400">
 							<PencilIcon class="size-3.5 text-indigo-500" />
-							Editing
+							{$t('post.editing')}
 						</span>
 						<div class="flex items-center gap-1">
 							<button
@@ -725,7 +732,8 @@
 									? 'bg-slate-100 font-semibold text-slate-900'
 									: 'text-slate-400 hover:text-slate-600'}"
 							>
-								<GlobeIcon class="size-3.5" /> Public
+								<GlobeIcon class="size-3.5" />
+								{$t('post.public')}
 							</button>
 							<button
 								type="button"
@@ -735,7 +743,8 @@
 									? 'bg-slate-100 font-semibold text-slate-900'
 									: 'text-slate-400 hover:text-slate-600'}"
 							>
-								<LockIcon class="size-3.5" /> Followers
+								<LockIcon class="size-3.5" />
+								{$t('post.followers')}
 							</button>
 						</div>
 					</div>
@@ -743,7 +752,7 @@
 					<textarea
 						bind:value={draft}
 						rows="3"
-						aria-label="Edit post text"
+						aria-label={$t('post.edit_text')}
 						class="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-[15px] leading-relaxed [overflow-wrap:anywhere] break-words text-slate-900 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
 					></textarea>
 
@@ -753,14 +762,14 @@
 								? 'font-bold text-rose-600'
 								: 'text-slate-400'}"
 						>
-							{MAX_POST_LENGTH - draft.length} characters left
+							{$t('post.characters_left', { values: { count: MAX_POST_LENGTH - draft.length } })}
 						</span>
 						<div class="flex items-center gap-2">
 							<button
 								type="button"
 								onclick={() => (editing = false)}
 								class="px-3 py-1.5 font-medium text-slate-500 transition hover:text-slate-800"
-								>Cancel</button
+								>{$t('common.cancel')}</button
 							>
 							<button
 								type="submit"
@@ -769,7 +778,7 @@
 									draft.length > MAX_POST_LENGTH}
 								class="rounded-full bg-slate-900 px-4 py-1.5 font-medium text-white transition hover:bg-slate-800 disabled:opacity-50"
 							>
-								{saving ? 'Saving…' : 'Save changes'}
+								{saving ? $t('common.saving') : $t('post.save_changes')}
 							</button>
 						</div>
 					</div>
@@ -798,9 +807,9 @@
 						<div class="flex flex-col leading-tight">
 							<span class="text-[15px] font-bold text-slate-900">{post.author.name}</span>
 							<span class="mt-0.5 text-[13px] text-slate-500">
-								@{post.author.username || post.author.handle || post.author.id} • {relative_time(
-									active_post.created_at,
-								)}
+								@{post.author.username || post.author.handle || post.author.id} • <RelativeTime
+									iso={active_post.created_at}
+								/>
 							</span>
 						</div>
 					</button>
@@ -850,7 +859,7 @@
 								class="flex min-h-[200px] w-full flex-col items-center justify-center gap-2 p-6 text-slate-400"
 							>
 								<i class="ph ph-image-broken text-3xl"></i>
-								<span class="text-xs font-medium">Media unavailable</span>
+								<span class="text-xs font-medium">{$t('post.media_unavailable')}</span>
 							</div>
 						{:else}
 							{#if !image_loaded}
@@ -871,7 +880,7 @@
 							/>
 							<img
 								src={active_post.image_url}
-								alt="Post attachment"
+								alt={$t('post.attachment_alt')}
 								class="relative z-10 h-full w-full object-contain transition-transform duration-700 hover:scale-[1.02] {!image_loaded
 									? 'opacity-0'
 									: 'opacity-100'}"
@@ -932,11 +941,11 @@
 						<button
 							type="button"
 							class="group/btn flex items-center gap-2 transition-colors hover:text-emerald-600 disabled:cursor-not-allowed disabled:opacity-40"
-							aria-label={reposted ? 'Reposted, open repost options' : 'Repost'}
+							aria-label={reposted ? $t('post.reposted_open_options') : $t('post.repost')}
 							aria-haspopup="menu"
 							aria-expanded={repost_menu_open}
 							aria-pressed={reposted}
-							title={can_repost ? undefined : 'Only public posts can be reposted'}
+							title={can_repost ? undefined : $t('post.only_public_reposts')}
 							disabled={!can_repost}
 							data-testid="repost-button"
 							onclick={(e) => {
@@ -957,7 +966,7 @@
 						{#if repost_menu_open}
 							<div
 								role="menu"
-								aria-label="Repost options"
+								aria-label={$t('post.repost_options_label')}
 								class="glass-surface absolute bottom-full left-1/2 z-50 mb-3 min-w-[180px] -translate-x-1/2 overflow-hidden rounded-2xl border border-white/80 py-1.5 shadow-xl shadow-black/10"
 							>
 								{#if reposted}
@@ -971,7 +980,7 @@
 										class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50"
 									>
 										<i class="ph ph-pencil-simple text-base text-slate-400"></i>
-										<span>Edit caption</span>
+										<span>{$t('post.edit_caption')}</span>
 									</button>
 									<button
 										type="button"
@@ -983,7 +992,7 @@
 										class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-rose-600 transition hover:bg-rose-50"
 									>
 										<i class="ph ph-arrow-u-up-left text-base text-rose-500"></i>
-										<span>Undo repost</span>
+										<span>{$t('post.undo_repost')}</span>
 									</button>
 								{:else}
 									<button
@@ -996,7 +1005,7 @@
 										class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50"
 									>
 										<i class="ph ph-repeat text-base text-slate-400"></i>
-										<span>Repost</span>
+										<span>{$t('post.repost')}</span>
 									</button>
 									<button
 										type="button"
@@ -1008,7 +1017,7 @@
 										class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50"
 									>
 										<i class="ph ph-note-pencil text-base text-slate-400"></i>
-										<span>Repost with caption</span>
+										<span>{$t('post.repost_with_caption')}</span>
 									</button>
 								{/if}
 							</div>
@@ -1017,7 +1026,7 @@
 					<button
 						type="button"
 						class="group/btn flex items-center transition-colors hover:text-amber-500"
-						aria-label={bookmarked ? 'Remove from favorites' : 'Add to favorites'}
+						aria-label={bookmarked ? $t('post.remove_favorites') : $t('post.add_favorites')}
 						aria-pressed={bookmarked}
 						data-testid="bookmark-button"
 						onclick={(e) => {
@@ -1040,7 +1049,7 @@
 				class="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-rose-50 p-3 text-sm text-rose-800"
 				role="alertdialog"
 			>
-				<span>Delete this post and its comments?</span>
+				<span>{$t('post.delete_confirm')}</span>
 				<span class="flex gap-2">
 					<button
 						type="button"
@@ -1048,7 +1057,7 @@
 							e.stopPropagation()
 							confirming_delete = false
 						}}
-						class="rounded-full px-3 py-1 hover:bg-rose-100">Cancel</button
+						class="rounded-full px-3 py-1 hover:bg-rose-100">{$t('common.cancel')}</button
 					>
 					<button
 						type="button"
@@ -1058,7 +1067,7 @@
 							confirm_delete()
 						}}
 						class="rounded-full bg-rose-600 px-3 py-1 text-white disabled:opacity-60"
-						>{deleting ? 'Deleting…' : 'Delete'}</button
+						>{deleting ? $t('common.deleting') : $t('common.delete')}</button
 					>
 				</span>
 			</div>

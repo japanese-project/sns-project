@@ -4,6 +4,7 @@
 	import { Checkbox } from '$lib/components/ui/checkbox'
 	import { Label } from '$lib/components/ui/label'
 	import { Separator } from '$lib/components/ui/separator'
+	import { t } from '$lib/i18n'
 
 	let { data, form } = $props()
 	let saving = $state(false)
@@ -11,10 +12,8 @@
 
 <div class="space-y-6">
 	<div>
-		<h3 class="text-lg font-medium">Privacy & Safety</h3>
-		<p class="text-sm text-muted-foreground">
-			Manage who can see your content and how you get notified.
-		</p>
+		<h3 class="text-lg font-medium">{$t('settings.privacy_title')}</h3>
+		<p class="text-sm text-muted-foreground">{$t('settings.privacy_desc')}</p>
 	</div>
 	<Separator />
 
@@ -30,13 +29,13 @@
 		}}
 	>
 		<div class="space-y-4">
-			<h4 class="text-sm font-medium">Account Privacy</h4>
+			<h4 class="text-sm font-medium">{$t('settings.account_privacy')}</h4>
 			<div class="flex items-start space-x-3">
 				<Checkbox id="isPrivate" name="is_private" checked={data.settings.isPrivate} />
 				<div class="space-y-1 leading-none">
-					<Label for="isPrivate">Private Account</Label>
+					<Label for="isPrivate">{$t('settings.private_account')}</Label>
 					<p class="text-sm text-muted-foreground">
-						When your account is private, only people you approve can see your posts and followers.
+						{$t('settings.private_account_desc')}
 					</p>
 				</div>
 			</div>
@@ -45,7 +44,7 @@
 		<Separator />
 
 		<div class="space-y-4">
-			<h4 class="text-sm font-medium">Notifications</h4>
+			<h4 class="text-sm font-medium">{$t('settings.notifications')}</h4>
 			<div class="flex items-start space-x-3">
 				<Checkbox
 					id="notifyOnFollow"
@@ -53,9 +52,9 @@
 					checked={data.settings.notifyOnFollow}
 				/>
 				<div class="space-y-1 leading-none">
-					<Label for="notifyOnFollow">New Followers</Label>
+					<Label for="notifyOnFollow">{$t('settings.new_followers')}</Label>
 					<p class="text-sm text-muted-foreground">
-						Receive a notification when someone follows you.
+						{$t('settings.new_followers_desc')}
 					</p>
 				</div>
 			</div>
@@ -63,9 +62,9 @@
 			<div class="flex items-start space-x-3">
 				<Checkbox id="notifyOnLike" name="notify_on_like" checked={data.settings.notifyOnLike} />
 				<div class="space-y-1 leading-none">
-					<Label for="notifyOnLike">Likes</Label>
+					<Label for="notifyOnLike">{$t('settings.new_likes')}</Label>
 					<p class="text-sm text-muted-foreground">
-						Receive a notification when someone likes your post.
+						{$t('settings.new_likes_desc')}
 					</p>
 				</div>
 			</div>
@@ -77,9 +76,9 @@
 					checked={data.settings.notifyOnComment}
 				/>
 				<div class="space-y-1 leading-none">
-					<Label for="notifyOnComment">Comments</Label>
+					<Label for="notifyOnComment">{$t('settings.new_comments')}</Label>
 					<p class="text-sm text-muted-foreground">
-						Receive a notification when someone comments on your post.
+						{$t('settings.new_comments_desc')}
 					</p>
 				</div>
 			</div>
@@ -87,10 +86,10 @@
 
 		<div class="flex items-center gap-4">
 			<Button type="submit" disabled={saving}>
-				{saving ? 'Saving...' : 'Save preferences'}
+				{saving ? $t('common.saving') : $t('common.save')}
 			</Button>
 			{#if form?.success}
-				<p class="text-sm text-green-600 dark:text-green-400">Settings saved successfully.</p>
+				<p class="text-sm text-green-600 dark:text-green-400">{$t('settings.saved')}</p>
 			{/if}
 		</div>
 	</form>

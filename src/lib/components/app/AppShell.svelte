@@ -22,8 +22,10 @@
 	import { api } from '$lib/api'
 	import { sign_out } from '$lib/auth-client'
 	import { composer } from '$lib/composer-state.svelte'
+	import { t } from '$lib/i18n'
 	import Avatar from './Avatar.svelte'
 	import Composer from './Composer.svelte'
+	import LanguageSelect from './LanguageSelect.svelte'
 	import OnboardingModal from './OnboardingModal.svelte'
 
 	let {
@@ -81,6 +83,9 @@
 
 	const nav_button =
 		'relative flex size-11 items-center justify-center rounded-full transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900'
+	// Same pill at 40px, so the extra language button still fits a 320px viewport.
+	const nav_button_mobile =
+		'relative flex size-10 items-center justify-center rounded-full transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 min-[360px]:size-11'
 	const active = 'bg-black text-white shadow-xs'
 	const idle = 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
 
@@ -97,7 +102,7 @@
 	<!-- Tablet & Desktop Floating Vertical Navigation Pill (Floot dock)   -->
 	<!-- ───────────────────────────────────────────────────────────────── -->
 	<nav
-		aria-label="Primary"
+		aria-label={$t('nav.primary')}
 		class="fixed top-1/2 left-3 z-40 hidden -translate-y-1/2 flex-col items-center gap-2 rounded-full border border-slate-200/80 bg-white/90 p-2 shadow-lg shadow-slate-900/5 backdrop-blur-md md:flex lg:left-6"
 	>
 		<a
@@ -107,8 +112,8 @@
 					window.dispatchEvent(new CustomEvent('feed:refresh'))
 				}
 			}}
-			title="Home"
-			aria-label="Home"
+			title={$t('nav.home')}
+			aria-label={$t('nav.home')}
 			aria-current={path === '/' ? 'page' : undefined}
 			class="{nav_button} {path === '/' ? active : idle}"
 		>
@@ -118,8 +123,8 @@
 		<button
 			type="button"
 			onclick={() => composer.show()}
-			title="Create post"
-			aria-label="Create post"
+			title={$t('nav.create_post')}
+			aria-label={$t('nav.create_post')}
 			class="{nav_button} {idle}"
 		>
 			<PlusIcon class="size-5" />
@@ -127,8 +132,8 @@
 
 		<a
 			href={resolve('/explore')}
-			title="Explore"
-			aria-label="Explore"
+			title={$t('nav.explore')}
+			aria-label={$t('nav.explore')}
 			aria-current={path.startsWith('/explore') ? 'page' : undefined}
 			class="{nav_button} {path.startsWith('/explore') ? active : idle}"
 		>
@@ -137,8 +142,12 @@
 
 		<a
 			href={resolve('/notifications')}
-			title={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
-			aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
+			title={unread > 0
+				? $t('nav.notifications_unread', { values: { count: unread } })
+				: $t('nav.notifications')}
+			aria-label={unread > 0
+				? $t('nav.notifications_unread', { values: { count: unread } })
+				: $t('nav.notifications')}
 			aria-current={path.startsWith('/notifications') ? 'page' : undefined}
 			class="{nav_button} {path.startsWith('/notifications') ? active : idle}"
 		>
@@ -153,8 +162,8 @@
 
 		<a
 			href={resolve('/u/[handle]', { handle: me_handle })}
-			title="Profile"
-			aria-label="Profile"
+			title={$t('nav.profile')}
+			aria-label={$t('nav.profile')}
 			aria-current={path.startsWith('/u/') && path.split('/')[2] === me_handle ? 'page' : undefined}
 			class="{nav_button} {path.split('/')[2] === me_handle && path.startsWith('/u/')
 				? active
@@ -166,8 +175,8 @@
 		{#if user.isAdmin}
 			<a
 				href={resolve('/admin/bots')}
-				title="Bot Fleet"
-				aria-label="Bot Fleet"
+				title={$t('nav.bot_fleet')}
+				aria-label={$t('nav.bot_fleet')}
 				aria-current={path.startsWith('/admin') ? 'page' : undefined}
 				class="{nav_button} {path.startsWith('/admin') ? active : idle}"
 			>
@@ -175,10 +184,12 @@
 			</a>
 		{/if}
 
+		<LanguageSelect variant="icon" placement="right" class="{nav_button} {idle}" />
+
 		<button
 			type="button"
-			aria-label="Sign out"
-			title="Sign out"
+			aria-label={$t('nav.sign_out')}
+			title={$t('nav.sign_out')}
 			onclick={handle_sign_out}
 			class="{nav_button} {idle} hover:bg-rose-50 hover:text-rose-600"
 		>
@@ -190,8 +201,8 @@
 	<!-- Mobile Floating Bottom Navigation Pill (< md)                    -->
 	<!-- ───────────────────────────────────────────────────────────────── -->
 	<nav
-		aria-label="Mobile navigation"
-		class="fixed bottom-4 left-1/2 z-40 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-slate-200/90 bg-white/95 p-1.5 shadow-lg shadow-slate-900/10 backdrop-blur-md md:hidden"
+		aria-label={$t('nav.mobile')}
+		class="fixed bottom-4 left-1/2 z-40 flex -translate-x-1/2 items-center gap-1 rounded-full border border-slate-200/90 bg-white/95 p-1.5 shadow-lg shadow-slate-900/10 backdrop-blur-md min-[360px]:gap-1.5 md:hidden"
 	>
 		<a
 			href={resolve('/')}
@@ -200,9 +211,9 @@
 					window.dispatchEvent(new CustomEvent('feed:refresh'))
 				}
 			}}
-			aria-label="Home"
+			aria-label={$t('nav.home')}
 			aria-current={path === '/' ? 'page' : undefined}
-			class="{nav_button} {path === '/' ? active : idle}"
+			class="{nav_button_mobile} {path === '/' ? active : idle}"
 		>
 			<HouseIcon class="size-5" />
 		</a>
@@ -210,27 +221,29 @@
 		<button
 			type="button"
 			onclick={() => composer.show()}
-			title="Create post"
-			aria-label="Create post"
-			class="{nav_button} {idle}"
+			title={$t('nav.create_post')}
+			aria-label={$t('nav.create_post')}
+			class="{nav_button_mobile} {idle}"
 		>
 			<PlusIcon class="size-5" />
 		</button>
 
 		<a
 			href={resolve('/explore')}
-			aria-label="Explore"
+			aria-label={$t('nav.explore')}
 			aria-current={path.startsWith('/explore') ? 'page' : undefined}
-			class="{nav_button} {path.startsWith('/explore') ? active : idle}"
+			class="{nav_button_mobile} {path.startsWith('/explore') ? active : idle}"
 		>
 			<CompassIcon class="size-5" />
 		</a>
 
 		<a
 			href={resolve('/notifications')}
-			aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
+			aria-label={unread > 0
+				? $t('nav.notifications_unread', { values: { count: unread } })
+				: $t('nav.notifications')}
 			aria-current={path.startsWith('/notifications') ? 'page' : undefined}
-			class="{nav_button} {path.startsWith('/notifications') ? active : idle}"
+			class="{nav_button_mobile} {path.startsWith('/notifications') ? active : idle}"
 		>
 			<BellIcon class="size-5" />
 			{#if unread > 0}
@@ -243,9 +256,9 @@
 
 		<a
 			href={resolve('/u/[handle]', { handle: me_handle })}
-			aria-label="Profile"
+			aria-label={$t('nav.profile')}
 			aria-current={path.startsWith('/u/') && path.split('/')[2] === me_handle ? 'page' : undefined}
-			class="{nav_button} {path.split('/')[2] === me_handle && path.startsWith('/u/')
+			class="{nav_button_mobile} {path.split('/')[2] === me_handle && path.startsWith('/u/')
 				? active
 				: idle}"
 		>
@@ -255,13 +268,15 @@
 		{#if user.isAdmin}
 			<a
 				href={resolve('/admin/bots')}
-				aria-label="Bot Fleet"
+				aria-label={$t('nav.bot_fleet')}
 				aria-current={path.startsWith('/admin') ? 'page' : undefined}
-				class="{nav_button} {path.startsWith('/admin') ? active : idle}"
+				class="{nav_button_mobile} {path.startsWith('/admin') ? active : idle}"
 			>
 				<BotIcon class="size-5" />
 			</a>
 		{/if}
+
+		<LanguageSelect variant="icon" placement="up" class="{nav_button_mobile} {idle}" />
 	</nav>
 
 	<!-- ───────────────────────────────────────────────────────────────── -->
@@ -296,8 +311,8 @@
 							class="flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 sm:px-2.5"
 						>
 							<PencilIcon class="size-3.5" />
-							<span class="hidden sm:inline">Share a thought…</span>
-							<span class="sm:hidden">Post</span>
+							<span class="hidden sm:inline">{$t('nav.share_thought')}</span>
+							<span class="sm:hidden">{$t('nav.share_thought_short')}</span>
 						</button>
 					</div>
 				</header>
@@ -320,7 +335,7 @@
 			<aside
 				class="sticky top-4 hidden shrink-0 lg:block xl:ml-8"
 				style="width: 320px; margin-left: 1.5rem;"
-				aria-label="Secondary Sidebar"
+				aria-label={$t('nav.secondary_sidebar')}
 			>
 				{@render right_sidebar()}
 			</aside>

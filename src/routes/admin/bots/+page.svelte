@@ -5,9 +5,10 @@
 	import AppShell from '$lib/components/app/AppShell.svelte'
 	import Avatar from '$lib/components/app/Avatar.svelte'
 	import LinkPreviewCard from '$lib/components/app/LinkPreviewCard.svelte'
+	import RelativeTime from '$lib/components/app/RelativeTime.svelte'
 	import { parse_content } from '$lib/content'
 	import { extract_first_url } from '$lib/link-preview-client'
-	import { relative_time } from '$lib/time'
+	import { date, t, time } from '$lib/i18n'
 	import CalendarIcon from '@lucide/svelte/icons/calendar'
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link'
 	import LayoutGridIcon from '@lucide/svelte/icons/layout-grid'
@@ -71,14 +72,14 @@
 	let edit_hashtags = $state('')
 
 	const banner_colors = [
-		{ id: 'midnight', label: 'Midnight', bg: 'bg-slate-900' },
-		{ id: 'sunset', label: 'Sunset', bg: 'bg-amber-600' },
-		{ id: 'emerald', label: 'Emerald', bg: 'bg-emerald-600' },
-		{ id: 'violet', label: 'Violet', bg: 'bg-violet-600' },
-		{ id: 'ocean', label: 'Ocean', bg: 'bg-sky-600' },
-		{ id: 'coral', label: 'Coral', bg: 'bg-rose-500' },
-		{ id: 'amber', label: 'Amber', bg: 'bg-amber-500' },
-	]
+		{ id: 'midnight', bg: 'bg-slate-900' },
+		{ id: 'sunset', bg: 'bg-amber-600' },
+		{ id: 'emerald', bg: 'bg-emerald-600' },
+		{ id: 'violet', bg: 'bg-violet-600' },
+		{ id: 'ocean', bg: 'bg-sky-600' },
+		{ id: 'coral', bg: 'bg-rose-500' },
+		{ id: 'amber', bg: 'bg-amber-500' },
+	] as const
 
 	function open_edit_modal(bot: PersonaType) {
 		editing_bot = bot
@@ -113,14 +114,15 @@
 	}
 
 	let campaign_end_display = $derived(() => {
-		if (!data.config?.campaign_end) return 'Continuous (No End Date)'
+		if (!data.config?.campaign_end) return $t('admin.campaign_continuous')
 		const end = new Date(data.config.campaign_end)
 		const now = new Date()
 		const diff_ms = end.getTime() - now.getTime()
-		if (diff_ms <= 0) return 'Ended (Campaign Expired)'
+		if (diff_ms <= 0) return $t('admin.campaign_ended')
 		const diff_days = Math.floor(diff_ms / (1000 * 60 * 60 * 24))
 		const diff_hours = Math.floor((diff_ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-		return `${end.toLocaleDateString()} ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (${diff_days}d ${diff_hours}h left)`
+		// $date/$time default to the active locale, so this reads correctly in ja/km too.
+		return `${$date(end)} ${$time(end, { hour: '2-digit', minute: '2-digit' })} ${$t('admin.campaign_remaining', { values: { days: diff_days, hours: diff_hours } })}`
 	})
 
 	function preset_date(days: number) {
@@ -175,10 +177,10 @@
 </script>
 
 <svelte:head>
-	<title>Bot Fleet & Content Operations — Admin</title>
+	<title>{$t('admin.doc_title')}</title>
 </svelte:head>
 
-<AppShell user={data.user} title="Bot Fleet" layout="wide">
+<AppShell user={data.user} title={$t('admin.title')} layout="wide">
 	<div class="space-y-6 pb-16">
 		<!-- Header Banner -->
 		<div
@@ -190,15 +192,13 @@
 						class="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700"
 					>
 						<ShieldCheckIcon class="size-3.5" />
-						Admin Control
+						{$t('admin.admin_control')}
 					</span>
 					<span class="text-xs font-medium text-slate-400">•</span>
-					<span class="text-xs font-medium text-slate-500">Autonomous Content & Persona Fleet</span>
+					<span class="text-xs font-medium text-slate-500">{$t('admin.tagline')}</span>
 				</div>
-				<h1 class="text-2xl font-black tracking-tight text-slate-900">Bot Operations Center</h1>
-				<p class="text-sm text-slate-500">
-					Curate breaking news, configure AI personalities, and manage autonomous schedule flows.
-				</p>
+				<h1 class="text-2xl font-black tracking-tight text-slate-900">{$t('admin.heading')}</h1>
+				<p class="text-sm text-slate-500">{$t('admin.description')}</p>
 			</div>
 
 			{#if data.is_admin}
@@ -209,7 +209,7 @@
 						class="flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800 active:scale-95"
 					>
 						<PlusIcon class="size-3.5" />
-						Create New Bot
+						{$t('admin.create_new_bot')}
 					</button>
 				</div>
 			{/if}
@@ -240,10 +240,8 @@
 					>
 						<LockIcon class="size-6" />
 					</div>
-					<h2 class="mt-3 text-base font-bold text-slate-900">Protected Admin Console</h2>
-					<p class="mt-1 text-xs text-slate-500">
-						Please enter your administrative secret key to configure the bot fleet.
-					</p>
+					<h2 class="mt-3 text-base font-bold text-slate-900">{$t('admin.locked_title')}</h2>
+					<p class="mt-1 text-xs text-slate-500">{$t('admin.locked_desc')}</p>
 				</div>
 
 				<form method="POST" action="?/unlock" use:enhance class="mt-5 space-y-3">
@@ -251,21 +249,21 @@
 						type="password"
 						name="secret"
 						required
-						placeholder="Paste your secret key"
+						placeholder={$t('admin.secret_placeholder')}
 						class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:ring-1 focus:ring-slate-900 focus:outline-none"
 					/>
 					<button
 						type="submit"
 						class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-xs transition hover:bg-slate-800 active:scale-[0.98]"
 					>
-						Unlock Access
+						{$t('admin.unlock')}
 					</button>
 				</form>
 			</div>
 		{:else}
 			<!-- Primary Navigation Tabs (Eliminates infinite vertical scroll) -->
 			<div class="flex items-center justify-between border-b border-slate-200/80 pb-1">
-				<nav class="flex items-center gap-2" aria-label="Admin Navigation Tabs">
+				<nav class="flex items-center gap-2" aria-label={$t('admin.nav_label')}>
 					<button
 						type="button"
 						onclick={() => (active_tab = 'controls')}
@@ -275,7 +273,7 @@
 							: 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900'}"
 					>
 						<SlidersHorizontalIcon class="size-3.5" />
-						<span>Overview & Controls</span>
+						<span>{$t('admin.tab_controls')}</span>
 					</button>
 
 					<button
@@ -287,7 +285,7 @@
 							: 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900'}"
 					>
 						<UsersIcon class="size-3.5" />
-						<span>Bot Fleet</span>
+						<span>{$t('admin.tab_fleet')}</span>
 						<span
 							class="py-0.2 rounded-full px-1.5 text-[10px] {active_tab === 'fleet'
 								? 'bg-white/20 text-white'
@@ -306,7 +304,7 @@
 							: 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900'}"
 					>
 						<MessageSquareIcon class="size-3.5" />
-						<span>Recent Posts</span>
+						<span>{$t('admin.tab_posts')}</span>
 						<span
 							class="py-0.2 rounded-full px-1.5 text-[10px] {active_tab === 'posts'
 								? 'bg-white/20 text-white'
@@ -326,25 +324,32 @@
 					<!-- Quick Metrics Row -->
 					<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
 						<div class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs">
-							<div class="text-xs font-medium text-slate-400 uppercase">Automation</div>
+							<div class="text-xs font-medium text-slate-400 uppercase">
+								{$t('admin.metric_automation')}
+							</div>
 							<div class="mt-1 flex items-center gap-2">
 								{#if data.config?.enabled}
 									<span class="size-2.5 animate-pulse rounded-full bg-emerald-500"></span>
-									<span class="text-sm font-bold text-emerald-700">Active</span>
+									<span class="text-sm font-bold text-emerald-700">{$t('admin.metric_active')}</span
+									>
 								{:else}
 									<span class="size-2.5 rounded-full bg-amber-500"></span>
-									<span class="text-sm font-bold text-amber-700">Paused</span>
+									<span class="text-sm font-bold text-amber-700">{$t('admin.metric_paused')}</span>
 								{/if}
 							</div>
 							<div class="mt-1 text-[11px] text-slate-500">
-								Interval: Every {data.config?.interval_hours ?? 3}h
+								{$t('admin.interval', { values: { hours: data.config?.interval_hours ?? 3 } })}
 							</div>
 						</div>
 
 						<div class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs">
-							<div class="text-xs font-medium text-slate-400 uppercase">Schedule Status</div>
+							<div class="text-xs font-medium text-slate-400 uppercase">
+								{$t('admin.metric_schedule')}
+							</div>
 							<div class="mt-1 truncate text-sm font-bold text-slate-900">
-								{data.config?.campaign_end ? 'Scheduled Limit' : 'Continuous (Indefinite)'}
+								{data.config?.campaign_end
+									? $t('admin.schedule_limited')
+									: $t('admin.schedule_continuous')}
 							</div>
 							<div class="mt-1 truncate text-[11px] text-slate-500">
 								{campaign_end_display()}
@@ -352,21 +357,29 @@
 						</div>
 
 						<div class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs">
-							<div class="text-xs font-medium text-slate-400 uppercase">Fleet Size</div>
+							<div class="text-xs font-medium text-slate-400 uppercase">
+								{$t('admin.metric_fleet_size')}
+							</div>
 							<div class="mt-1 text-sm font-bold text-slate-900">
-								{data.personas.length} Accounts
+								{$t('admin.accounts', { values: { count: data.personas.length } })}
 							</div>
 							<div class="mt-1 text-[11px] text-slate-500">
-								{data.personas.filter((b) => b.is_custom).length} custom configured
+								{$t('admin.custom_configured', {
+									values: { count: data.personas.filter((b) => b.is_custom).length },
+								})}
 							</div>
 						</div>
 
 						<div class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs">
-							<div class="text-xs font-medium text-slate-400 uppercase">Today's Posts</div>
-							<div class="mt-1 text-sm font-bold text-slate-900">
-								{data.personas.reduce((sum, b) => sum + b.daily_posts, 0)} seeded
+							<div class="text-xs font-medium text-slate-400 uppercase">
+								{$t('admin.metric_today_posts')}
 							</div>
-							<div class="mt-1 text-[11px] text-slate-500">Max limit 3/day per bot</div>
+							<div class="mt-1 text-sm font-bold text-slate-900">
+								{$t('admin.seeded', {
+									values: { count: data.personas.reduce((sum, b) => sum + b.daily_posts, 0) },
+								})}
+							</div>
+							<div class="mt-1 text-[11px] text-slate-500">{$t('admin.max_limit')}</div>
 						</div>
 					</div>
 
@@ -379,7 +392,7 @@
 							<div>
 								<div class="flex items-center justify-between">
 									<span class="text-xs font-bold tracking-wider text-slate-400 uppercase"
-										>Pipeline Status</span
+										>{$t('admin.pipeline_status')}</span
 									>
 									{#if data.config?.enabled}
 										<PlayIcon class="size-4 text-emerald-600" />
@@ -388,12 +401,10 @@
 									{/if}
 								</div>
 								<h3 class="mt-2 text-base font-bold text-slate-900">
-									{data.config?.enabled ? 'Running Normally' : 'Currently Paused'}
+									{data.config?.enabled ? $t('admin.running') : $t('admin.paused')}
 								</h3>
 								<p class="mt-1 text-xs text-slate-500">
-									{data.config?.enabled
-										? 'The autonomous bot pipeline executes on schedule every 3 hours with breaking news from trusted feeds.'
-										: 'Automated runs are suspended. Bots will not post until resumed.'}
+									{data.config?.enabled ? $t('admin.running_desc') : $t('admin.paused_desc')}
 								</p>
 							</div>
 
@@ -410,7 +421,9 @@
 										? 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
 										: 'bg-emerald-600 text-white hover:bg-emerald-700'}"
 								>
-									{data.config?.enabled ? 'Pause Automated Posting' : 'Resume Automated Posting'}
+									{data.config?.enabled
+										? $t('admin.pause_automation')
+										: $t('admin.resume_automation')}
 								</button>
 							</form>
 						</div>
@@ -422,16 +435,14 @@
 							<div>
 								<div class="flex items-center justify-between">
 									<span class="text-xs font-bold tracking-wider text-slate-400 uppercase"
-										>Schedule Control</span
+										>{$t('admin.schedule_control')}</span
 									>
 									<CalendarIcon class="size-4 text-slate-400" />
 								</div>
 								<h3 class="mt-2 truncate text-sm font-bold text-slate-900">
 									{campaign_end_display()}
 								</h3>
-								<p class="mt-1 text-xs text-slate-500">
-									Set a stop date, or cancel schedule to let bots post continuously.
-								</p>
+								<p class="mt-1 text-xs text-slate-500">{$t('admin.schedule_desc')}</p>
 							</div>
 
 							<!-- Presets & Cancel Action -->
@@ -442,21 +453,21 @@
 										onclick={() => preset_date(3)}
 										class="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
 									>
-										+3 Days
+										{$t('admin.plus_3_days')}
 									</button>
 									<button
 										type="button"
 										onclick={() => preset_date(7)}
 										class="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
 									>
-										+1 Week
+										{$t('admin.plus_1_week')}
 									</button>
 									<button
 										type="button"
 										onclick={() => preset_date(14)}
 										class="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
 									>
-										+2 Weeks
+										{$t('admin.plus_2_weeks')}
 									</button>
 								</div>
 
@@ -472,7 +483,7 @@
 										type="submit"
 										class="rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-slate-800"
 									>
-										Set
+										{$t('admin.set')}
 									</button>
 								</form>
 
@@ -482,7 +493,7 @@
 											type="submit"
 											class="w-full text-center text-[11px] font-semibold text-rose-600 hover:underline"
 										>
-											Clear schedule (Continuous)
+											{$t('admin.clear_schedule')}
 										</button>
 									</form>
 								{/if}
@@ -496,15 +507,12 @@
 							<div>
 								<div class="flex items-center justify-between">
 									<span class="text-xs font-bold tracking-wider text-slate-400 uppercase"
-										>Immediate Trigger</span
+										>{$t('admin.immediate_trigger')}</span
 									>
 									<SparklesIcon class="size-4 text-indigo-500" />
 								</div>
-								<h3 class="mt-2 text-base font-bold text-slate-900">Run Single Cycle</h3>
-								<p class="mt-1 text-xs text-slate-500">
-									Fetches live news items, matches persona topic, and creates a realistic post
-									instantly.
-								</p>
+								<h3 class="mt-2 text-base font-bold text-slate-900">{$t('admin.run_cycle')}</h3>
+								<p class="mt-1 text-xs text-slate-500">{$t('admin.run_cycle_desc')}</p>
 							</div>
 
 							<form
@@ -528,7 +536,7 @@
 									bind:value={selected_bot_id}
 									class="w-full rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none"
 								>
-									<option value="">🎲 Auto-pick least active bot</option>
+									<option value="">{$t('admin.auto_pick')}</option>
 									{#each data.personas as bot (bot.id)}
 										<option value={bot.id}>@{bot.username} ({bot.name})</option>
 									{/each}
@@ -540,7 +548,7 @@
 									class="flex w-full items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white shadow-xs transition hover:bg-indigo-700 active:scale-95 disabled:opacity-50"
 								>
 									<SparklesIcon class="size-3.5 {is_triggering ? 'animate-spin' : ''}" />
-									{is_triggering ? 'Fetching Live News & Simulating...' : 'Trigger Bot Post ⚡'}
+									{is_triggering ? $t('admin.triggering') : $t('admin.trigger')}
 								</button>
 							</form>
 
@@ -565,12 +573,11 @@
 					<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 						<div>
 							<h2 class="text-lg font-bold text-slate-900">
-								Bot Fleet Directory ({filtered_personas().length} of {data.personas.length} Accounts)
+								{$t('admin.directory_title', {
+									values: { shown: filtered_personas().length, total: data.personas.length },
+								})}
 							</h2>
-							<p class="text-xs text-slate-500">
-								Manage account identities, unique writing styles, trusted RSS feeds, and personality
-								prompts.
-							</p>
+							<p class="text-xs text-slate-500">{$t('admin.directory_desc')}</p>
 						</div>
 
 						<div class="flex flex-wrap items-center gap-2">
@@ -582,7 +589,7 @@
 								<input
 									type="text"
 									bind:value={search_query}
-									placeholder="Search bots or topics..."
+									placeholder={$t('admin.search_bots')}
 									class="rounded-xl border border-slate-200 bg-slate-50/60 py-1.5 pr-3 pl-8 text-xs text-slate-800 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none"
 								/>
 							</div>
@@ -595,8 +602,8 @@
 									class="rounded-lg p-1.5 transition {fleet_view_mode === 'table'
 										? 'bg-white text-slate-900 shadow-2xs'
 										: 'text-slate-400 hover:text-slate-700'}"
-									title="Compact Table View (Scan all bots without scrolling)"
-									aria-label="Table View"
+									title={$t('admin.table_title')}
+									aria-label={$t('admin.table_aria')}
 								>
 									<ListIcon class="size-3.5" />
 								</button>
@@ -606,8 +613,8 @@
 									class="rounded-lg p-1.5 transition {fleet_view_mode === 'grid'
 										? 'bg-white text-slate-900 shadow-2xs'
 										: 'text-slate-400 hover:text-slate-700'}"
-									title="Grid Card View"
-									aria-label="Grid View"
+									title={$t('admin.grid_title')}
+									aria-label={$t('admin.grid_aria')}
 								>
 									<LayoutGridIcon class="size-3.5" />
 								</button>
@@ -619,14 +626,14 @@
 								class="flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-slate-800"
 							>
 								<PlusIcon class="size-3.5" />
-								New Bot
+								{$t('admin.new_bot')}
 							</button>
 						</div>
 					</div>
 
 					<!-- Category Filters -->
 					<div class="flex flex-wrap items-center gap-1.5 border-b border-slate-100 pb-3 text-xs">
-						{#each [{ id: 'all', label: 'All Bots' }, { id: 'tech', label: 'Tech & AI' }, { id: 'anime', label: 'Anime & Manga' }, { id: 'movie', label: 'Entertainment' }, { id: 'economic', label: 'Economics' }, { id: 'cafe', label: 'Coffee & Cafe' }, { id: 'custom', label: 'Custom Bots' }] as tab (tab.id)}
+						{#each [{ id: 'all', label_key: 'admin.filter_all' }, { id: 'tech', label_key: 'admin.filter_tech' }, { id: 'anime', label_key: 'admin.filter_anime' }, { id: 'movie', label_key: 'admin.filter_movie' }, { id: 'economic', label_key: 'admin.filter_economic' }, { id: 'cafe', label_key: 'admin.filter_cafe' }, { id: 'custom', label_key: 'admin.filter_custom' }] as tab (tab.id)}
 							<button
 								type="button"
 								onclick={() => (selected_category = tab.id)}
@@ -635,14 +642,14 @@
 									? 'bg-slate-900 text-white'
 									: 'bg-slate-100 text-slate-600 hover:bg-slate-200'}"
 							>
-								{tab.label}
+								{$t(tab.label_key)}
 							</button>
 						{/each}
 					</div>
 
 					{#if filtered_personas().length === 0}
 						<div class="py-12 text-center text-xs text-slate-400">
-							No bots found matching your search and filter criteria.
+							{$t('admin.no_bots')}
 						</div>
 					{:else if fleet_view_mode === 'table'}
 						<!-- High-Density Compact Table View -->
@@ -650,11 +657,11 @@
 							<table class="w-full text-left text-xs">
 								<thead class="bg-slate-50 font-bold text-slate-500 uppercase">
 									<tr class="border-b border-slate-200/80">
-										<th class="py-3 pr-3 pl-4">Persona</th>
-										<th class="hidden px-3 py-3 md:table-cell">Focus Topics</th>
-										<th class="hidden px-3 py-3 sm:table-cell">Feeds</th>
-										<th class="px-3 py-3">Today / Total</th>
-										<th class="py-3 pr-4 pl-3 text-right">Actions</th>
+										<th class="py-3 pr-3 pl-4">{$t('admin.col_persona')}</th>
+										<th class="hidden px-3 py-3 md:table-cell">{$t('admin.col_topics')}</th>
+										<th class="hidden px-3 py-3 sm:table-cell">{$t('admin.col_feeds')}</th>
+										<th class="px-3 py-3">{$t('admin.col_today_total')}</th>
+										<th class="py-3 pr-4 pl-3 text-right">{$t('admin.col_actions')}</th>
 									</tr>
 								</thead>
 								<tbody class="divide-y divide-slate-100 bg-white">
@@ -676,7 +683,7 @@
 															{#if bot.is_custom}
 																<span
 																	class="py-0.2 rounded bg-indigo-50 px-1 text-[9px] font-semibold text-indigo-700"
-																	>Custom</span
+																	>{$t('admin.custom_badge')}</span
 																>
 															{/if}
 														</div>
@@ -710,14 +717,16 @@
 												<span
 													class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600"
 												>
-													{(bot.feeds || []).length} feeds
+													{$t('admin.feeds_count', { values: { count: (bot.feeds || []).length } })}
 												</span>
 											</td>
 
 											<!-- Posts count -->
 											<td class="px-3 py-3">
 												<span class="font-bold text-slate-800">{bot.daily_posts}/3</span>
-												<span class="text-[10px] text-slate-400">({bot.total_posts} total)</span>
+												<span class="text-[10px] text-slate-400"
+													>{$t('admin.total_count', { values: { count: bot.total_posts } })}</span
+												>
 											</td>
 
 											<!-- Actions -->
@@ -727,17 +736,17 @@
 														<input type="hidden" name="bot_id" value={bot.id} />
 														<button
 															type="submit"
-															title="Trigger post now"
+															title={$t('admin.trigger_now')}
 															class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 shadow-2xs hover:bg-slate-100"
 														>
-															Post ⚡
+															{$t('admin.post_now')}
 														</button>
 													</form>
 
 													<button
 														type="button"
 														onclick={() => open_edit_modal(bot)}
-														title="Edit profile & prompt"
+														title={$t('admin.edit_prompt')}
 														class="rounded-lg border border-slate-200 bg-white p-1 text-slate-600 shadow-2xs hover:bg-slate-50"
 													>
 														<PencilIcon class="size-3.5" />
@@ -749,7 +758,13 @@
 															<button
 																type="submit"
 																onclick={(e) => {
-																	if (!confirm(`Delete custom bot @${bot.username}?`)) {
+																	if (
+																		!confirm(
+																			$t('admin.delete_bot_confirm', {
+																				values: { handle: bot.username },
+																			}),
+																		)
+																	) {
 																		e.preventDefault()
 																	}
 																}}
@@ -790,7 +805,7 @@
 														{#if bot.is_custom}
 															<span
 																class="py-0.2 rounded bg-indigo-50 px-1.5 text-[10px] font-semibold text-indigo-700"
-																>Custom</span
+																>{$t('admin.custom_badge')}</span
 															>
 														{/if}
 													</div>
@@ -808,7 +823,7 @@
 											<button
 												type="button"
 												onclick={() => open_edit_modal(bot)}
-												title="Edit Bot"
+												title={$t('admin.edit_bot')}
 												class="rounded-lg border border-slate-200 bg-white p-1.5 text-slate-600 shadow-2xs hover:bg-slate-50"
 											>
 												<PencilIcon class="size-3.5" />
@@ -828,7 +843,11 @@
 												</span>
 											{/each}
 											{#if (bot.feeds || []).length > 2}
-												<span class="text-[10px] text-slate-400">+{bot.feeds.length - 2} more</span>
+												<span class="text-[10px] text-slate-400"
+													>{$t('admin.more_feeds', {
+														values: { count: bot.feeds.length - 2 },
+													})}</span
+												>
 											{/if}
 										</div>
 									</div>
@@ -837,8 +856,9 @@
 										class="mt-4 flex items-center justify-between border-t border-slate-200/60 pt-2.5"
 									>
 										<div class="text-[10px] text-slate-500">
-											<span class="font-bold text-slate-800">{bot.daily_posts}/3</span> today • {bot.total_posts}
-											total
+											{$t('admin.today_total', {
+												values: { today: bot.daily_posts, total: bot.total_posts },
+											})}
 										</div>
 
 										<div class="flex items-center gap-1.5">
@@ -846,10 +866,10 @@
 												<input type="hidden" name="bot_id" value={bot.id} />
 												<button
 													type="submit"
-													title="Post immediately"
+													title={$t('admin.post_immediately')}
 													class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-2xs hover:bg-slate-100"
 												>
-													Post ⚡
+													{$t('admin.post_now')}
 												</button>
 											</form>
 
@@ -859,7 +879,13 @@
 													<button
 														type="submit"
 														onclick={(e) => {
-															if (!confirm(`Delete custom bot @${bot.username}?`)) {
+															if (
+																!confirm(
+																	$t('admin.delete_bot_confirm', {
+																		values: { handle: bot.username },
+																	}),
+																)
+															) {
 																e.preventDefault()
 															}
 														}}
@@ -886,12 +912,14 @@
 					<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 						<div>
 							<h2 class="text-lg font-bold text-slate-900">
-								Recent Automated Posts ({filtered_recent_posts().length} of {data.recent_posts
-									.length})
+								{$t('admin.recent_title', {
+									values: {
+										shown: filtered_recent_posts().length,
+										total: data.recent_posts.length,
+									},
+								})}
 							</h2>
-							<p class="text-xs text-slate-500">
-								Real-time monitor of live posts seeded by autonomous personas with link previews.
-							</p>
+							<p class="text-xs text-slate-500">{$t('admin.recent_desc')}</p>
 						</div>
 
 						<div class="flex flex-wrap items-center gap-2">
@@ -903,7 +931,7 @@
 								<input
 									type="text"
 									bind:value={post_search}
-									placeholder="Search posts..."
+									placeholder={$t('admin.search_posts')}
 									class="rounded-xl border border-slate-200 bg-slate-50/60 py-1.5 pr-3 pl-8 text-xs text-slate-800 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none"
 								/>
 							</div>
@@ -913,7 +941,7 @@
 								bind:value={post_bot_filter}
 								class="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none"
 							>
-								<option value="all">All Bots</option>
+								<option value="all">{$t('admin.filter_all')}</option>
 								{#each data.personas as bot (bot.id)}
 									<option value={bot.id}>@{bot.username}</option>
 								{/each}
@@ -922,7 +950,7 @@
 					</div>
 
 					{#if filtered_recent_posts().length === 0}
-						<div class="py-12 text-center text-xs text-slate-400">No automated posts found.</div>
+						<div class="py-12 text-center text-xs text-slate-400">{$t('admin.no_posts')}</div>
 					{:else}
 						<div class="divide-y divide-slate-100">
 							{#each filtered_recent_posts() as item (item.id)}
@@ -941,7 +969,7 @@
 												<span class="font-bold text-slate-900">{item.user_name}</span>
 												<span class="text-slate-400">@{item.user_username}</span>
 												<span class="text-slate-400">•</span>
-												<span class="text-slate-400">{relative_time(item.created_at)}</span>
+												<span class="text-slate-400"><RelativeTime iso={item.created_at} /></span>
 											</div>
 
 											{#if parse_content(item.content, { exclude_url: first_link }).length > 0}
@@ -983,14 +1011,14 @@
 											target="_blank"
 											class="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
 										>
-											View
+											{$t('pin_card.view').replace(/\s*→$/, '')}
 										</a>
 
 										<form method="POST" action="?/delete_post" use:enhance>
 											<input type="hidden" name="post_id" value={item.id} />
 											<button
 												type="submit"
-												aria-label="Delete bot post"
+												aria-label={$t('admin.delete_bot_post')}
 												class="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
 											>
 												<TrashIcon class="size-3.5" />
@@ -1016,10 +1044,8 @@
 			>
 				<div class="flex items-center justify-between border-b border-slate-100 pb-3">
 					<div>
-						<h3 class="text-base font-bold text-slate-900">Create New Bot Persona</h3>
-						<p class="text-xs text-slate-500">
-							Configure a new automated account with custom feeds and personality.
-						</p>
+						<h3 class="text-base font-bold text-slate-900">{$t('admin.create_title')}</h3>
+						<p class="text-xs text-slate-500">{$t('admin.create_desc')}</p>
 					</div>
 					<button
 						type="button"
@@ -1046,7 +1072,7 @@
 					<div class="grid grid-cols-2 gap-3">
 						<div>
 							<label for="create_name" class="block text-xs font-bold text-slate-700"
-								>Display Name</label
+								>{$t('edit_profile.display_name')}</label
 							>
 							<input
 								id="create_name"
@@ -1054,13 +1080,13 @@
 								name="name"
 								bind:value={create_name}
 								required
-								placeholder="e.g. Maya Tanaka"
+								placeholder={$t('admin.name_placeholder')}
 								class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
 							/>
 						</div>
 						<div>
 							<label for="create_username" class="block text-xs font-bold text-slate-700"
-								>Username / Handle</label
+								>{$t('edit_profile.username')}</label
 							>
 							<input
 								id="create_username"
@@ -1068,7 +1094,7 @@
 								name="username"
 								bind:value={create_username}
 								required
-								placeholder="e.g. maya_tech"
+								placeholder={$t('admin.username_placeholder')}
 								class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
 							/>
 						</div>
@@ -1076,21 +1102,21 @@
 
 					<div>
 						<label for="create_bio" class="block text-xs font-bold text-slate-700"
-							>Bio Description</label
+							>{$t('admin.bio_label')}</label
 						>
 						<textarea
 							id="create_bio"
 							name="bio"
 							bind:value={create_bio}
 							rows={2}
-							placeholder="Short profile description of what this bot posts about..."
+							placeholder={$t('admin.bio_placeholder')}
 							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
 						></textarea>
 					</div>
 
 					<div>
 						<label for="create_image" class="block text-xs font-bold text-slate-700"
-							>Avatar Image URL (Optional)</label
+							>{$t('admin.image_label')}</label
 						>
 						<input
 							id="create_image"
@@ -1103,7 +1129,7 @@
 					</div>
 
 					<div>
-						<span class="block text-xs font-bold text-slate-700">Profile Banner Theme</span>
+						<span class="block text-xs font-bold text-slate-700">{$t('admin.banner_label')}</span>
 						<div class="mt-1.5 flex flex-wrap gap-2">
 							{#each banner_colors as color (color.id)}
 								<label class="flex cursor-pointer items-center gap-1.5 text-xs">
@@ -1119,7 +1145,7 @@
 											? 'border-indigo-600 ring-2 ring-indigo-200'
 											: 'border-white'}"
 									></span>
-									<span class="text-[11px] text-slate-600">{color.label}</span>
+									<span class="text-[11px] text-slate-600">{$t(`admin.color_${color.id}`)}</span>
 								</label>
 							{/each}
 						</div>
@@ -1127,7 +1153,7 @@
 
 					<div>
 						<label for="create_tone_prompt" class="block text-xs font-bold text-slate-700"
-							>Tone & Personality Prompt</label
+							>{$t('admin.tone_label')}</label
 						>
 						<textarea
 							id="create_tone_prompt"
@@ -1135,14 +1161,14 @@
 							bind:value={create_tone_prompt}
 							rows={3}
 							required
-							placeholder="Describe their voice, emojis, attitude, and how they react to news..."
+							placeholder={$t('admin.tone_placeholder')}
 							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
 						></textarea>
 					</div>
 
 					<div>
 						<label for="create_feeds" class="block text-xs font-bold text-slate-700"
-							>RSS / Atom News Feeds (one per line)</label
+							>{$t('admin.feeds_label')}</label
 						>
 						<textarea
 							id="create_feeds"
@@ -1155,7 +1181,9 @@
 						></textarea>
 
 						<div class="mt-2">
-							<span class="text-[11px] font-semibold text-slate-500">Quick preset sources:</span>
+							<span class="text-[11px] font-semibold text-slate-500"
+								>{$t('admin.presets_create')}</span
+							>
 							<div class="mt-1 flex flex-wrap gap-1">
 								{#each data.trusted_presets as preset (preset.url)}
 									<button
@@ -1172,14 +1200,14 @@
 
 					<div>
 						<label for="create_hashtags" class="block text-xs font-bold text-slate-700"
-							>Hashtags (comma separated)</label
+							>{$t('admin.hashtags_label')}</label
 						>
 						<input
 							id="create_hashtags"
 							type="text"
 							name="hashtags"
 							bind:value={create_hashtags}
-							placeholder="#tech, #coding, #vibecoding"
+							placeholder={$t('admin.hashtags_placeholder')}
 							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
 						/>
 					</div>
@@ -1190,13 +1218,13 @@
 							onclick={() => (show_create_modal = false)}
 							class="rounded-xl px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100"
 						>
-							Cancel
+							{$t('common.cancel')}
 						</button>
 						<button
 							type="submit"
 							class="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
 						>
-							Create Bot Persona
+							{$t('admin.create_submit')}
 						</button>
 					</div>
 				</form>
@@ -1214,10 +1242,8 @@
 			>
 				<div class="flex items-center justify-between border-b border-slate-100 pb-3">
 					<div>
-						<h3 class="text-base font-bold text-slate-900">Edit Bot Profile & Identity</h3>
-						<p class="text-xs text-slate-500">
-							Changes immediately update the database and public profile.
-						</p>
+						<h3 class="text-base font-bold text-slate-900">{$t('admin.edit_title')}</h3>
+						<p class="text-xs text-slate-500">{$t('admin.edit_desc')}</p>
 					</div>
 					<button
 						type="button"
@@ -1246,7 +1272,7 @@
 					<div class="grid grid-cols-2 gap-3">
 						<div>
 							<label for="edit_name" class="block text-xs font-bold text-slate-700"
-								>Display Name</label
+								>{$t('edit_profile.display_name')}</label
 							>
 							<input
 								id="edit_name"
@@ -1259,7 +1285,7 @@
 						</div>
 						<div>
 							<label for="edit_username" class="block text-xs font-bold text-slate-700"
-								>Username / Handle</label
+								>{$t('edit_profile.username')}</label
 							>
 							<input
 								id="edit_username"
@@ -1273,7 +1299,9 @@
 					</div>
 
 					<div>
-						<label for="edit_bio" class="block text-xs font-bold text-slate-700">Bio</label>
+						<label for="edit_bio" class="block text-xs font-bold text-slate-700"
+							>{$t('edit_profile.bio')}</label
+						>
 						<textarea
 							id="edit_bio"
 							name="bio"
@@ -1285,7 +1313,7 @@
 
 					<div>
 						<label for="edit_image" class="block text-xs font-bold text-slate-700"
-							>Avatar Image URL</label
+							>{$t('admin.image_label')}</label
 						>
 						<input
 							id="edit_image"
@@ -1297,7 +1325,7 @@
 					</div>
 
 					<div>
-						<span class="block text-xs font-bold text-slate-700">Profile Banner Theme</span>
+						<span class="block text-xs font-bold text-slate-700">{$t('admin.banner_label')}</span>
 						<div class="mt-1.5 flex flex-wrap gap-2">
 							{#each banner_colors as color (color.id)}
 								<label class="flex cursor-pointer items-center gap-1.5 text-xs">
@@ -1313,7 +1341,7 @@
 											? 'border-indigo-600 ring-2 ring-indigo-200'
 											: 'border-white'}"
 									></span>
-									<span class="text-[11px] text-slate-600">{color.label}</span>
+									<span class="text-[11px] text-slate-600">{$t(`admin.color_${color.id}`)}</span>
 								</label>
 							{/each}
 						</div>
@@ -1321,7 +1349,7 @@
 
 					<div>
 						<label for="edit_tone_prompt" class="block text-xs font-bold text-slate-700"
-							>Tone & Personality Prompt</label
+							>{$t('admin.tone_label')}</label
 						>
 						<textarea
 							id="edit_tone_prompt"
@@ -1334,7 +1362,7 @@
 
 					<div>
 						<label for="edit_feeds" class="block text-xs font-bold text-slate-700"
-							>News Feeds (one per line)</label
+							>{$t('admin.feeds_label')}</label
 						>
 						<textarea
 							id="edit_feeds"
@@ -1345,7 +1373,9 @@
 						></textarea>
 
 						<div class="mt-2">
-							<span class="text-[11px] font-semibold text-slate-500">Add trusted source:</span>
+							<span class="text-[11px] font-semibold text-slate-500"
+								>{$t('admin.presets_edit')}</span
+							>
 							<div class="mt-1 flex flex-wrap gap-1">
 								{#each data.trusted_presets as preset (preset.url)}
 									<button
@@ -1362,7 +1392,7 @@
 
 					<div>
 						<label for="edit_hashtags" class="block text-xs font-bold text-slate-700"
-							>Hashtags (comma separated)</label
+							>{$t('admin.hashtags_label')}</label
 						>
 						<input
 							id="edit_hashtags"
@@ -1379,13 +1409,13 @@
 							onclick={() => (editing_bot = null)}
 							class="rounded-xl px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100"
 						>
-							Cancel
+							{$t('common.cancel')}
 						</button>
 						<button
 							type="submit"
 							class="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
 						>
-							Save Bot Settings
+							{$t('admin.save_submit')}
 						</button>
 					</div>
 				</form>

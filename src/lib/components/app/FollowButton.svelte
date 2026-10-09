@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { api } from '$lib/api'
+	import { t } from '$lib/i18n'
 
 	let {
 		handle,
 		following: server_following,
 		follows_you = false,
-		label_following = 'Following',
+		label_following,
 		label_follow,
 		on_change,
 	}: {
@@ -22,7 +23,11 @@
 	let pending = $state(false)
 	let error_message = $state<string | null>(null)
 
-	let follow_label = $derived(label_follow ?? (follows_you ? 'Follow Back' : 'Follow'))
+	// Default labels come from the locale dictionaries; callers can still override them.
+	let follow_label = $derived(
+		label_follow ?? (follows_you ? $t('follow.follow_back') : $t('follow.follow')),
+	)
+	let following_label = $derived(label_following ?? $t('follow.following'))
 
 	async function toggle() {
 		if (pending) return
@@ -39,7 +44,7 @@
 			on_change?.(result)
 		} catch (e) {
 			override = previous // rollback
-			error_message = e instanceof Error ? e.message : 'Could not update follow'
+			error_message = e instanceof Error ? e.message : $t('follow.error')
 		} finally {
 			pending = false
 		}
@@ -58,7 +63,7 @@
 				? 'bg-indigo-600 text-white shadow-xs hover:bg-indigo-700'
 				: 'bg-black text-white hover:bg-slate-800'}"
 	>
-		{following ? label_following : follow_label}
+		{following ? following_label : follow_label}
 	</button>
 	{#if error_message}
 		<span class="mt-1 text-[10px] text-rose-600" role="alert">{error_message}</span>

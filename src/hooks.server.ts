@@ -5,6 +5,7 @@
 // layouts and pages can access the authenticated user.
 
 import { dev, building } from '$app/environment'
+import { default_locale, negotiate_locale } from '$lib/i18n/locales'
 import { create_auth } from '$lib/server/auth'
 import { create_db } from '$lib/server/db'
 import { user as user_table } from '$lib/server/db/schema'
@@ -35,6 +36,20 @@ export const handle: Handle = async ({ event, resolve }) => {
 		} as App.Platform
 	}
 
+	// Negotiated before the early returns below so every response — including API and
+	// prerendered ones — has a locale available for the `lang` attribute.
+	event.locals.locale = negotiate_locale(event.request.headers.get('accept-language'))
+
+	// Substitutes %lang% in app.html so <html lang> matches the negotiated locale. Used by every
+	// exit path below, including the prerender/healthcheck early returns, so the placeholder can
+	// never leak into a response.
+	const resolve_with_lang = () => {
+		const lang = event.locals.locale ?? default_locale
+		return resolve(event, {
+			transformPageChunk: ({ html }: { html: string }) => html.replace('%lang%', lang),
+		})
+	}
+
 	if (event.url.pathname.startsWith('/api/')) {
 		const category = rate_limit_for(event.url.pathname, event.request.method)
 		if (category && (await is_rate_limited(category, event))) {
@@ -47,14 +62,14 @@ export const handle: Handle = async ({ event, resolve }) => {
 		// During prerendering or when platform env is unavailable, skip auth.
 		event.locals.user = null
 		event.locals.session = null
-		return resolve(event)
+		return resolve_with_lang()
 	}
 
 	// Skip auth for healthcheck to avoid dependency on secrets which might not be fully propagated during deployment
 	if (event.url.pathname === '/api/health') {
 		event.locals.user = null
 		event.locals.session = null
-		return resolve(event)
+		return resolve_with_lang()
 	}
 
 	const { DB: db, AUTH_KV: auth_kv } = platform_env
@@ -111,5 +126,5 @@ export const handle: Handle = async ({ event, resolve }) => {
 		)
 	}
 
-	return resolve(event)
+	return resolve_with_lang()
 }

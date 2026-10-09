@@ -2,12 +2,13 @@
 	import { onMount } from 'svelte'
 	import { api } from '$lib/api'
 	import { composer } from '$lib/composer-state.svelte'
+	import { t } from '$lib/i18n'
 	import type { Page, PostView } from '$lib/types'
 	import PostCard from './PostCard.svelte'
 
 	let {
 		endpoint,
-		empty_message = 'Nothing here yet.',
+		empty_message,
 		accepts_new_posts = false,
 	}: {
 		endpoint: string
@@ -38,7 +39,7 @@
 			posts = initial ? fresh : [...posts, ...fresh]
 			next_cursor = page.next_cursor
 		} catch (e) {
-			error_message = e instanceof Error ? e.message : 'Could not load posts'
+			error_message = e instanceof Error ? e.message : $t('post_list.error')
 		} finally {
 			loading = false
 			loading_more = false
@@ -98,7 +99,7 @@
 
 <div class="space-y-10">
 	{#if loading}
-		<div class="space-y-10" aria-busy="true" aria-label="Loading posts">
+		<div class="space-y-10" aria-busy="true" aria-label={$t('post_list.loading')}>
 			{#each [0, 1, 2] as n (n)}
 				<div class="h-32 animate-pulse px-2 py-5">
 					<div class="flex gap-3">
@@ -119,7 +120,7 @@
 				type="button"
 				onclick={() => load(true)}
 				class="mt-4 rounded-full bg-black px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800"
-				>Try again</button
+				>{$t('common.try_again')}</button
 			>
 		</div>
 	{:else if posts.length === 0}
@@ -130,7 +131,7 @@
 					type="button"
 					onclick={() => composer.show()}
 					class="mt-4 rounded-full bg-black px-5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-slate-800"
-					>Write the first post</button
+					>{$t('post_list.write_first')}</button
 				>
 			{/if}
 		</div>
@@ -153,14 +154,14 @@
 						type="button"
 						onclick={() => load(false)}
 						class="rounded-full bg-white px-5 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50"
-						>Try again</button
+						>{$t('common.try_again')}</button
 					>
 				{:else}
-					<span class="text-xs text-slate-400">{loading_more ? 'Loading…' : ''}</span>
+					<span class="text-xs text-slate-400">{loading_more ? $t('common.loading') : ''}</span>
 				{/if}
 			</div>
 		{:else}
-			<p class="text-center text-xs text-slate-400">You're all caught up.</p>
+			<p class="text-center text-xs text-slate-400">{$t('post_list.all_caught_up')}</p>
 		{/if}
 	{/if}
 </div>
