@@ -36,13 +36,8 @@
 	aria-modal="true"
 	aria-labelledby="confirm-dialog-title"
 >
-	<div
-		class="my-auto w-full max-w-sm rounded-3xl bg-[#f8fafc] p-6 shadow-2xl dark:bg-slate-900"
-	>
-		<h2
-			id="confirm-dialog-title"
-			class="text-lg font-extrabold text-slate-900 dark:text-slate-100"
-		>
+	<div class="my-auto w-full max-w-sm rounded-3xl bg-[#f8fafc] p-6 shadow-2xl dark:bg-slate-900">
+		<h2 id="confirm-dialog-title" class="text-lg font-extrabold text-slate-900 dark:text-slate-100">
 			{title}
 		</h2>
 		<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
