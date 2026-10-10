@@ -266,7 +266,7 @@
 		"title": "プロフィールを編集",
 		"display_name": "表示名",
 		"username": "ユーザー名",
-		"username_placeholder": "username",
+		"username_placeholder": "ユーザー名",
 		"username_help": "半角英小文字、数字、アンダースコア（_）のみ使用できます。変更すると既存のプロフィールURLは無効になります。",
 		"bio": "自己紹介",
 		"bio_placeholder": "あなた自身について少し教えてください…",
