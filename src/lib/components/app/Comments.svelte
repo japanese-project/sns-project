@@ -147,7 +147,8 @@
 			<p class="text-sm">
 				<a
 					href={resolve('/u/[handle]', { handle: comment.author.handle })}
-					class="font-semibold text-slate-900 hover:underline">{comment.author.name}</a
+					class="font-semibold text-slate-900 hover:underline dark:text-slate-100"
+					>{comment.author.name}</a
 				>
 				<span class="ml-1 text-xs text-slate-400"><RelativeTime iso={comment.created_at} /></span>
 				{#if comment.updated_at && comment.updated_at !== comment.created_at}
@@ -167,7 +168,7 @@
 						type="text"
 						bind:value={edit_draft}
 						maxlength={MAX_COMMENT_LENGTH}
-						class="w-full rounded-full border border-slate-200 bg-transparent px-3 py-1 text-sm transition outline-none focus:border-slate-900 focus:ring-0"
+						class="w-full rounded-full border border-slate-200 bg-transparent px-3 py-1 text-sm transition outline-none focus:border-slate-900 focus:ring-0 dark:border-slate-700 dark:focus:border-slate-300"
 					/>
 					<div class="flex items-center gap-2 text-xs">
 						<button
@@ -180,14 +181,16 @@
 						<button
 							type="button"
 							onclick={cancel_edit}
-							class="font-medium text-slate-500 hover:text-slate-800"
+							class="font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
 						>
 							{$t('common.cancel')}
 						</button>
 					</div>
 				</form>
 			{:else}
-				<p class="text-sm [overflow-wrap:anywhere] break-words whitespace-pre-wrap text-slate-700">
+				<p
+					class="text-sm [overflow-wrap:anywhere] break-words whitespace-pre-wrap text-slate-700 dark:text-slate-300"
+				>
 					{#if is_nested && target_author?.username}
 						<a
 							href={resolve('/u/[handle]', { handle: target_author.handle })}
@@ -228,7 +231,7 @@
 							reply_to = root_parent ?? comment
 							reply_target_author = comment.author
 						}}
-						class="font-medium text-slate-500 transition hover:text-slate-900"
+						class="font-medium text-slate-500 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
 					>
 						{is_nested
 							? $t('comments.reply_to', { values: { name: comment.author.name } })
@@ -240,7 +243,7 @@
 					<button
 						type="button"
 						onclick={() => start_edit(comment)}
-						class="font-medium text-slate-400 transition hover:text-slate-700"
+						class="font-medium text-slate-400 transition hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-200"
 					>
 						{$t('common.edit')}
 					</button>
@@ -256,7 +259,7 @@
 			</div>
 
 			{#if !is_nested && comment.replies.length > 0}
-				<ul class="mt-2 border-l border-slate-200 pl-3">
+				<ul class="mt-2 border-l border-slate-200 pl-3 dark:border-slate-700">
 					{#each comment.replies as reply (reply.id)}
 						{@render row(reply, comment)}
 					{/each}
@@ -309,7 +312,7 @@
 				placeholder={$t('comments.placeholder')}
 				aria-label={$t('comments.comment_text')}
 				maxlength={MAX_COMMENT_LENGTH}
-				class="min-w-0 flex-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm transition outline-none focus:border-black focus:ring-1 focus:ring-black"
+				class="min-w-0 flex-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm transition outline-none focus:border-black focus:ring-1 focus:ring-black dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-slate-300 dark:focus:ring-slate-300"
 			/>
 			<button
 				type="submit"

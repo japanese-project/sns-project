@@ -62,7 +62,7 @@
 	<div class="relative">
 		<form onsubmit={handle_search} role="search" class="relative">
 			<SearchIcon
-				class="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-slate-400"
+				class="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500"
 			/>
 			<input
 				type="search"
@@ -94,7 +94,7 @@
 	{#if displayed_topics.length > 0 || topics_override !== null}
 		<!-- Trending Now Section -->
 		<section
-			class="rounded-3xl border border-slate-200/80 bg-white/90 p-4 shadow-xs backdrop-blur-xs"
+			class="rounded-3xl border border-slate-200/80 bg-white/90 p-4 shadow-xs backdrop-blur-xs dark:border-slate-800 dark:bg-slate-900/90"
 			aria-labelledby="trending-heading"
 		>
 			<div class="flex flex-wrap items-center justify-between gap-1.5 pb-2.5">
@@ -106,7 +106,7 @@
 				</div>
 				<!-- Period Pills: Today / Week / Month -->
 				<div
-					class="inline-flex items-center rounded-full bg-slate-100 p-0.5 text-[10px] font-semibold"
+					class="inline-flex items-center rounded-full bg-slate-100 p-0.5 text-[10px] font-semibold dark:bg-slate-800"
 					role="tablist"
 					aria-label={$t('sidebar.trending_window')}
 				>
@@ -116,8 +116,8 @@
 						aria-selected={active_period === 'today'}
 						onclick={() => select_period('today')}
 						class="rounded-full px-2 py-0.5 transition {active_period === 'today'
-							? 'bg-white text-slate-900 shadow-xs'
-							: 'text-slate-500 hover:text-slate-900'}"
+							? 'bg-white text-slate-900 shadow-xs dark:bg-slate-700 dark:text-slate-50'
+							: 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
 					>
 						{$t('sidebar.today')}
 					</button>
@@ -127,8 +127,8 @@
 						aria-selected={active_period === 'week'}
 						onclick={() => select_period('week')}
 						class="rounded-full px-2 py-0.5 transition {active_period === 'week'
-							? 'bg-white text-slate-900 shadow-xs'
-							: 'text-slate-500 hover:text-slate-900'}"
+							? 'bg-white text-slate-900 shadow-xs dark:bg-slate-700 dark:text-slate-50'
+							: 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
 					>
 						{$t('sidebar.week')}
 					</button>
@@ -138,8 +138,8 @@
 						aria-selected={active_period === 'month'}
 						onclick={() => select_period('month')}
 						class="rounded-full px-2 py-0.5 transition {active_period === 'month'
-							? 'bg-white text-slate-900 shadow-xs'
-							: 'text-slate-500 hover:text-slate-900'}"
+							? 'bg-white text-slate-900 shadow-xs dark:bg-slate-700 dark:text-slate-50'
+							: 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
 					>
 						{$t('sidebar.month')}
 					</button>
@@ -147,7 +147,9 @@
 			</div>
 
 			<div
-				class="divide-y divide-slate-100 transition-opacity {loading_topics ? 'opacity-50' : ''}"
+				class="divide-y divide-slate-100 transition-opacity dark:divide-slate-800 {loading_topics
+					? 'opacity-50'
+					: ''}"
 			>
 				{#if displayed_topics.length === 0}
 					<p class="py-3 text-center text-xs text-slate-400">
@@ -163,11 +165,11 @@
 						{@const post_count = typeof topic === 'string' ? null : topic.count}
 						<a
 							href={`${resolve('/explore')}?q=${encodeURIComponent('#' + tag_name)}`}
-							class="group -mx-2 flex items-center justify-between rounded-2xl p-2.5 transition hover:bg-slate-50"
+							class="group -mx-2 flex items-center justify-between rounded-2xl p-2.5 transition hover:bg-slate-50 dark:hover:bg-slate-800/60"
 						>
 							<div class="min-w-0 flex-1">
 								<p
-									class="truncate text-xs font-bold text-slate-900 transition group-hover:text-indigo-600"
+									class="truncate text-xs font-bold text-slate-900 transition group-hover:text-indigo-600 dark:text-slate-100"
 								>
 									#{tag_name}
 								</p>
@@ -178,14 +180,14 @@
 								{/if}
 							</div>
 							<ArrowUpRightIcon
-								class="size-3.5 text-slate-300 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-slate-600"
+								class="size-3.5 text-slate-300 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-slate-600 dark:text-slate-600 dark:group-hover:text-slate-300"
 							/>
 						</a>
 					{/each}
 				{/if}
 			</div>
 
-			<div class="mt-2 border-t border-slate-100 pt-2.5">
+			<div class="mt-2 border-t border-slate-100 pt-2.5 dark:border-slate-800">
 				<a
 					href={`${resolve('/explore')}?period=${active_period}`}
 					class="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 transition hover:text-indigo-700"
@@ -199,7 +201,7 @@
 
 	<!-- Who to Follow (User Recommendations) -->
 	<section
-		class="rounded-3xl border border-slate-200/80 bg-white/90 p-4 shadow-xs backdrop-blur-xs"
+		class="rounded-3xl border border-slate-200/80 bg-white/90 p-4 shadow-xs backdrop-blur-xs dark:border-slate-800 dark:bg-slate-900/90"
 		aria-labelledby="who-to-follow-heading"
 	>
 		<div class="flex items-center justify-between pb-2">
@@ -210,7 +212,7 @@
 		</div>
 
 		{#if suggested_users.length > 0}
-			<ul class="divide-y divide-slate-100">
+			<ul class="divide-y divide-slate-100 dark:divide-slate-800">
 				{#each suggested_users.slice(0, 4) as person (person.id)}
 					<li class="flex items-center justify-between gap-2 py-2.5">
 						<a
@@ -219,10 +221,12 @@
 						>
 							<div class="shrink-0"><Avatar user={person} size={34} /></div>
 							<div class="min-w-0 flex-1">
-								<p class="truncate text-xs font-bold text-slate-900 group-hover:underline">
+								<p
+									class="truncate text-xs font-bold text-slate-900 group-hover:underline dark:text-slate-100"
+								>
 									{person.name}
 								</p>
-								<p class="truncate text-[11px] text-slate-400">
+								<p class="truncate text-[11px] text-slate-400 dark:text-slate-500">
 									@{person.username ?? person.id.slice(0, 8)}
 								</p>
 							</div>
@@ -250,7 +254,7 @@
 			</div>
 		{/if}
 
-		<div class="mt-2 border-t border-slate-100 pt-2.5">
+		<div class="mt-2 border-t border-slate-100 pt-2.5 dark:border-slate-800">
 			<a
 				href={resolve('/explore')}
 				class="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 transition hover:text-indigo-700"
@@ -261,7 +265,7 @@
 	</section>
 
 	<!-- Footer Info -->
-	<footer class="px-2 text-[11px] leading-relaxed text-slate-400">
+	<footer class="px-2 text-[11px] leading-relaxed text-slate-400 dark:text-slate-500">
 		<p class="flex flex-wrap gap-x-3 gap-y-1">
 			<a href={resolve('/explore')} class="hover:text-slate-600 hover:underline"
 				>{$t('nav.explore')}</a

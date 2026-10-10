@@ -184,7 +184,7 @@
 	<div class="space-y-6 pb-16">
 		<!-- Header Banner -->
 		<div
-			class="flex flex-col justify-between gap-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm md:flex-row md:items-center"
+			class="flex flex-col justify-between gap-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm md:flex-row md:items-center dark:border-slate-800 dark:bg-slate-900"
 		>
 			<div class="space-y-1">
 				<div class="flex items-center gap-2">
@@ -206,7 +206,7 @@
 					<button
 						type="button"
 						onclick={() => (show_create_modal = true)}
-						class="flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800 active:scale-95"
+						class="flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800 active:scale-95 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
 					>
 						<PlusIcon class="size-3.5" />
 						{$t('admin.create_new_bot')}
@@ -233,7 +233,9 @@
 
 		{#if !data.is_admin}
 			<!-- Password Unlock Box -->
-			<div class="mx-auto max-w-md rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
+			<div
+				class="mx-auto max-w-md rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+			>
 				<div class="text-center">
 					<div
 						class="mx-auto flex size-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600"
@@ -254,7 +256,7 @@
 					/>
 					<button
 						type="submit"
-						class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-xs transition hover:bg-slate-800 active:scale-[0.98]"
+						class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-xs transition hover:bg-slate-800 active:scale-[0.98] dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
 					>
 						{$t('admin.unlock')}
 					</button>
@@ -270,7 +272,7 @@
 						class="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition {active_tab ===
 						'controls'
 							? 'bg-slate-900 text-white shadow-xs'
-							: 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900'}"
+							: 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100'}"
 					>
 						<SlidersHorizontalIcon class="size-3.5" />
 						<span>{$t('admin.tab_controls')}</span>
@@ -282,14 +284,14 @@
 						class="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition {active_tab ===
 						'fleet'
 							? 'bg-slate-900 text-white shadow-xs'
-							: 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900'}"
+							: 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100'}"
 					>
 						<UsersIcon class="size-3.5" />
 						<span>{$t('admin.tab_fleet')}</span>
 						<span
 							class="py-0.2 rounded-full px-1.5 text-[10px] {active_tab === 'fleet'
-								? 'bg-white/20 text-white'
-								: 'bg-slate-100 text-slate-600'}"
+								? 'bg-white/20 text-white dark:bg-white/15'
+								: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}"
 						>
 							{data.personas.length}
 						</span>
@@ -301,14 +303,14 @@
 						class="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition {active_tab ===
 						'posts'
 							? 'bg-slate-900 text-white shadow-xs'
-							: 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900'}"
+							: 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100'}"
 					>
 						<MessageSquareIcon class="size-3.5" />
 						<span>{$t('admin.tab_posts')}</span>
 						<span
 							class="py-0.2 rounded-full px-1.5 text-[10px] {active_tab === 'posts'
-								? 'bg-white/20 text-white'
-								: 'bg-slate-100 text-slate-600'}"
+								? 'bg-white/20 text-white dark:bg-white/15'
+								: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}"
 						>
 							{data.recent_posts.length}
 						</span>
@@ -387,7 +389,7 @@
 					<div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
 						<!-- Control 1: Master Status Switch -->
 						<div
-							class="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs"
+							class="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900"
 						>
 							<div>
 								<div class="flex items-center justify-between">
@@ -418,7 +420,7 @@
 									type="submit"
 									class="w-full rounded-xl px-4 py-2.5 text-xs font-semibold transition active:scale-95 {data
 										.config?.enabled
-										? 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+										? 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
 										: 'bg-emerald-600 text-white hover:bg-emerald-700'}"
 								>
 									{data.config?.enabled
@@ -430,16 +432,16 @@
 
 						<!-- Control 2: Schedule & Campaign End Timing -->
 						<div
-							class="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs"
+							class="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900"
 						>
 							<div>
 								<div class="flex items-center justify-between">
 									<span class="text-xs font-bold tracking-wider text-slate-400 uppercase"
 										>{$t('admin.schedule_control')}</span
 									>
-									<CalendarIcon class="size-4 text-slate-400" />
+									<CalendarIcon class="size-4 text-slate-400 dark:text-slate-500" />
 								</div>
-								<h3 class="mt-2 truncate text-sm font-bold text-slate-900">
+								<h3 class="mt-2 truncate text-sm font-bold text-slate-900 dark:text-slate-100">
 									{campaign_end_display()}
 								</h3>
 								<p class="mt-1 text-xs text-slate-500">{$t('admin.schedule_desc')}</p>
@@ -451,21 +453,21 @@
 									<button
 										type="button"
 										onclick={() => preset_date(3)}
-										class="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
+										class="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
 									>
 										{$t('admin.plus_3_days')}
 									</button>
 									<button
 										type="button"
 										onclick={() => preset_date(7)}
-										class="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
+										class="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
 									>
 										{$t('admin.plus_1_week')}
 									</button>
 									<button
 										type="button"
 										onclick={() => preset_date(14)}
-										class="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
+										class="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
 									>
 										{$t('admin.plus_2_weeks')}
 									</button>
@@ -477,7 +479,7 @@
 										name="end_date"
 										bind:value={custom_end_date}
 										required
-										class="w-full rounded-xl border border-slate-200 px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none"
+										class="w-full rounded-xl border border-slate-200 px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
 									/>
 									<button
 										type="submit"
@@ -502,7 +504,7 @@
 
 						<!-- Control 3: Manual News Post Trigger -->
 						<div
-							class="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs"
+							class="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900"
 						>
 							<div>
 								<div class="flex items-center justify-between">
@@ -534,7 +536,7 @@
 								<select
 									name="bot_id"
 									bind:value={selected_bot_id}
-									class="w-full rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none"
+									class="w-full rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
 								>
 									<option value="">{$t('admin.auto_pick')}</option>
 									{#each data.personas as bot (bot.id)}
@@ -568,7 +570,9 @@
 			<!-- TAB 2: BOT FLEET DIRECTORY                                  -->
 			<!-- ───────────────────────────────────────────────────────────── -->
 			{#if active_tab === 'fleet'}
-				<div class="space-y-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs">
+				<div
+					class="space-y-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900"
+				>
 					<!-- Directory Header with Controls -->
 					<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 						<div>
@@ -584,7 +588,7 @@
 							<!-- Search Input -->
 							<div class="relative">
 								<SearchIcon
-									class="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400"
+									class="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500"
 								/>
 								<input
 									type="text"
@@ -595,7 +599,9 @@
 							</div>
 
 							<!-- View Mode Toggle (Table / Grid) -->
-							<div class="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-0.5">
+							<div
+								class="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-700 dark:bg-slate-800"
+							>
 								<button
 									type="button"
 									onclick={() => (fleet_view_mode = 'table')}
@@ -623,7 +629,7 @@
 							<button
 								type="button"
 								onclick={() => (show_create_modal = true)}
-								class="flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-slate-800"
+								class="flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
 							>
 								<PlusIcon class="size-3.5" />
 								{$t('admin.new_bot')}
@@ -640,7 +646,7 @@
 								class="rounded-lg px-2.5 py-1 text-xs font-medium transition {selected_category ===
 								tab.id
 									? 'bg-slate-900 text-white'
-									: 'bg-slate-100 text-slate-600 hover:bg-slate-200'}"
+									: 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}"
 							>
 								{$t(tab.label_key)}
 							</button>
@@ -653,7 +659,9 @@
 						</div>
 					{:else if fleet_view_mode === 'table'}
 						<!-- High-Density Compact Table View -->
-						<div class="overflow-x-auto rounded-2xl border border-slate-200/80">
+						<div
+							class="overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-slate-800"
+						>
 							<table class="w-full text-left text-xs">
 								<thead class="bg-slate-50 font-bold text-slate-500 uppercase">
 									<tr class="border-b border-slate-200/80">
@@ -664,9 +672,11 @@
 										<th class="py-3 pr-4 pl-3 text-right">{$t('admin.col_actions')}</th>
 									</tr>
 								</thead>
-								<tbody class="divide-y divide-slate-100 bg-white">
+								<tbody
+									class="divide-y divide-slate-100 bg-white dark:divide-slate-800 dark:bg-slate-900"
+								>
 									{#each filtered_personas() as bot (bot.id)}
-										<tr class="transition hover:bg-slate-50/70">
+										<tr class="transition hover:bg-slate-50/70 dark:hover:bg-slate-800/60">
 											<!-- Bot Profile -->
 											<td class="py-3 pr-3 pl-4">
 												<div class="flex items-center gap-2.5">
@@ -679,7 +689,9 @@
 													/>
 													<div class="min-w-0">
 														<div class="flex items-center gap-1.5">
-															<span class="truncate font-bold text-slate-900">{bot.name}</span>
+															<span class="truncate font-bold text-slate-900 dark:text-slate-100"
+																>{bot.name}</span
+															>
 															{#if bot.is_custom}
 																<span
 																	class="py-0.2 rounded bg-indigo-50 px-1 text-[9px] font-semibold text-indigo-700"
@@ -704,7 +716,7 @@
 												<div class="flex max-w-[220px] flex-wrap gap-1">
 													{#each (bot.hashtags || []).slice(0, 2) as tag (tag)}
 														<span
-															class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600"
+															class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300"
 														>
 															{tag}
 														</span>
@@ -715,7 +727,7 @@
 											<!-- Feeds -->
 											<td class="hidden px-3 py-3 sm:table-cell">
 												<span
-													class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600"
+													class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
 												>
 													{$t('admin.feeds_count', { values: { count: (bot.feeds || []).length } })}
 												</span>
@@ -768,7 +780,7 @@
 																		e.preventDefault()
 																	}
 																}}
-																class="rounded-lg p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+																class="rounded-lg p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950 dark:hover:text-rose-400"
 															>
 																<TrashIcon class="size-3.5" />
 															</button>
@@ -786,7 +798,7 @@
 						<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
 							{#each filtered_personas() as bot (bot.id)}
 								<div
-									class="flex flex-col justify-between rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition hover:border-slate-300 hover:shadow-xs"
+									class="flex flex-col justify-between rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition hover:border-slate-300 hover:shadow-xs dark:border-slate-800 dark:bg-slate-800/50"
 								>
 									<div>
 										<div class="flex items-start justify-between gap-3">
@@ -800,7 +812,9 @@
 												/>
 												<div class="min-w-0">
 													<div class="flex items-center gap-1.5">
-														<span class="truncate text-xs font-bold text-slate-900">{bot.name}</span
+														<span
+															class="truncate text-xs font-bold text-slate-900 dark:text-slate-100"
+															>{bot.name}</span
 														>
 														{#if bot.is_custom}
 															<span
@@ -830,14 +844,14 @@
 											</button>
 										</div>
 
-										<p class="mt-2.5 line-clamp-2 text-xs text-slate-600">
+										<p class="mt-2.5 line-clamp-2 text-xs text-slate-600 dark:text-slate-400">
 											{bot.bio}
 										</p>
 
 										<div class="mt-2.5 flex flex-wrap gap-1">
 											{#each (bot.feeds || []).slice(0, 2) as f (f)}
 												<span
-													class="max-w-[180px] truncate rounded border border-slate-200/60 bg-white px-1.5 py-0.5 text-[10px] font-medium text-slate-500"
+													class="max-w-[180px] truncate rounded border border-slate-200/60 bg-white px-1.5 py-0.5 text-[10px] font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-800"
 												>
 													{f.replace(/https?:\/\/(www\.)?/, '').split('/')[0]}
 												</span>
@@ -853,7 +867,7 @@
 									</div>
 
 									<div
-										class="mt-4 flex items-center justify-between border-t border-slate-200/60 pt-2.5"
+										class="mt-4 flex items-center justify-between border-t border-slate-200/60 pt-2.5 dark:border-slate-800"
 									>
 										<div class="text-[10px] text-slate-500">
 											{$t('admin.today_total', {
@@ -889,7 +903,7 @@
 																e.preventDefault()
 															}
 														}}
-														class="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+														class="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950 dark:hover:text-rose-400"
 													>
 														<TrashIcon class="size-3.5" />
 													</button>
@@ -908,7 +922,9 @@
 			<!-- TAB 3: RECENT POSTS & ACTIVITY                              -->
 			<!-- ───────────────────────────────────────────────────────────── -->
 			{#if active_tab === 'posts'}
-				<div class="space-y-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs">
+				<div
+					class="space-y-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900"
+				>
 					<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 						<div>
 							<h2 class="text-lg font-bold text-slate-900">
@@ -926,7 +942,7 @@
 							<!-- Search Input -->
 							<div class="relative">
 								<SearchIcon
-									class="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400"
+									class="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500"
 								/>
 								<input
 									type="text"
@@ -939,7 +955,7 @@
 							<!-- Filter by bot -->
 							<select
 								bind:value={post_bot_filter}
-								class="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none"
+								class="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
 							>
 								<option value="all">{$t('admin.filter_all')}</option>
 								{#each data.personas as bot (bot.id)}
@@ -952,7 +968,7 @@
 					{#if filtered_recent_posts().length === 0}
 						<div class="py-12 text-center text-xs text-slate-400">{$t('admin.no_posts')}</div>
 					{:else}
-						<div class="divide-y divide-slate-100">
+						<div class="divide-y divide-slate-100 dark:divide-slate-800">
 							{#each filtered_recent_posts() as item (item.id)}
 								{@const first_link = extract_first_url(item.content)}
 								<div class="flex items-start justify-between gap-4 py-4">
@@ -966,14 +982,18 @@
 										/>
 										<div class="space-y-1">
 											<div class="flex items-center gap-1.5 text-xs">
-												<span class="font-bold text-slate-900">{item.user_name}</span>
+												<span class="font-bold text-slate-900 dark:text-slate-100"
+													>{item.user_name}</span
+												>
 												<span class="text-slate-400">@{item.user_username}</span>
 												<span class="text-slate-400">•</span>
 												<span class="text-slate-400"><RelativeTime iso={item.created_at} /></span>
 											</div>
 
 											{#if parse_content(item.content, { exclude_url: first_link }).length > 0}
-												<div class="text-xs leading-relaxed whitespace-pre-wrap text-slate-700">
+												<div
+													class="text-xs leading-relaxed whitespace-pre-wrap text-slate-700 dark:text-slate-300"
+												>
 													{#each parse_content( item.content, { exclude_url: first_link } ) as segment, i (i)}
 														{#if segment.type === 'tag'}
 															<a
@@ -1009,7 +1029,7 @@
 										<a
 											href={resolve('/posts/[id]', { id: item.id })}
 											target="_blank"
-											class="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+											class="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
 										>
 											{$t('pin_card.view').replace(/\s*→$/, '')}
 										</a>
@@ -1040,9 +1060,11 @@
 			class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs"
 		>
 			<div
-				class="max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl"
+				class="max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900"
 			>
-				<div class="flex items-center justify-between border-b border-slate-100 pb-3">
+				<div
+					class="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800"
+				>
 					<div>
 						<h3 class="text-base font-bold text-slate-900">{$t('admin.create_title')}</h3>
 						<p class="text-xs text-slate-500">{$t('admin.create_desc')}</p>
@@ -1050,7 +1072,7 @@
 					<button
 						type="button"
 						onclick={() => (show_create_modal = false)}
-						class="rounded-full p-1.5 text-slate-400 hover:bg-slate-100"
+						class="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
 					>
 						<XIcon class="size-4" />
 					</button>
@@ -1124,7 +1146,7 @@
 							name="image"
 							bind:value={create_image}
 							placeholder="https://api.dicebear.com/7.x/notionists/svg?seed=maya"
-							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
 						/>
 					</div>
 
@@ -1177,7 +1199,7 @@
 							rows={3}
 							required
 							placeholder="https://dev.to/feed"
-							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
 						></textarea>
 
 						<div class="mt-2">
@@ -1189,7 +1211,7 @@
 									<button
 										type="button"
 										onclick={() => add_feed_preset(preset.url, 'create')}
-										class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-600 hover:bg-slate-100"
+										class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
 									>
 										+ {preset.name}
 									</button>
@@ -1212,17 +1234,19 @@
 						/>
 					</div>
 
-					<div class="flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
+					<div
+						class="flex items-center justify-end gap-2 border-t border-slate-100 pt-3 dark:border-slate-800"
+					>
 						<button
 							type="button"
 							onclick={() => (show_create_modal = false)}
-							class="rounded-xl px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100"
+							class="rounded-xl px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
 						>
 							{$t('common.cancel')}
 						</button>
 						<button
 							type="submit"
-							class="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
+							class="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
 						>
 							{$t('admin.create_submit')}
 						</button>
@@ -1238,9 +1262,11 @@
 			class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs"
 		>
 			<div
-				class="max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl"
+				class="max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900"
 			>
-				<div class="flex items-center justify-between border-b border-slate-100 pb-3">
+				<div
+					class="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800"
+				>
 					<div>
 						<h3 class="text-base font-bold text-slate-900">{$t('admin.edit_title')}</h3>
 						<p class="text-xs text-slate-500">{$t('admin.edit_desc')}</p>
@@ -1248,7 +1274,7 @@
 					<button
 						type="button"
 						onclick={() => (editing_bot = null)}
-						class="rounded-full p-1.5 text-slate-400 hover:bg-slate-100"
+						class="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
 					>
 						<XIcon class="size-4" />
 					</button>
@@ -1280,7 +1306,7 @@
 								name="name"
 								bind:value={edit_name}
 								required
-								class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+								class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
 							/>
 						</div>
 						<div>
@@ -1293,7 +1319,7 @@
 								name="username"
 								bind:value={edit_username}
 								required
-								class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+								class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
 							/>
 						</div>
 					</div>
@@ -1307,7 +1333,7 @@
 							name="bio"
 							bind:value={edit_bio}
 							rows={2}
-							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
 						></textarea>
 					</div>
 
@@ -1320,7 +1346,7 @@
 							type="url"
 							name="image"
 							bind:value={edit_image}
-							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
 						/>
 					</div>
 
@@ -1356,7 +1382,7 @@
 							name="tone_prompt"
 							bind:value={edit_tone_prompt}
 							rows={3}
-							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
 						></textarea>
 					</div>
 
@@ -1369,7 +1395,7 @@
 							name="feeds"
 							bind:value={edit_feeds}
 							rows={3}
-							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
 						></textarea>
 
 						<div class="mt-2">
@@ -1381,7 +1407,7 @@
 									<button
 										type="button"
 										onclick={() => add_feed_preset(preset.url, 'edit')}
-										class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-600 hover:bg-slate-100"
+										class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
 									>
 										+ {preset.name}
 									</button>
@@ -1399,21 +1425,23 @@
 							type="text"
 							name="hashtags"
 							bind:value={edit_hashtags}
-							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
 						/>
 					</div>
 
-					<div class="flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
+					<div
+						class="flex items-center justify-end gap-2 border-t border-slate-100 pt-3 dark:border-slate-800"
+					>
 						<button
 							type="button"
 							onclick={() => (editing_bot = null)}
-							class="rounded-xl px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100"
+							class="rounded-xl px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
 						>
 							{$t('common.cancel')}
 						</button>
 						<button
 							type="submit"
-							class="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
+							class="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
 						>
 							{$t('admin.save_submit')}
 						</button>

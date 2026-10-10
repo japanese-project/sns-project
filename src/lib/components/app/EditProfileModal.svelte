@@ -166,7 +166,7 @@
 
 	<!-- Slide-in sheet from right -->
 	<div
-		class="fixed inset-y-0 right-0 z-50 flex w-full max-w-sm flex-col bg-[#f8fafc] shadow-2xl"
+		class="fixed inset-y-0 right-0 z-50 flex w-full max-w-sm flex-col bg-[#f8fafc] shadow-2xl dark:bg-slate-900"
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="edit-profile-title"
@@ -193,7 +193,7 @@
 				<div>
 					<label
 						for="profile-name"
-						class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase"
+						class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400"
 					>
 						{$t('edit_profile.display_name')}
 					</label>
@@ -203,7 +203,7 @@
 						bind:value={name}
 						maxlength={MAX_NAME_LENGTH}
 						required
-						class="mt-2 w-full border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 text-sm text-slate-900 transition outline-none focus:border-slate-900 focus:ring-0 focus:outline-none"
+						class="mt-2 w-full border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 text-sm text-slate-900 transition outline-none focus:border-slate-900 focus:ring-0 focus:outline-none dark:border-slate-700 dark:text-slate-100 dark:focus:border-slate-100"
 					/>
 				</div>
 
@@ -211,13 +211,13 @@
 				<div>
 					<label
 						for="profile-username"
-						class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase"
+						class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400"
 					>
 						{$t('edit_profile.username')}
 					</label>
 					<div class="relative mt-2">
 						<span
-							class="pointer-events-none absolute inset-y-0 left-0 flex items-center pb-1.5 text-sm font-semibold text-slate-400"
+							class="pointer-events-none absolute inset-y-0 left-0 flex items-center pb-1.5 text-sm font-semibold text-slate-400 dark:text-slate-500"
 							>@</span
 						>
 						<input
@@ -239,7 +239,7 @@
 					<div class="flex items-center justify-between">
 						<label
 							for="profile-bio"
-							class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase"
+							class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400"
 						>
 							{$t('edit_profile.bio')}
 						</label>
@@ -273,7 +273,7 @@
 						data-testid="banner-preview"
 						class="mt-2 h-14 w-full rounded-xl {get_banner_class(
 							banner_color,
-						)} border border-slate-200/60 shadow-inner"
+						)} border border-slate-200/60 shadow-inner dark:border-slate-700"
 					></div>
 					<div class="mt-3 grid grid-cols-4 gap-2">
 						{#each BANNER_THEMES as theme (theme.id)}
@@ -310,8 +310,8 @@
 								type="button"
 								onclick={() => toggle_interest(topic)}
 								class="rounded-full px-3.5 py-1.5 text-xs font-semibold transition {is_selected
-									? 'bg-slate-900 text-white shadow-sm'
-									: 'text-slate-600 hover:bg-slate-100'}"
+									? 'bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-900'
+									: 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}"
 							>
 								{is_selected ? '✓ ' : '#'}{topic}
 							</button>
@@ -343,12 +343,12 @@
 							}}
 							placeholder={$t('edit_profile.add_own')}
 							maxlength={30}
-							class="flex-1 border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-slate-900 focus:ring-0 focus:outline-none"
+							class="flex-1 border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-slate-900 focus:ring-0 focus:outline-none dark:border-slate-700"
 						/>
 						<button
 							type="button"
 							onclick={add_custom}
-							class="rounded-full px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+							class="rounded-full px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
 						>
 							{$t('common.add')}
 						</button>
@@ -356,7 +356,10 @@
 				</div>
 
 				{#if error_message}
-					<p class="rounded-2xl bg-rose-50 px-4 py-3 text-xs text-rose-700" role="alert">
+					<p
+						class="rounded-2xl bg-rose-50 px-4 py-3 text-xs text-rose-700 dark:bg-rose-950 dark:text-rose-300"
+						role="alert"
+					>
 						{error_message}
 					</p>
 				{/if}
@@ -364,19 +367,19 @@
 
 			<!-- Sticky footer actions -->
 			<div
-				class="flex shrink-0 items-center justify-end gap-3 border-t border-slate-200/60 px-5 py-4"
+				class="flex shrink-0 items-center justify-end gap-3 border-t border-slate-200/60 px-5 py-4 dark:border-slate-800"
 			>
 				<button
 					type="button"
 					onclick={on_close}
-					class="rounded-full px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+					class="rounded-full px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
 				>
 					{$t('common.cancel')}
 				</button>
 				<button
 					type="submit"
 					disabled={saving || !name.trim()}
-					class="rounded-full bg-black px-6 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50"
+					class="rounded-full bg-black px-6 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
 				>
 					{saving ? $t('common.saving') : $t('common.save')}
 				</button>

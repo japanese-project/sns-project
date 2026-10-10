@@ -469,7 +469,7 @@
 			aria-expanded={menu_open}
 			aria-controls={menu_open ? `menu-${post.id}` : undefined}
 			bind:this={menu_button_el}
-			class="flex size-9 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+			class="flex size-9 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
 			onkeydown={handle_button_keydown}
 			onclick={(e) => {
 				e.stopPropagation()
@@ -494,7 +494,7 @@
 					role="menuitem"
 					tabindex="-1"
 					onclick={handle_copy_link}
-					class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50 focus:bg-white/50"
+					class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50 focus:bg-white/50 dark:text-slate-200 dark:hover:bg-white/10 dark:focus:bg-white/10"
 				>
 					{#if copy_status === 'copied'}
 						<i class="ph-fill ph-check-circle text-base text-emerald-600"></i>
@@ -520,7 +520,7 @@
 							draft_visibility = active_post.visibility
 							editing = true
 						}}
-						class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50 focus:bg-white/50"
+						class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50 focus:bg-white/50 dark:text-slate-200 dark:hover:bg-white/10 dark:focus:bg-white/10"
 					>
 						<i class="ph ph-pencil-simple text-base text-slate-400"></i>
 						<span>{$t('post.edit_post')}</span>
@@ -549,7 +549,7 @@
 {#if post.repost_of}
 	<!-- A repost is one card: who reposted (and their caption) on top, the original embedded below. -->
 	<div
-		class="rounded-3xl border border-slate-100 bg-white p-5 pb-9 shadow-sm sm:p-6 sm:pb-9"
+		class="rounded-3xl border border-slate-100 bg-white p-5 pb-9 shadow-sm sm:p-6 sm:pb-9 dark:border-slate-800 dark:bg-slate-900"
 		data-testid="repost"
 	>
 		<div class="mb-3 flex items-center gap-3">
@@ -557,7 +557,9 @@
 				href={resolve('/u/[handle]', { handle: post.author.handle })}
 				class="flex min-w-0 items-center gap-3 transition-opacity hover:opacity-80"
 			>
-				<span class="shrink-0 overflow-hidden rounded-full border border-slate-100">
+				<span
+					class="shrink-0 overflow-hidden rounded-full border border-slate-100 dark:border-slate-800"
+				>
 					<Avatar user={post.author} size={36} />
 				</span>
 				<span class="flex min-w-0 flex-col leading-tight">
@@ -612,7 +614,7 @@
 			</form>
 		{:else if post.content}
 			<p
-				class="mb-3 text-[15px] leading-relaxed [overflow-wrap:anywhere] whitespace-pre-wrap text-slate-800"
+				class="mb-3 text-[15px] leading-relaxed [overflow-wrap:anywhere] whitespace-pre-wrap text-slate-800 dark:text-slate-200"
 				data-testid="repost-caption"
 			>
 				{#each parse_content(post.content) as segment, i (i)}
@@ -662,7 +664,7 @@
 	<article
 		class="post-card group relative {embedded
 			? ''
-			: 'rounded-3xl border border-slate-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md sm:p-6'} {!editing
+			: 'rounded-3xl border border-slate-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md sm:p-6 dark:border-slate-800 dark:bg-slate-900'} {!editing
 			? 'cursor-pointer'
 			: ''}"
 		data-testid="post-card"
@@ -729,8 +731,8 @@
 								onclick={() => (draft_visibility = 'public')}
 								class="flex items-center gap-1 rounded-full px-2.5 py-1 transition {draft_visibility ===
 								'public'
-									? 'bg-slate-100 font-semibold text-slate-900'
-									: 'text-slate-400 hover:text-slate-600'}"
+									? 'bg-slate-100 font-semibold text-slate-900 dark:bg-slate-800 dark:text-slate-50'
+									: 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'}"
 							>
 								<GlobeIcon class="size-3.5" />
 								{$t('post.public')}
@@ -740,8 +742,8 @@
 								onclick={() => (draft_visibility = 'followers-only')}
 								class="flex items-center gap-1 rounded-full px-2.5 py-1 transition {draft_visibility ===
 								'followers-only'
-									? 'bg-slate-100 font-semibold text-slate-900'
-									: 'text-slate-400 hover:text-slate-600'}"
+									? 'bg-slate-100 font-semibold text-slate-900 dark:bg-slate-800 dark:text-slate-50'
+									: 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'}"
 							>
 								<LockIcon class="size-3.5" />
 								{$t('post.followers')}
@@ -800,12 +802,14 @@
 						}}
 					>
 						<div
-							class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-100 bg-slate-50"
+							class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-800"
 						>
 							<Avatar user={post.author} size={44} />
 						</div>
 						<div class="flex flex-col leading-tight">
-							<span class="text-[15px] font-bold text-slate-900">{post.author.name}</span>
+							<span class="text-[15px] font-bold text-slate-900 dark:text-slate-100"
+								>{post.author.name}</span
+							>
 							<span class="mt-0.5 text-[13px] text-slate-500">
 								@{post.author.username || post.author.handle || post.author.id} • <RelativeTime
 									iso={active_post.created_at}
@@ -819,7 +823,7 @@
 				<!-- Text Content -->
 				{#if display_segments.length > 0}
 					<p
-						class="mt-4 text-[15px] leading-relaxed [overflow-wrap:anywhere] whitespace-pre-wrap text-slate-800"
+						class="mt-4 text-[15px] leading-relaxed [overflow-wrap:anywhere] whitespace-pre-wrap text-slate-800 dark:text-slate-200"
 					>
 						{#each display_segments as segment, i (i)}
 							{#if segment.type === 'tag'}
@@ -848,7 +852,7 @@
 					<div
 						data-testid="post-image-container"
 						data-aspect-ratio={effective_aspect_ratio}
-						class="relative mt-4 flex max-h-[320px] w-full items-center justify-center overflow-hidden rounded-2xl border border-slate-100 bg-slate-50 sm:max-h-[400px] md:max-h-[500px]"
+						class="relative mt-4 flex max-h-[320px] w-full items-center justify-center overflow-hidden rounded-2xl border border-slate-100 bg-slate-50 sm:max-h-[400px] md:max-h-[500px] dark:border-slate-800 dark:bg-slate-800"
 						style={effective_aspect_ratio
 							? `aspect-ratio: ${effective_aspect_ratio};`
 							: 'min-height: 200px;'}
@@ -864,7 +868,7 @@
 						{:else}
 							{#if !image_loaded}
 								<div
-									class="absolute inset-0 z-0 flex animate-pulse items-center justify-center bg-slate-100 text-slate-300"
+									class="absolute inset-0 z-0 flex animate-pulse items-center justify-center bg-slate-100 text-slate-300 dark:bg-slate-800 dark:text-slate-600"
 								>
 									<i class="ph ph-image text-3xl"></i>
 								</div>
@@ -921,7 +925,7 @@
 								: 'ph ph-heart text-slate-400 group-hover/btn:text-system-pink'}"
 						></i>
 						<span
-							class="like-count text-sm font-medium text-slate-600 tabular-nums"
+							class="like-count text-sm font-medium text-slate-600 tabular-nums dark:text-slate-400"
 							data-testid="like-count">{like_count}</span
 						>
 					</button>
@@ -935,7 +939,9 @@
 						<i
 							class="ph ph-chat-circle text-xl text-slate-400 transition-colors group-hover/btn:text-black"
 						></i>
-						<span class="text-sm font-medium text-slate-600">{comment_count}</span>
+						<span class="text-sm font-medium text-slate-600 dark:text-slate-400"
+							>{comment_count}</span
+						>
 					</button>
 					<div class="relative flex items-center">
 						<button
@@ -959,7 +965,7 @@
 									: 'text-slate-400 group-hover/btn:text-emerald-600'}"
 							></i>
 							<span
-								class="text-sm font-medium text-slate-600 tabular-nums"
+								class="text-sm font-medium text-slate-600 tabular-nums dark:text-slate-400"
 								data-testid="repost-count">{repost_count}</span
 							>
 						</button>
@@ -977,7 +983,7 @@
 											e.stopPropagation()
 											open_caption_form()
 										}}
-										class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50"
+										class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50 dark:text-slate-200 dark:hover:bg-white/10"
 									>
 										<i class="ph ph-pencil-simple text-base text-slate-400"></i>
 										<span>{$t('post.edit_caption')}</span>
@@ -1002,7 +1008,7 @@
 											e.stopPropagation()
 											send_repost()
 										}}
-										class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50"
+										class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50 dark:text-slate-200 dark:hover:bg-white/10"
 									>
 										<i class="ph ph-repeat text-base text-slate-400"></i>
 										<span>{$t('post.repost')}</span>
@@ -1014,7 +1020,7 @@
 											e.stopPropagation()
 											open_caption_form()
 										}}
-										class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50"
+										class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50 dark:text-slate-200 dark:hover:bg-white/10"
 									>
 										<i class="ph ph-note-pencil text-base text-slate-400"></i>
 										<span>{$t('post.repost_with_caption')}</span>
@@ -1079,7 +1085,7 @@
 
 		{#if show_comments}
 			<div
-				class="mt-6 border-t border-slate-100 pt-4"
+				class="mt-6 border-t border-slate-100 pt-4 dark:border-slate-800"
 				onclick={(e) => e.stopPropagation()}
 				onkeydown={(e) => e.stopPropagation()}
 				role="presentation"

@@ -27,6 +27,7 @@
 	import Composer from './Composer.svelte'
 	import LanguageSelect from './LanguageSelect.svelte'
 	import OnboardingModal from './OnboardingModal.svelte'
+	import ThemeSwitcher from '../ThemeSwitcher.svelte'
 
 	let {
 		user,
@@ -87,17 +88,33 @@
 	const nav_button_mobile =
 		'relative flex size-10 items-center justify-center rounded-full transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 min-[360px]:size-11'
 	const active = 'bg-black text-white shadow-xs'
-	const idle = 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+	const idle =
+		'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100'
 
-	async function handle_sign_out() {
-		await sign_out()
-		await goto(resolve('/login'))
+	let show_sign_out_confirm = $state(false)
+	let signing_out = $state(false)
+
+	function handle_sign_out() {
+		show_sign_out_confirm = true
+	}
+
+	async function confirm_sign_out() {
+		if (signing_out) return
+		signing_out = true
+		try {
+			await sign_out()
+			await goto(resolve('/login'))
+		} finally {
+			signing_out = false
+		}
 	}
 </script>
 
 <svelte:head><title>{title} · SNS</title></svelte:head>
 
-<div class="min-h-screen bg-[#f8fafc] text-slate-900 antialiased">
+<div
+	class="min-h-screen bg-slate-50 text-slate-900 antialiased transition-colors duration-200 dark:bg-slate-950 dark:text-slate-50"
+>
 	<!-- ───────────────────────────────────────────────────────────────── -->
 	<!-- Tablet & Desktop Floating Vertical Navigation Pill (Floot dock)   -->
 	<!-- ───────────────────────────────────────────────────────────────── -->
@@ -191,10 +208,12 @@
 			aria-label={$t('nav.sign_out')}
 			title={$t('nav.sign_out')}
 			onclick={handle_sign_out}
-			class="{nav_button} {idle} hover:bg-rose-50 hover:text-rose-600"
+			class="{nav_button} {idle} hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950 dark:hover:text-rose-400"
 		>
 			<LogOutIcon class="size-4" />
 		</button>
+
+		<ThemeSwitcher />
 	</nav>
 
 	<!-- ───────────────────────────────────────────────────────────────── -->
@@ -295,20 +314,22 @@
 				<!-- Centered Sticky Header Pill -->
 				<header class="sticky top-3 z-30 flex justify-center pt-1 pb-3 sm:top-4 sm:pt-2 sm:pb-4">
 					<div
-						class="inline-flex items-center gap-3 rounded-full border border-slate-200/80 bg-white/90 p-1.5 shadow-sm shadow-slate-900/5 backdrop-blur-md sm:gap-3.5 sm:px-5 sm:py-2"
+						class="inline-flex items-center gap-3 rounded-full border border-slate-200/80 bg-white/90 p-1.5 shadow-sm shadow-slate-900/5 backdrop-blur-md sm:gap-3.5 sm:px-5 sm:py-2 dark:border-slate-800 dark:bg-slate-900/90"
 					>
 						{#if header_content}
 							{@render header_content()}
 						{:else}
-							<h1 class="px-2 text-sm font-bold tracking-tight text-slate-900">{title}</h1>
+							<h1 class="px-2 text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100">
+								{title}
+							</h1>
 						{/if}
 
-						<span class="h-4 w-px bg-slate-200"></span>
+						<span class="h-4 w-px bg-slate-200 dark:bg-slate-700"></span>
 
 						<button
 							type="button"
 							onclick={() => composer.show()}
-							class="flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 sm:px-2.5"
+							class="flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 sm:px-2.5 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
 						>
 							<PencilIcon class="size-3.5" />
 							<span class="hidden sm:inline">{$t('nav.share_thought')}</span>
@@ -344,6 +365,18 @@
 
 	{#if composer.open}
 		<Composer {user} />
+	{/if}
+
+	{#if show_sign_out_confirm}
+		<ConfirmDialog
+			title="Sign out?"
+			message="You'll need to sign in again to access your account."
+			confirm_label="Sign out"
+			danger
+			busy={signing_out}
+			on_confirm={confirm_sign_out}
+			on_cancel={() => (show_sign_out_confirm = false)}
+		/>
 	{/if}
 
 	{#if user.onboarded === false && !onboarding_dismissed}

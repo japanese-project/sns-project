@@ -131,7 +131,24 @@ describe('Profile Page Header & Customization', () => {
 		const sign_out_btn = page.getByRole('button', { name: 'Sign out' })
 		await expect.element(sign_out_btn).toBeVisible()
 
+		// Clicking the trigger only opens the confirmation dialog — nothing signs out yet
 		await sign_out_btn.click()
+		expect(sign_out).not.toHaveBeenCalled()
+		expect(goto).not.toHaveBeenCalled()
+
+		// Cancelling the dialog dismisses it without signing out
+		const cancel_btn = page.getByRole('button', { name: 'Cancel' })
+		await expect.element(cancel_btn).toBeVisible()
+		await cancel_btn.click()
+		await expect.element(page.getByRole('dialog')).not.toBeInTheDocument()
+		expect(sign_out).not.toHaveBeenCalled()
+
+		// Confirming signs out and navigates to the login page
+		await sign_out_btn.click()
+		const dialog = page.getByRole('dialog', { name: 'Sign out?' })
+		await expect.element(dialog).toBeVisible()
+		await dialog.getByRole('button', { name: 'Sign out' }).click()
+		await expect.element(page.getByRole('dialog')).not.toBeInTheDocument()
 		expect(sign_out).toHaveBeenCalledTimes(1)
 		expect(goto).toHaveBeenCalledWith('/login')
 	})
@@ -185,5 +202,64 @@ describe('Profile Page Header & Customization', () => {
 		expect(action_bar).not.toBeNull()
 		// Action bar uses available horizontal space between avatar and actions
 		expect(action_bar?.className).toContain('justify-between')
+	})
+
+	it('overlaps only the avatar with the banner and keeps actions on the page background', async () => {
+		render(ProfilePage, {
+			data: {
+				session: null,
+				user: current_user,
+				profile: mock_self_profile,
+			},
+		})
+
+		const edit_btn = page.getByRole('button', { name: 'Edit Profile' })
+		await expect.element(edit_btn).toBeVisible()
+
+		// The avatar wrapper is the first item of the header action row
+		const actions = edit_btn.element().closest('.flex.items-center.justify-between')
+		const row = actions?.parentElement
+		const avatar = row?.firstElementChild
+		expect(avatar).toBeDefined()
+
+		// Only the avatar hangs over the banner; the row itself is not pulled up
+		expect(avatar?.className).toMatch(/-mt-(12|14)/)
+		expect(row?.className).not.toMatch(/-mt-/)
+
+		// Actions are bottom-aligned against the avatar instead of straddling the banner border
+		expect(row?.className).toContain('items-end')
+		expect(row?.className).toMatch(/\bpt-\d/)
+		expect(actions?.className).not.toMatch(/\b-?mt-\d/)
+	})
+
+	it('exposes a single banner theme trigger anchored inside the banner', async () => {
+		render(ProfilePage, {
+			data: {
+				session: null,
+				user: current_user,
+				profile: mock_self_profile,
+			},
+		})
+
+		const banner = page.getByTestId('profile-banner')
+		await expect.element(banner).toBeInTheDocument()
+
+		// The only remaining trigger is the "Change cover" button pinned to the banner
+		const cover_btn = page.getByRole('button', { name: 'Change banner theme' })
+		await expect.element(cover_btn).toBeVisible()
+		expect(page.getByRole('button', { name: /change banner/i }).elements()).toHaveLength(1)
+		expect(banner.element().parentElement?.contains(cover_btn.element())).toBe(true)
+		expect(cover_btn.element().className).toContain('absolute')
+
+		// The action row keeps only Edit Profile and Sign out next to the settings link
+		const actions = page
+			.getByRole('button', { name: 'Edit Profile' })
+			.element()
+			.closest('.flex.items-center.justify-between')
+		const action_buttons = Array.from(actions?.querySelectorAll('button') ?? []).map(
+			(button) => button.getAttribute('aria-label') ?? button.textContent?.trim(),
+		)
+		expect(action_buttons).toEqual(['Edit Profile', 'Sign out'])
+		expect(actions?.contains(page.getByRole('link', { name: 'Settings' }).element())).toBe(true)
 	})
 })

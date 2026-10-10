@@ -16,6 +16,7 @@
 	import { BANNER_THEMES, get_banner_class } from '$lib/banner-themes'
 	import AppShell from '$lib/components/app/AppShell.svelte'
 	import Avatar from '$lib/components/app/Avatar.svelte'
+	import ConfirmDialog from '$lib/components/app/ConfirmDialog.svelte'
 	import EditProfileModal from '$lib/components/app/EditProfileModal.svelte'
 	import FollowButton from '$lib/components/app/FollowButton.svelte'
 	import PostList from '$lib/components/app/PostList.svelte'
@@ -41,9 +42,23 @@
 	// TikTok-style Tabs: 'posts' | 'favorites' | 'liked'
 	let active_tab = $state<'posts' | 'favorites' | 'liked'>('posts')
 
-	async function handle_sign_out() {
-		await sign_out()
-		await goto(resolve('/login'))
+	let show_sign_out_confirm = $state(false)
+	let signing_out = $state(false)
+
+	function handle_sign_out() {
+		show_sign_out_confirm = true
+	}
+
+	async function confirm_sign_out() {
+		if (signing_out) return
+		signing_out = true
+		try {
+			await sign_out()
+			show_sign_out_confirm = false
+			await goto(resolve('/login'))
+		} finally {
+			signing_out = false
+		}
 	}
 
 	async function select_banner(theme_id: string) {
@@ -76,7 +91,7 @@
 <AppShell user={data.user} title={profile.is_self ? $t('profile.title') : profile.user.name}>
 	<div class="mx-auto w-full max-w-2xl">
 		<!-- TikTok Style Profile Header Section -->
-		<section class="border-b border-slate-200/60 pb-2">
+		<section class="border-b border-slate-200/60 pb-2 dark:border-slate-800">
 			<!-- Header Banner with quick Change Banner trigger -->
 			<div class="relative">
 				<div
@@ -100,13 +115,13 @@
 			</div>
 
 			<!-- Header Action Bar: Avatar + Actions (Responsive for Mobile & Desktop) -->
-			<!-- Notice: preserves the flex items-center justify-between container required by layout tests -->
-			<div class="relative -mt-10 flex items-center justify-between gap-4 px-3 sm:-mt-12 sm:px-4">
-				<div class="relative rounded-full shadow-md ring-4 ring-white">
+			<!-- The row sits flush under the banner: only the avatar overlaps it, actions keep clear air below it -->
+			<div class="relative flex items-end justify-between gap-4 px-3 pt-3 sm:px-4 sm:pt-4">
+				<div class="relative -mt-12 shrink-0 rounded-full shadow-md ring-4 ring-white sm:-mt-14">
 					<Avatar user={profile.user} size={80} />
 				</div>
 
-				<div class="mt-8 flex shrink-0 items-center gap-2 sm:mt-10">
+				<div class="flex shrink-0 items-center justify-between gap-2">
 					{#if !profile.is_self}
 						<FollowButton
 							handle={profile.user.handle}
@@ -118,7 +133,7 @@
 						<button
 							type="button"
 							onclick={() => (show_edit_modal = true)}
-							class="rounded-xl border border-slate-300/80 bg-white px-4 py-2 text-xs font-bold text-slate-800 shadow-2xs transition-all duration-150 hover:bg-slate-50 active:scale-95 sm:px-5 sm:text-sm"
+							class="rounded-xl border border-slate-300/80 bg-white px-4 py-2 text-xs font-bold text-slate-800 shadow-2xs transition-all duration-150 hover:bg-slate-50 active:scale-95 sm:px-5 sm:text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
 						>
 							{$t('profile.edit_profile')}
 						</button>
@@ -154,20 +169,26 @@
 			<!-- User Details (Left-aligned across all screens) -->
 			<div class="mt-3 px-3 sm:px-4">
 				<div class="flex flex-wrap items-center gap-2">
-					<h2 class="text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
+					<h2
+						class="text-xl font-black tracking-tight text-slate-900 sm:text-2xl dark:text-slate-100"
+					>
 						{profile.user.name}
 					</h2>
 					{#if !profile.is_self && profile.is_followed_by}
 						<span
-							class="rounded-md bg-slate-100 px-2 py-0.5 text-[0.68rem] font-bold text-slate-600"
+							class="rounded-md bg-slate-100 px-2 py-0.5 text-[0.68rem] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300"
 						>
 							{$t('follow.follows_you')}
 						</span>
 					{/if}
 				</div>
-				<div class="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-slate-500">
+				<div
+					class="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-slate-500 dark:text-slate-400"
+				>
 					{#if profile.user.username}
-						<span class="font-semibold text-slate-600">@{profile.user.username}</span>
+						<span class="font-semibold text-slate-600 dark:text-slate-300"
+							>@{profile.user.username}</span
+						>
 						<span>·</span>
 					{/if}
 					<span>{$t('profile.joined', { values: { date: joined } })}</span>
@@ -179,11 +200,13 @@
 						href={resolve('/u/[handle]/following', { handle: profile.user.handle })}
 						class="group flex items-baseline gap-1.5 transition"
 					>
-						<dd class="text-base font-black text-slate-900 tabular-nums sm:text-lg">
+						<dd
+							class="text-base font-black text-slate-900 tabular-nums sm:text-lg dark:text-slate-100"
+						>
 							{profile.following_count}
 						</dd>
 						<dt
-							class="text-xs font-medium text-slate-500 group-hover:text-slate-900 group-hover:underline"
+							class="text-xs font-medium text-slate-500 group-hover:text-slate-900 group-hover:underline dark:text-slate-400 dark:group-hover:text-slate-100"
 						>
 							{$t('profile.following')}
 						</dt>
@@ -193,19 +216,21 @@
 						class="group flex items-baseline gap-1.5 transition"
 					>
 						<dd
-							class="text-base font-black text-slate-900 tabular-nums sm:text-lg"
+							class="text-base font-black text-slate-900 tabular-nums sm:text-lg dark:text-slate-100"
 							data-testid="follower-count"
 						>
 							{follower_count}
 						</dd>
 						<dt
-							class="text-xs font-medium text-slate-500 group-hover:text-slate-900 group-hover:underline"
+							class="text-xs font-medium text-slate-500 group-hover:text-slate-900 group-hover:underline dark:text-slate-400 dark:group-hover:text-slate-100"
 						>
 							{$t('profile.followers')}
 						</dt>
 					</a>
 					<div class="flex items-baseline gap-1.5">
-						<dd class="text-base font-black text-slate-900 tabular-nums sm:text-lg">
+						<dd
+							class="text-base font-black text-slate-900 tabular-nums sm:text-lg dark:text-slate-100"
+						>
 							{profile.likes_count ?? 0}
 						</dd>
 						<dt class="text-xs font-medium text-slate-500">{$t('profile.likes')}</dt>
@@ -215,7 +240,7 @@
 				<!-- Bio Section -->
 				{#if profile.bio}
 					<p
-						class="text-sm leading-relaxed [overflow-wrap:anywhere] break-words whitespace-pre-wrap text-slate-700"
+						class="text-sm leading-relaxed [overflow-wrap:anywhere] break-words whitespace-pre-wrap text-slate-700 dark:text-slate-300"
 					>
 						{#each parse_content(profile.bio) as segment, i (i)}
 							{#if segment.type === 'tag'}
@@ -247,7 +272,7 @@
 						{#each profile.interests as interest (interest)}
 							<a
 								href="{resolve('/explore')}?q={encodeURIComponent('#' + interest)}"
-								class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
+								class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100"
 							>
 								#{interest}
 							</a>
@@ -257,7 +282,7 @@
 					<button
 						type="button"
 						onclick={() => (show_edit_modal = true)}
-						class="mt-2.5 text-xs font-medium text-slate-400 transition hover:text-slate-900 hover:underline"
+						class="mt-2.5 text-xs font-medium text-slate-400 transition hover:text-slate-900 hover:underline dark:text-slate-500 dark:hover:text-slate-100"
 					>
 						{$t('profile.add_topics')}
 					</button>
@@ -265,7 +290,7 @@
 			</div>
 
 			<!-- TikTok Style Profile Content Tabs -->
-			<div class="mt-6 flex border-b border-slate-200/80 px-2 sm:px-4">
+			<div class="mt-6 flex border-b border-slate-200/80 px-2 sm:px-4 dark:border-slate-800">
 				<button
 					type="button"
 					role="tab"
@@ -273,13 +298,15 @@
 					onclick={() => (active_tab = 'posts')}
 					class="relative flex flex-1 items-center justify-center gap-2 py-3 text-xs font-bold tracking-wide transition sm:flex-initial sm:px-6 {active_tab ===
 					'posts'
-						? 'text-slate-900'
-						: 'text-slate-400 hover:text-slate-700'}"
+						? 'text-slate-900 dark:text-slate-100'
+						: 'text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}"
 				>
 					<Grid3x3Icon class="size-4" />
 					<span>{$t('profile.posts')}</span>
 					{#if active_tab === 'posts'}
-						<div class="absolute bottom-0 h-0.5 w-full bg-slate-900 sm:w-16"></div>
+						<div
+							class="absolute bottom-0 h-0.5 w-full bg-slate-900 sm:w-16 dark:bg-slate-100"
+						></div>
 					{/if}
 				</button>
 
@@ -290,13 +317,15 @@
 					onclick={() => (active_tab = 'favorites')}
 					class="relative flex flex-1 items-center justify-center gap-2 py-3 text-xs font-bold tracking-wide transition sm:flex-initial sm:px-6 {active_tab ===
 					'favorites'
-						? 'text-slate-900'
-						: 'text-slate-400 hover:text-slate-700'}"
+						? 'text-slate-900 dark:text-slate-100'
+						: 'text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}"
 				>
 					<BookmarkIcon class="size-4" />
 					<span>{$t('profile.favorites')}</span>
 					{#if active_tab === 'favorites'}
-						<div class="absolute bottom-0 h-0.5 w-full bg-slate-900 sm:w-16"></div>
+						<div
+							class="absolute bottom-0 h-0.5 w-full bg-slate-900 sm:w-16 dark:bg-slate-100"
+						></div>
 					{/if}
 				</button>
 
@@ -307,13 +336,15 @@
 					onclick={() => (active_tab = 'liked')}
 					class="relative flex flex-1 items-center justify-center gap-2 py-3 text-xs font-bold tracking-wide transition sm:flex-initial sm:px-6 {active_tab ===
 					'liked'
-						? 'text-slate-900'
-						: 'text-slate-400 hover:text-slate-700'}"
+						? 'text-slate-900 dark:text-slate-100'
+						: 'text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}"
 				>
 					<HeartIcon class="size-4" />
 					<span>{$t('profile.liked')}</span>
 					{#if active_tab === 'liked'}
-						<div class="absolute bottom-0 h-0.5 w-full bg-slate-900 sm:w-16"></div>
+						<div
+							class="absolute bottom-0 h-0.5 w-full bg-slate-900 sm:w-16 dark:bg-slate-100"
+						></div>
 					{/if}
 				</button>
 			</div>
@@ -342,8 +373,12 @@
 					<PostList endpoint="/api/users/me/likes" empty_message={$t('profile.empty_liked')} />
 				{/if}
 			{:else}
-				<div class="flex flex-col items-center justify-center py-16 text-center text-slate-500">
-					<div class="mb-3 rounded-full bg-slate-100 p-4 text-slate-400">
+				<div
+					class="flex flex-col items-center justify-center py-16 text-center text-slate-500 dark:text-slate-400"
+				>
+					<div
+						class="mb-3 rounded-full bg-slate-100 p-4 text-slate-400 dark:bg-slate-800 dark:text-slate-500"
+					>
 						<LockIcon class="size-8" />
 					</div>
 					<h4 class="text-sm font-bold text-slate-800">
@@ -369,7 +404,7 @@
 				aria-labelledby="banner-modal-title"
 			>
 				<div
-					class="w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl transition-all"
+					class="w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl transition-all dark:border-slate-800 dark:bg-slate-900"
 				>
 					<div class="flex items-center justify-between pb-3">
 						<div class="flex items-center gap-2">
@@ -381,7 +416,7 @@
 						<button
 							type="button"
 							onclick={() => (show_banner_modal = false)}
-							class="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+							class="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
 							aria-label="Close"
 						>
 							<XIcon class="size-4" />
@@ -393,7 +428,11 @@
 					</p>
 
 					{#if banner_error}
-						<p class="mt-3 rounded-xl bg-rose-50 p-2.5 text-xs text-rose-700">{banner_error}</p>
+						<p
+							class="mt-3 rounded-xl bg-rose-50 p-2.5 text-xs text-rose-700 dark:bg-rose-950 dark:text-rose-300"
+						>
+							{banner_error}
+						</p>
 					{/if}
 
 					<div class="mt-4 grid grid-cols-2 gap-2.5">
@@ -405,7 +444,7 @@
 								disabled={saving_banner}
 								class="group relative flex h-14 items-center justify-between overflow-hidden rounded-2xl border-2 px-3.5 transition-all {is_active
 									? 'border-indigo-600 shadow-xs ring-2 ring-indigo-500/20'
-									: 'border-slate-200 hover:border-slate-300'}"
+									: 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600'}"
 							>
 								<!-- Background gradient preview -->
 								<div class="absolute inset-0 opacity-80 {theme.preview_class}"></div>
@@ -417,7 +456,7 @@
 
 								{#if is_active}
 									<div
-										class="relative z-10 flex size-5 items-center justify-center rounded-full bg-white text-indigo-600 shadow-xs"
+										class="relative z-10 flex size-5 items-center justify-center rounded-full bg-white text-indigo-600 shadow-xs dark:bg-slate-800"
 									>
 										<CheckIcon class="size-3" />
 									</div>
@@ -430,13 +469,26 @@
 						<button
 							type="button"
 							onclick={() => (show_banner_modal = false)}
-							class="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+							class="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
 						>
 							{$t('common.close')}
 						</button>
 					</div>
 				</div>
 			</div>
+		{/if}
+
+		<!-- Sign out confirmation -->
+		{#if show_sign_out_confirm}
+			<ConfirmDialog
+				title="Sign out?"
+				message="You'll need to sign in again to access your account."
+				confirm_label="Sign out"
+				danger
+				busy={signing_out}
+				on_confirm={confirm_sign_out}
+				on_cancel={() => (show_sign_out_confirm = false)}
+			/>
 		{/if}
 
 		<!-- Full Profile Edit Modal -->

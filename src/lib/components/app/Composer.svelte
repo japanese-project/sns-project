@@ -202,13 +202,13 @@
 	>
 		<!-- Header -->
 		<div
-			class="flex shrink-0 items-center justify-between border-b border-slate-100 bg-white/80 px-4 py-3 backdrop-blur-md sm:px-6"
+			class="flex shrink-0 items-center justify-between border-b border-slate-100 bg-white/80 px-4 py-3 backdrop-blur-md sm:px-6 dark:border-slate-800 dark:bg-slate-900/80"
 		>
 			<button
 				type="button"
 				aria-label={$t('composer.cancel')}
 				onclick={request_close}
-				class="text-[15px] font-medium text-slate-500 transition hover:text-slate-900"
+				class="text-[15px] font-medium text-slate-500 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
 			>
 				{$t('composer.cancel')}
 			</button>
@@ -218,7 +218,7 @@
 			<button
 				type="submit"
 				disabled={invalid || submitting}
-				class="rounded-full bg-slate-900 px-5 py-1.5 text-sm font-bold text-white shadow-sm transition enabled:hover:bg-black enabled:active:scale-95 disabled:bg-slate-200 disabled:text-slate-400"
+				class="rounded-full bg-slate-900 px-5 py-1.5 text-sm font-bold text-white shadow-sm transition enabled:hover:bg-black enabled:active:scale-95 disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-slate-700 dark:disabled:text-slate-500"
 			>
 				{submitting ? $t('composer.posting') : $t('composer.post')}
 			</button>
@@ -236,7 +236,7 @@
 						<button
 							type="button"
 							onclick={() => (visibility = visibility === 'public' ? 'followers-only' : 'public')}
-							class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600 shadow-xs transition hover:bg-slate-50 hover:text-slate-900 active:scale-95"
+							class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600 shadow-xs transition hover:bg-slate-50 hover:text-slate-900 active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100"
 						>
 							{#if visibility === 'public'}
 								<GlobeIcon class="size-3.5 text-indigo-500" />
@@ -294,11 +294,13 @@
 		</div>
 
 		<!-- Bottom Action Bar -->
-		<div class="shrink-0 border-t border-slate-100 bg-slate-50/50 px-4 py-3 sm:px-6">
+		<div
+			class="shrink-0 border-t border-slate-100 bg-slate-50/50 px-4 py-3 sm:px-6 dark:border-slate-800 dark:bg-slate-800/50"
+		>
 			<div class="flex items-center justify-between">
 				<div class="flex items-center gap-2">
 					<label
-						class="flex size-9 cursor-pointer items-center justify-center rounded-full text-indigo-500 transition hover:bg-indigo-50 hover:text-indigo-600 active:scale-95"
+						class="flex size-9 cursor-pointer items-center justify-center rounded-full text-indigo-500 transition hover:bg-indigo-50 hover:text-indigo-600 active:scale-95 dark:hover:bg-indigo-950"
 					>
 						<ImageIcon class="size-[22px]" />
 						<span class="sr-only">{$t('composer.add_image')}</span>
@@ -316,7 +318,7 @@
 					{:else if content.trim() || selected_image}
 						<button
 							type="button"
-							class="ml-2 text-[13px] font-semibold text-slate-400 transition hover:text-rose-600"
+							class="ml-2 text-[13px] font-semibold text-slate-400 transition hover:text-rose-600 dark:text-slate-500"
 							onclick={() => {
 								if (confirm($t('composer.confirm_discard_draft'))) {
 									discard_draft()
@@ -330,7 +332,7 @@
 
 				<div class="flex items-center gap-3">
 					<div
-						class="flex size-8 items-center justify-center rounded-full bg-white text-[11px] font-bold shadow-xs ring-1 ring-slate-200 {remaining <
+						class="flex size-8 items-center justify-center rounded-full bg-white text-[11px] font-bold shadow-xs ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700 {remaining <
 						0
 							? 'text-rose-600 ring-rose-200'
 							: remaining <= 50

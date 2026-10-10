@@ -90,11 +90,11 @@
 	tabindex="0"
 	onclick={handle_card_click}
 	onkeydown={handle_card_keydown}
-	class="group mb-2.5 flex cursor-pointer break-inside-avoid flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xs transition-all duration-200 hover:-translate-y-1 hover:border-slate-300 hover:shadow-md sm:mb-4"
+	class="group mb-2.5 flex cursor-pointer break-inside-avoid flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xs transition-all duration-200 hover:-translate-y-1 hover:border-slate-300 hover:shadow-md sm:mb-4 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700"
 >
 	<!-- Visual Media Header (if post has image) -->
 	{#if post.image_url}
-		<div class="relative w-full overflow-hidden bg-slate-100">
+		<div class="relative w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
 			<img
 				src={post.image_url}
 				alt={$t('post.attachment_alt')}
@@ -116,15 +116,15 @@
 				<div class="min-w-0">
 					<div class="flex items-center gap-1">
 						<span
-							class="truncate text-xs font-bold text-slate-900 group-hover/author:text-indigo-600"
+							class="truncate text-xs font-bold text-slate-900 group-hover/author:text-indigo-600 dark:text-slate-100"
 						>
 							{post.author.name}
 						</span>
 						{#if post.visibility === 'followers-only'}
-							<LockIcon class="size-2.5 text-slate-400" />
+							<LockIcon class="size-2.5 text-slate-400 dark:text-slate-500" />
 						{/if}
 					</div>
-					<span class="block truncate text-[10px] text-slate-400">
+					<span class="block truncate text-[10px] text-slate-400 dark:text-slate-500">
 						@{post.author.username || post.author.id}
 					</span>
 				</div>
@@ -137,7 +137,7 @@
 
 		<!-- Post Body Content -->
 		{#if display_segments.length > 0}
-			<div class="mt-3 text-xs leading-relaxed text-slate-700">
+			<div class="mt-3 text-xs leading-relaxed text-slate-700 dark:text-slate-300">
 				<div class="line-clamp-6 whitespace-pre-wrap">
 					{#each display_segments as segment, i (i)}
 						{#if segment.type === 'tag'}
@@ -176,7 +176,7 @@
 
 	<!-- Bottom Card Actions Bar -->
 	<div
-		class="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-2.5 py-1.5 text-xs text-slate-500 sm:px-3.5 sm:py-2"
+		class="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-2.5 py-1.5 text-xs text-slate-500 sm:px-3.5 sm:py-2 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400"
 	>
 		<div class="flex items-center gap-2 sm:gap-3">
 			<!-- Like button -->
@@ -210,7 +210,7 @@
 					type="button"
 					onclick={handle_delete}
 					disabled={deleting}
-					class="text-[10px] font-medium text-slate-400 transition-colors hover:text-rose-600"
+					class="text-[10px] font-medium text-slate-400 transition-colors hover:text-rose-600 dark:text-slate-500"
 				>
 					{deleting ? $t('common.deleting') : $t('common.delete')}
 				</button>
@@ -218,7 +218,7 @@
 			<a
 				href={post_url}
 				onclick={(e) => e.stopPropagation()}
-				class="text-[10px] font-semibold text-slate-400 transition-colors hover:text-slate-700"
+				class="text-[10px] font-semibold text-slate-400 transition-colors hover:text-slate-700 dark:text-slate-500"
 			>
 				{$t('pin_card.view')}
 			</a>

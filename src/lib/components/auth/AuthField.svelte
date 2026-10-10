@@ -29,16 +29,18 @@
 </script>
 
 <div class="grid gap-2 max-[375px]:gap-1.5">
-	<Label for={name} class="text-sm font-bold text-[#25314b] max-[375px]:text-xs">{label}</Label>
+	<Label for={name} class="text-sm font-bold text-[#25314b] max-[375px]:text-xs dark:text-slate-100"
+		>{label}</Label
+	>
 	<div class="relative flex items-center">
 		{#if type === 'email'}
 			<MailIcon
-				class="pointer-events-none absolute left-4 z-10 size-[1.1rem] text-[#8c95a8]"
+				class="pointer-events-none absolute left-4 z-10 size-[1.1rem] text-[#8c95a8] dark:text-slate-500"
 				aria-hidden="true"
 			/>
 		{:else}
 			<LockKeyholeIcon
-				class="pointer-events-none absolute left-4 z-10 size-[1.1rem] text-[#8c95a8]"
+				class="pointer-events-none absolute left-4 z-10 size-[1.1rem] text-[#8c95a8] dark:text-slate-500"
 				aria-hidden="true"
 			/>
 		{/if}
@@ -51,7 +53,7 @@
 			{placeholder}
 			{autocomplete}
 			required
-			class="h-[3.35rem] rounded-[0.85rem] border-[#dfe3eb] bg-[#fbfcfe] pr-14 pl-12 text-[0.94rem] text-[#17233c] shadow-none placeholder:text-[#a3aaba] focus-visible:border-primary focus-visible:bg-white focus-visible:ring-primary/15 max-[375px]:h-12 max-[375px]:text-sm"
+			class="h-[3.35rem] rounded-[0.85rem] border-[#dfe3eb] bg-[#fbfcfe] pr-14 pl-12 text-[0.94rem] text-[#17233c] shadow-none placeholder:text-[#a3aaba] focus-visible:border-primary focus-visible:bg-white focus-visible:ring-primary/15 max-[375px]:h-12 max-[375px]:text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:focus-visible:bg-slate-900"
 		/>
 
 		{#if type === 'password'}
