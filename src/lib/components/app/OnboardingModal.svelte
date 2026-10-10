@@ -2,6 +2,7 @@
 	import { invalidateAll } from '$app/navigation'
 	import { api } from '$lib/api'
 	import { MAX_BIO_LENGTH } from '$lib/limits'
+	import { t } from '$lib/i18n'
 
 	let {
 		user,
@@ -74,7 +75,7 @@
 			await invalidateAll()
 			on_done()
 		} catch (e) {
-			error_message = e instanceof Error ? e.message : 'Could not save profile setup'
+			error_message = e instanceof Error ? e.message : $t('onboarding.error')
 		} finally {
 			saving = false
 		}
@@ -98,16 +99,13 @@
 			<span
 				class="inline-block rounded-full bg-slate-900 px-3 py-1 text-[0.7rem] font-bold tracking-wider text-white uppercase"
 			>
-				Welcome to Loop
+				{$t('onboarding.badge')}
 			</span>
-			<h2
-				id="onboarding-title"
-				class="mt-3 text-2xl font-extrabold text-slate-900 dark:text-slate-100"
-			>
-				Welcome, {user.name}!
+			<h2 id="onboarding-title" class="mt-3 text-2xl font-extrabold text-slate-900">
+				{$t('onboarding.title', { values: { name: user.name } })}
 			</h2>
-			<p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-				Set up your profile to discover conversations and people you'll love.
+			<p class="mt-1 text-xs text-slate-500">
+				{$t('onboarding.subtitle')}
 			</p>
 		</div>
 
@@ -119,7 +117,7 @@
 						for="onboarding-bio"
 						class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400"
 					>
-						About You (optional)
+						{$t('onboarding.about_you')}
 					</label>
 					<span class="text-xs text-slate-400 tabular-nums dark:text-slate-500">
 						{MAX_BIO_LENGTH - bio.length}
@@ -130,20 +128,18 @@
 					bind:value={bio}
 					rows="2"
 					maxlength={MAX_BIO_LENGTH}
-					placeholder="A sentence or two about what you do or what you love…"
-					class="mt-2 w-full resize-none border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 text-sm leading-relaxed text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-slate-900 focus:ring-0 focus:outline-none dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-100"
+					placeholder={$t('onboarding.bio_placeholder')}
+					class="mt-2 w-full resize-none border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 text-sm leading-relaxed text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-slate-900 focus:ring-0 focus:outline-none"
 				></textarea>
 			</div>
 
 			<!-- Topics / Interests -->
 			<div>
-				<p
-					class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400"
-				>
-					Topics you enjoy
+				<p class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase">
+					{$t('onboarding.topics')}
 				</p>
-				<p class="mt-0.5 text-[0.68rem] text-slate-400 dark:text-slate-500">
-					These will help tailor your experience and appear as #tags on your profile.
+				<p class="mt-0.5 text-[0.68rem] text-slate-400">
+					{$t('onboarding.topics_desc')}
 				</p>
 				<div class="mt-3 flex flex-wrap gap-2">
 					{#each available_interests as topic (topic)}
@@ -167,7 +163,7 @@
 								type="button"
 								onclick={() => remove_custom(topic)}
 								class="ml-0.5 opacity-70 hover:opacity-100"
-								aria-label="Remove {topic}">✕</button
+								aria-label={$t('onboarding.remove_topic', { values: { topic } })}>✕</button
 							>
 						</span>
 					{/each}
@@ -184,7 +180,7 @@
 								add_custom()
 							}
 						}}
-						placeholder="Add other interest…"
+						placeholder={$t('onboarding.add_other')}
 						maxlength={30}
 						class="flex-1 border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-slate-900 focus:ring-0 focus:outline-none dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-100"
 					/>
@@ -193,7 +189,7 @@
 						onclick={add_custom}
 						class="rounded-full px-3.5 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
 					>
-						Add
+						{$t('common.add')}
 					</button>
 				</div>
 			</div>
@@ -216,7 +212,7 @@
 					onclick={() => finish(true)}
 					class="rounded-full px-4 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
 				>
-					Skip for now
+					{$t('onboarding.skip')}
 				</button>
 				<button
 					type="submit"
@@ -224,7 +220,7 @@
 					onclick={() => finish(false)}
 					class="rounded-full bg-slate-900 px-6 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
 				>
-					{saving ? 'Saving…' : 'Get Started'}
+					{saving ? $t('common.saving') : $t('onboarding.get_started')}
 				</button>
 			</div>
 		</div>

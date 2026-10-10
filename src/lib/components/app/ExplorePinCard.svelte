@@ -5,10 +5,11 @@
 	import { api } from '$lib/api'
 	import { parse_content } from '$lib/content'
 	import { extract_first_url } from '$lib/link-preview-client'
-	import { relative_time } from '$lib/time'
+	import { t } from '$lib/i18n'
 	import type { PostView } from '$lib/types'
 	import Avatar from './Avatar.svelte'
 	import LinkPreviewCard from './LinkPreviewCard.svelte'
+	import RelativeTime from './RelativeTime.svelte'
 	import HeartIcon from '@lucide/svelte/icons/heart'
 	import MessageCircleIcon from '@lucide/svelte/icons/message-circle'
 	import LockIcon from '@lucide/svelte/icons/lock'
@@ -33,7 +34,7 @@
 
 	async function handle_delete(event: MouseEvent) {
 		event.stopPropagation()
-		if (deleting || !confirm('Delete this post?')) return
+		if (deleting || !confirm($t('pin_card.delete_confirm'))) return
 		deleting = true
 		try {
 			await api(`/api/posts/${post.id}`, { method: 'DELETE' })
@@ -96,7 +97,7 @@
 		<div class="relative w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
 			<img
 				src={post.image_url}
-				alt="Post attachment"
+				alt={$t('post.attachment_alt')}
 				loading="lazy"
 				class="max-h-72 w-full object-cover transition-transform duration-300 group-hover:scale-102"
 			/>
@@ -129,11 +130,8 @@
 				</div>
 			</a>
 
-			<time
-				class="shrink-0 text-[10px] text-slate-400 dark:text-slate-500"
-				datetime={post.created_at}
-			>
-				{relative_time(post.created_at)}
+			<time class="shrink-0 text-[10px] text-slate-400" datetime={post.created_at}>
+				<RelativeTime iso={post.created_at} />
 			</time>
 		</div>
 
@@ -188,7 +186,7 @@
 				class="flex items-center gap-1 transition-colors hover:text-rose-600 {liked
 					? 'font-semibold text-rose-600'
 					: 'text-slate-500'}"
-				aria-label={liked ? 'Unlike' : 'Like'}
+				aria-label={liked ? $t('pin_card.unlike') : $t('pin_card.like')}
 			>
 				<HeartIcon class="size-3.5 {liked ? 'fill-rose-500 text-rose-500' : ''}" />
 				<span class="text-[11px]">{like_count > 0 ? like_count : ''}</span>
@@ -199,7 +197,7 @@
 				href="{post_url}#comments"
 				onclick={(e) => e.stopPropagation()}
 				class="flex items-center gap-1 text-slate-500 transition-colors hover:text-indigo-600"
-				aria-label="View comments"
+				aria-label={$t('pin_card.view_comments')}
 			>
 				<MessageCircleIcon class="size-3.5" />
 				<span class="text-[11px]">{post.comment_count > 0 ? post.comment_count : ''}</span>
@@ -214,7 +212,7 @@
 					disabled={deleting}
 					class="text-[10px] font-medium text-slate-400 transition-colors hover:text-rose-600 dark:text-slate-500"
 				>
-					{deleting ? 'Deleting…' : 'Delete'}
+					{deleting ? $t('common.deleting') : $t('common.delete')}
 				</button>
 			{/if}
 			<a
@@ -222,7 +220,7 @@
 				onclick={(e) => e.stopPropagation()}
 				class="text-[10px] font-semibold text-slate-400 transition-colors hover:text-slate-700 dark:text-slate-500"
 			>
-				View →
+				{$t('pin_card.view')}
 			</a>
 		</div>
 	</div>

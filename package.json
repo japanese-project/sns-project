@@ -72,6 +72,7 @@
 		"better-auth": "^1.7.5",
 		"drizzle-orm": "^0.45.3",
 		"mode-watcher": "^1.1.0",
+		"svelte-i18n": "^4.0.1",
 		"sveltekit-rate-limiter": "^0.8.0"
 	},
 	"overrides": {

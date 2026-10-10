@@ -4,10 +4,11 @@
 	import { resolve } from '$app/paths'
 	import { api } from '$lib/api'
 	import { MAX_COMMENT_LENGTH } from '$lib/limits'
-	import { relative_time } from '$lib/time'
+	import { t } from '$lib/i18n'
 	import type { CommentView, UserSummary } from '$lib/types'
 	import { parse_content } from '$lib/content'
 	import Avatar from './Avatar.svelte'
+	import RelativeTime from './RelativeTime.svelte'
 
 	let { post_id, on_count }: { post_id: string; on_count: (n: number) => void } = $props()
 
@@ -31,7 +32,7 @@
 			comments = (await api<{ items: CommentView[] }>(`/api/posts/${post_id}/comments`)).items
 			on_count(total(comments))
 		} catch (e) {
-			load_error = e instanceof Error ? e.message : 'Could not load comments'
+			load_error = e instanceof Error ? e.message : $t('comments.error_load')
 		} finally {
 			loading = false
 		}
@@ -66,7 +67,7 @@
 			on_count(total(comments))
 		} catch (e) {
 			// Nothing was added optimistically, so a failure leaves the list and the draft untouched.
-			submit_error = e instanceof Error ? e.message : 'Could not post comment'
+			submit_error = e instanceof Error ? e.message : $t('comments.error_post')
 		} finally {
 			submitting = false
 		}
@@ -100,7 +101,7 @@
 			editing_comment_id = null
 			edit_draft = ''
 		} catch (e) {
-			alert(e instanceof Error ? e.message : 'Failed to update comment')
+			alert(e instanceof Error ? e.message : $t('comments.error_update'))
 		} finally {
 			saving_edit = false
 		}
@@ -126,7 +127,7 @@
 			remove_from(comments)
 			on_count(total(comments))
 		} catch (e) {
-			alert(e instanceof Error ? e.message : 'Failed to delete comment')
+			alert(e instanceof Error ? e.message : $t('comments.error_delete'))
 		} finally {
 			deleting_comment_id = null
 		}
@@ -149,9 +150,9 @@
 					class="font-semibold text-slate-900 hover:underline dark:text-slate-100"
 					>{comment.author.name}</a
 				>
-				<span class="ml-1 text-xs text-slate-400">{relative_time(comment.created_at)}</span>
+				<span class="ml-1 text-xs text-slate-400"><RelativeTime iso={comment.created_at} /></span>
 				{#if comment.updated_at && comment.updated_at !== comment.created_at}
-					<span class="ml-1 text-[0.68rem] text-slate-400">(edited)</span>
+					<span class="ml-1 text-[0.68rem] text-slate-400">{$t('comments.edited')}</span>
 				{/if}
 			</p>
 
@@ -175,14 +176,14 @@
 							disabled={saving_edit || !edit_draft.trim()}
 							class="rounded-full bg-slate-900 px-3 py-1 font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
 						>
-							{saving_edit ? 'Saving…' : 'Save'}
+							{saving_edit ? $t('common.saving') : $t('common.save')}
 						</button>
 						<button
 							type="button"
 							onclick={cancel_edit}
 							class="font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
 						>
-							Cancel
+							{$t('common.cancel')}
 						</button>
 					</div>
 				</form>
@@ -232,7 +233,9 @@
 						}}
 						class="font-medium text-slate-500 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
 					>
-						{is_nested ? `Reply to ${comment.author.name}` : 'Reply'}
+						{is_nested
+							? $t('comments.reply_to', { values: { name: comment.author.name } })
+							: $t('comments.reply')}
 					</button>
 				{/if}
 
@@ -242,7 +245,7 @@
 						onclick={() => start_edit(comment)}
 						class="font-medium text-slate-400 transition hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-200"
 					>
-						Edit
+						{$t('common.edit')}
 					</button>
 					<button
 						type="button"
@@ -250,7 +253,7 @@
 						disabled={deleting_comment_id === comment.id}
 						class="font-medium text-slate-400 transition hover:text-rose-600 disabled:opacity-50"
 					>
-						{deleting_comment_id === comment.id ? 'Deleting…' : 'Delete'}
+						{deleting_comment_id === comment.id ? $t('common.deleting') : $t('common.delete')}
 					</button>
 				{/if}
 			</div>
@@ -266,15 +269,16 @@
 	</li>
 {/snippet}
 
-<section class="mt-4 border-t border-slate-200 pt-4 dark:border-slate-800" aria-label="Comments">
+<section class="mt-4 border-t border-slate-200 pt-4" aria-label={$t('comments.label')}>
 	{#if loading}
-		<p class="text-sm text-slate-400">Loading comments…</p>
+		<p class="text-sm text-slate-400">{$t('comments.loading')}</p>
 	{:else if load_error}
 		<p class="text-sm text-rose-600" role="alert">
-			{load_error} <button type="button" class="underline" onclick={load}>Retry</button>
+			{load_error}
+			<button type="button" class="underline" onclick={load}>{$t('common.retry')}</button>
 		</p>
 	{:else if comments.length === 0}
-		<p class="text-sm text-slate-400">No comments yet.</p>
+		<p class="text-sm text-slate-400">{$t('comments.empty')}</p>
 	{:else}
 		<ul class="space-y-4">
 			{#each comments as comment (comment.id)}
@@ -289,7 +293,7 @@
 				class="flex items-center justify-between rounded-full border border-indigo-100 bg-indigo-50/80 px-3.5 py-1 text-xs text-indigo-700"
 			>
 				<span>
-					Replying to <span class="font-bold">{reply_target_author.name}</span>
+					{$t('comments.replying_to')} <span class="font-bold">{reply_target_author.name}</span>
 				</span>
 				<button
 					type="button"
@@ -297,7 +301,7 @@
 						reply_to = null
 						reply_target_author = null
 					}}
-					aria-label="Cancel reply"
+					aria-label={$t('comments.cancel_reply')}
 					class="font-bold hover:text-indigo-900">✕</button
 				>
 			</p>
@@ -305,8 +309,8 @@
 		<div class="flex gap-2">
 			<input
 				bind:value={text}
-				placeholder="Write a comment…"
-				aria-label="Comment text"
+				placeholder={$t('comments.placeholder')}
+				aria-label={$t('comments.comment_text')}
 				maxlength={MAX_COMMENT_LENGTH}
 				class="min-w-0 flex-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm transition outline-none focus:border-black focus:ring-1 focus:ring-black dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-slate-300 dark:focus:ring-slate-300"
 			/>
@@ -314,7 +318,7 @@
 				type="submit"
 				disabled={submitting || text.trim().length === 0}
 				class="shrink-0 rounded-full bg-black px-4 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-slate-800 disabled:opacity-50"
-				>{submitting ? '…' : 'Send'}</button
+				>{submitting ? '…' : $t('comments.send')}</button
 			>
 		</div>
 		{#if submit_error}<p class="text-xs text-rose-600" role="alert">{submit_error}</p>{/if}

@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths'
 	import type { UserListItem } from '$lib/types'
 	import Avatar from './Avatar.svelte'
+	import { t } from '$lib/i18n'
 	import FollowButton from './FollowButton.svelte'
 
 	let { person }: { person: UserListItem } = $props()
@@ -22,7 +23,7 @@
 				<span
 					class="py-0.2 absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-full border border-white bg-slate-900 px-1.5 text-[8px] font-bold text-white shadow-2xs"
 				>
-					Follows you
+					{$t('follow.follows_you')}
 				</span>
 			{/if}
 		</div>

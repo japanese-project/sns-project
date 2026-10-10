@@ -14,6 +14,7 @@
 	import { api } from '$lib/api'
 	import { MAX_SEARCH_LENGTH } from '$lib/limits'
 	import SearchSuggestions from '$lib/components/app/SearchSuggestions.svelte'
+	import { t } from '$lib/i18n'
 	import { search_history } from '$lib/search-history.svelte'
 	import type { Page, PostView, TrendingPeriod } from '$lib/types'
 
@@ -37,11 +38,17 @@
 
 	let posts = $derived([...(data.results?.posts ?? []), ...extra_posts])
 
-	const period_labels: Record<TrendingPeriod, string> = {
-		today: 'Today',
-		week: 'This Week',
-		month: 'This Month',
+	// Resolved per render from the locale dictionaries, so switching language updates the labels.
+	const period_label_keys: Record<TrendingPeriod, string> = {
+		today: 'explore.period_today',
+		week: 'explore.period_week',
+		month: 'explore.period_month',
 	}
+	const period_labels = $derived(
+		Object.fromEntries(
+			Object.entries(period_label_keys).map(([period, key]) => [period, $t(key)]),
+		) as Record<TrendingPeriod, string>,
+	)
 
 	function set_period(period: TrendingPeriod) {
 		const path = resolve('/explore')
@@ -77,14 +84,14 @@
 			extra_posts = [...extra_posts, ...result.posts]
 			next_cursor = result.next_cursor
 		} catch (e) {
-			more_error = e instanceof Error ? e.message : 'Could not load more results'
+			more_error = e instanceof Error ? e.message : $t('explore.error')
 		} finally {
 			loading_more = false
 		}
 	}
 </script>
 
-<AppShell user={data.user} title="Explore" layout="wide">
+<AppShell user={data.user} title={$t('nav.explore')} layout="wide">
 	<div class="mx-auto w-full space-y-5">
 		<!-- Top Bar: Search Input with Suggestions dropdown -->
 		<div class="relative mx-auto max-w-3xl">
@@ -97,14 +104,14 @@
 					bind:value={input}
 					onfocus={() => (is_focused = true)}
 					maxlength={MAX_SEARCH_LENGTH}
-					placeholder="Search people, tags, or topics…"
-					aria-label="Search"
-					class="w-full rounded-2xl border border-slate-200/80 bg-white py-2.5 pr-9 pl-10 text-sm text-slate-900 shadow-xs transition outline-none placeholder:text-slate-400 focus:border-black focus:ring-1 focus:ring-black dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-100 dark:focus:ring-slate-100 [&::-webkit-search-cancel-button]:appearance-none"
+					placeholder={$t('explore.search_placeholder')}
+					aria-label={$t('explore.search_label')}
+					class="w-full rounded-2xl border border-slate-200/80 bg-white py-2.5 pr-9 pl-10 text-sm text-slate-900 shadow-xs transition outline-none placeholder:text-slate-400 focus:border-black focus:ring-1 focus:ring-black [&::-webkit-search-cancel-button]:appearance-none"
 				/>
 				{#if input}
 					<button
 						type="button"
-						aria-label="Clear search"
+						aria-label={$t('explore.clear_search')}
 						onclick={() => {
 							input = ''
 							if (data.results) {
@@ -152,7 +159,7 @@
 				<div
 					class="inline-flex shrink-0 items-center rounded-full bg-slate-100 p-0.5 text-xs font-medium dark:bg-slate-800"
 					role="tablist"
-					aria-label="Trending time window"
+					aria-label={$t('explore.trending_window')}
 				>
 					{#each ['today', 'week', 'month'] as const as p (p)}
 						<button
@@ -200,10 +207,8 @@
 					<div class="flex items-center justify-between px-1 text-slate-700 dark:text-slate-300">
 						<div class="flex items-center gap-1.5">
 							<SparklesIcon class="size-3.5 text-amber-500" />
-							<span
-								class="text-[11px] font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400"
-							>
-								Suggested Creators
+							<span class="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+								{$t('explore.suggested_creators')}
 							</span>
 						</div>
 					</div>
@@ -221,10 +226,8 @@
 				<div class="flex items-center justify-between px-1 text-slate-700 dark:text-slate-300">
 					<div class="flex items-center gap-2">
 						<CompassIcon class="size-4 text-indigo-600" />
-						<h2
-							class="text-xs font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400"
-						>
-							Explore Content ({data.discovery.posts.length})
+						<h2 class="text-xs font-bold tracking-wider text-slate-500 uppercase">
+							{$t('explore.explore_content', { values: { count: data.discovery.posts.length } })}
 						</h2>
 					</div>
 
@@ -236,10 +239,10 @@
 							type="button"
 							onclick={() => (view_mode = 'masonry')}
 							class="rounded-lg p-1.5 transition {view_mode === 'masonry'
-								? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-700 dark:text-slate-50'
-								: 'text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}"
-							title="Pinterest / Instagram Masonry Grid"
-							aria-label="Masonry Grid View"
+								? 'bg-white text-slate-900 shadow-2xs'
+								: 'text-slate-400 hover:text-slate-700'}"
+							title={$t('explore.masonry_title')}
+							aria-label={$t('explore.masonry_aria')}
 						>
 							<LayoutGridIcon class="size-3.5" />
 						</button>
@@ -247,10 +250,10 @@
 							type="button"
 							onclick={() => (view_mode = 'feed')}
 							class="rounded-lg p-1.5 transition {view_mode === 'feed'
-								? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-700 dark:text-slate-50'
-								: 'text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}"
-							title="Standard Single Feed"
-							aria-label="Feed View"
+								? 'bg-white text-slate-900 shadow-2xs'
+								: 'text-slate-400 hover:text-slate-700'}"
+							title={$t('explore.feed_title')}
+							aria-label={$t('explore.feed_aria')}
 						>
 							<ListIcon class="size-3.5" />
 						</button>
@@ -283,10 +286,10 @@
 			<!-- Matching People Carousel -->
 			{#if data.results.users.length > 0}
 				<div class="space-y-2">
-					<h3
-						class="px-1 text-xs font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400"
-					>
-						People Matching “{data.query}” ({data.results.users.length})
+					<h3 class="px-1 text-xs font-bold tracking-wider text-slate-500 uppercase">
+						{$t('explore.people_matching', {
+							values: { query: data.query, count: data.results.users.length },
+						})}
 					</h3>
 					<div class="custom-scrollbar flex gap-3 overflow-x-auto pb-1">
 						{#each data.results.users as person (person.id)}
@@ -298,9 +301,9 @@
 
 			<!-- Matching Posts in Pinterest / Instagram Multi-Column Grid -->
 			<div class="space-y-3 pt-2">
-				<div class="flex items-center justify-between px-1 text-slate-700 dark:text-slate-300">
-					<h2 class="text-xs font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400">
-						Posts Matching “{data.query}” ({posts.length})
+				<div class="flex items-center justify-between px-1 text-slate-700">
+					<h2 class="text-xs font-bold tracking-wider text-slate-500 uppercase">
+						{$t('explore.posts_matching', { values: { query: data.query, count: posts.length } })}
 					</h2>
 
 					<!-- View Mode Switch -->
@@ -311,10 +314,10 @@
 							type="button"
 							onclick={() => (view_mode = 'masonry')}
 							class="rounded-lg p-1.5 transition {view_mode === 'masonry'
-								? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-700 dark:text-slate-50'
-								: 'text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}"
-							title="Pinterest / Instagram Masonry Grid"
-							aria-label="Masonry Grid View"
+								? 'bg-white text-slate-900 shadow-2xs'
+								: 'text-slate-400 hover:text-slate-700'}"
+							title={$t('explore.masonry_title')}
+							aria-label={$t('explore.masonry_aria')}
 						>
 							<LayoutGridIcon class="size-3.5" />
 						</button>
@@ -322,10 +325,10 @@
 							type="button"
 							onclick={() => (view_mode = 'feed')}
 							class="rounded-lg p-1.5 transition {view_mode === 'feed'
-								? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-700 dark:text-slate-50'
-								: 'text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}"
-							title="Standard Single Feed"
-							aria-label="Feed View"
+								? 'bg-white text-slate-900 shadow-2xs'
+								: 'text-slate-400 hover:text-slate-700'}"
+							title={$t('explore.feed_title')}
+							aria-label={$t('explore.feed_aria')}
 						>
 							<ListIcon class="size-3.5" />
 						</button>
@@ -336,7 +339,7 @@
 					<div
 						class="rounded-2xl border border-slate-200/60 bg-white p-8 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400"
 					>
-						No posts match “{data.query}”.
+						{$t('explore.no_posts_match', { values: { query: data.query } })}
 					</div>
 				{:else if view_mode === 'masonry'}
 					<div
@@ -363,7 +366,7 @@
 							disabled={loading_more}
 							class="rounded-full border border-slate-200 bg-white px-6 py-2.5 text-xs font-bold text-slate-800 shadow-xs transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-700"
 						>
-							{loading_more ? 'Loading more content…' : 'Load more results'}
+							{loading_more ? $t('explore.loading_more') : $t('explore.load_more')}
 						</button>
 						{#if more_error}
 							<p class="mt-2 text-xs text-rose-600">{more_error}</p>

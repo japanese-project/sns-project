@@ -2,20 +2,19 @@
 	import { resolve } from '$app/paths'
 	import BrandMark from '$lib/components/auth/BrandMark.svelte'
 	import LoginForm from '$lib/components/auth/LoginForm.svelte'
+	import LanguageSelect from '$lib/components/app/LanguageSelect.svelte'
+	import { t } from '$lib/i18n'
 </script>
 
 <svelte:head>
-	<title>Sign in · Loop</title>
-	<meta
-		name="description"
-		content="Sign in to Loop and reconnect with the people and conversations that matter."
-	/>
+	<title>{$t('login.title')}</title>
+	<meta name="description" content={$t('login.description')} />
 </svelte:head>
 
 <main class="grid min-h-svh bg-white font-sans lg:grid-cols-[0.92fr_1.08fr] dark:bg-slate-950">
 	<section
 		class="relative hidden overflow-hidden bg-[linear-gradient(145deg,rgba(19,31,58,0.96),rgba(35,48,82,0.98))] text-white lg:flex lg:flex-col lg:justify-between"
-		aria-label="About Loop"
+		aria-label={$t('login.about')}
 	>
 		<div
 			class="pointer-events-none absolute -top-40 -right-48 size-[32rem] rounded-full bg-[radial-gradient(circle,rgba(255,107,74,0.25),transparent_68%)]"
@@ -35,16 +34,15 @@
 				<p
 					class="mb-5 flex items-center gap-3 text-xs font-extrabold tracking-[0.12em] text-[#ffb09d] uppercase before:h-0.5 before:w-8 before:bg-[#ff795c] before:content-['']"
 				>
-					Your people, one place
+					{$t('login.eyebrow')}
 				</p>
 				<h2
 					class="m-0 max-w-[31rem] text-[clamp(2.8rem,5.4vw,5.15rem)] leading-[0.99] font-bold tracking-[-0.065em]"
 				>
-					Share the little things that make life big.
+					{$t('login.headline')}
 				</h2>
 				<p class="mt-6 max-w-[29rem] text-[clamp(0.95rem,1.5vw,1.08rem)] leading-7 text-[#b8c1d5]">
-					A calmer place to stay close, swap ideas, and celebrate everyday moments with the people
-					who matter.
+					{$t('login.subtext')}
 				</p>
 			</div>
 
@@ -70,8 +68,8 @@
 					>
 				</div>
 				<div>
-					<strong class="text-xs">Join the conversation</strong>
-					<p class="mt-0.5 mb-0 text-[0.7rem] text-[#aeb8cc]">Good people are already waiting.</p>
+					<strong class="text-xs">{$t('login.join_title')}</strong>
+					<p class="mt-0.5 mb-0 text-[0.7rem] text-[#aeb8cc]">{$t('login.join_sub')}</p>
 				</div>
 			</div>
 		</div>
@@ -87,16 +85,17 @@
 		</div>
 
 		<div class="mt-auto">
+			<div class="mb-5 flex justify-center"><LanguageSelect /></div>
 			<p class="text-center text-[0.7rem] text-[#a0a7b5]">
-				By continuing, you agree to our
+				{$t('login.terms_prefix')}
 				<a
 					class="font-semibold text-[#70798c] no-underline transition-colors hover:text-[#15213a] hover:underline"
-					href={resolve('/login#terms')}>Terms</a
+					href={resolve('/login#terms')}>{$t('login.terms')}</a
 				>
-				and
+				{$t('login.and')}
 				<a
 					class="font-semibold text-[#70798c] no-underline transition-colors hover:text-[#15213a] hover:underline"
-					href={resolve('/login#privacy')}>Privacy Policy</a
+					href={resolve('/login#privacy')}>{$t('login.privacy_policy')}</a
 				>.
 			</p>
 		</div>

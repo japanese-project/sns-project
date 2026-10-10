@@ -89,6 +89,7 @@ describe('Profile Page Header & Customization', () => {
 		render(ProfilePage, {
 			data: {
 				session: null,
+				locale: 'en',
 				user: current_user,
 				profile: mock_self_profile,
 			},
@@ -104,6 +105,7 @@ describe('Profile Page Header & Customization', () => {
 		render(ProfilePage, {
 			data: {
 				session: null,
+				locale: 'en',
 				user: current_user,
 				profile: mock_other_profile,
 			},
@@ -119,6 +121,7 @@ describe('Profile Page Header & Customization', () => {
 		render(ProfilePage, {
 			data: {
 				session: null,
+				locale: 'en',
 				user: current_user,
 				profile: mock_self_profile,
 			},
@@ -154,6 +157,7 @@ describe('Profile Page Header & Customization', () => {
 		render(ProfilePage, {
 			data: {
 				session: null,
+				locale: 'en',
 				user: current_user,
 				profile: mock_other_profile,
 			},
@@ -168,6 +172,7 @@ describe('Profile Page Header & Customization', () => {
 		render(ProfilePage, {
 			data: {
 				session: null,
+				locale: 'en',
 				user: current_user,
 				profile: mock_self_profile,
 			},
@@ -183,6 +188,7 @@ describe('Profile Page Header & Customization', () => {
 		render(ProfilePage, {
 			data: {
 				session: null,
+				locale: 'en',
 				user: current_user,
 				profile: mock_self_profile,
 			},
@@ -202,6 +208,7 @@ describe('Profile Page Header & Customization', () => {
 		render(ProfilePage, {
 			data: {
 				session: null,
+				locale: 'en',
 				user: current_user,
 				profile: mock_self_profile,
 			},
@@ -230,6 +237,7 @@ describe('Profile Page Header & Customization', () => {
 		render(ProfilePage, {
 			data: {
 				session: null,
+				locale: 'en',
 				user: current_user,
 				profile: mock_self_profile,
 			},
@@ -239,9 +247,10 @@ describe('Profile Page Header & Customization', () => {
 		await expect.element(banner).toBeInTheDocument()
 
 		// The only remaining trigger is the "Change cover" button pinned to the banner
-		const cover_btn = page.getByRole('button', { name: 'Change banner theme' })
+		const cover_btn = page.getByRole('button', { name: 'Change cover' })
 		await expect.element(cover_btn).toBeVisible()
-		expect(page.getByRole('button', { name: /change banner/i }).elements()).toHaveLength(1)
+		expect(page.getByRole('button', { name: /change cover/i }).elements()).toHaveLength(1)
+		expect(page.getByRole('button', { name: /change banner/i }).elements()).toHaveLength(0)
 		expect(banner.element().parentElement?.contains(cover_btn.element())).toBe(true)
 		expect(cover_btn.element().className).toContain('absolute')
 

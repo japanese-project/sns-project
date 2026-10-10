@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths'
+	import { t } from '$lib/i18n'
 	import type { UserListItem } from '$lib/types'
 	import Avatar from './Avatar.svelte'
 	import FollowButton from './FollowButton.svelte'
@@ -26,7 +27,7 @@
 					<span
 						class="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[0.65rem] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300"
 					>
-						Follows you
+						{$t('follow.follows_you')}
 					</span>
 				{/if}
 			</div>

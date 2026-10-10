@@ -4,6 +4,7 @@
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link'
 	import GlobeIcon from '@lucide/svelte/icons/globe'
 	import XIcon from '@lucide/svelte/icons/x'
+	import { t } from '$lib/i18n'
 	import { get_link_preview, type LinkPreviewData } from '$lib/link-preview-client'
 
 	let {
@@ -84,7 +85,7 @@
 					e.preventDefault()
 					on_dismiss?.()
 				}}
-				aria-label="Remove link preview"
+				aria-label={$t('link_preview.remove')}
 				class="absolute top-2 right-2 z-10 rounded-full bg-black/60 p-1 text-white backdrop-blur-xs transition hover:bg-black"
 			>
 				<XIcon class="size-3.5" />
@@ -107,7 +108,7 @@
 				>
 					<img
 						src={preview.image}
-						alt={preview.title || 'Link preview image'}
+						alt={preview.title || $t('link_preview.image_alt')}
 						class="w-full object-cover transition duration-300 group-hover:scale-101"
 						loading="lazy"
 						onerror={() => (image_failed = true)}
@@ -165,7 +166,7 @@
 					e.preventDefault()
 					on_dismiss?.()
 				}}
-				aria-label="Remove link preview"
+				aria-label={$t('link_preview.remove')}
 				class="absolute top-1 right-1 z-10 rounded-full bg-black/60 p-1 text-white backdrop-blur-xs transition hover:bg-black"
 			>
 				<XIcon class="size-3" />

@@ -3,6 +3,7 @@
 	import SearchIcon from '@lucide/svelte/icons/search'
 	import SparklesIcon from '@lucide/svelte/icons/sparkles'
 	import XIcon from '@lucide/svelte/icons/x'
+	import { t } from '$lib/i18n'
 	import { search_history } from '$lib/search-history.svelte'
 
 	let {
@@ -34,14 +35,14 @@
 			>
 				<span class="flex items-center gap-1.5">
 					<ClockIcon class="size-3 text-slate-400" />
-					<span>Recent searches</span>
+					<span>{$t('search_suggestions.recent')}</span>
 				</span>
 				<button
 					type="button"
 					onclick={() => search_history.clear()}
 					class="transition hover:text-slate-700 active:scale-95 dark:hover:text-slate-200"
 				>
-					Clear all
+					{$t('search_suggestions.clear_all')}
 				</button>
 			</div>
 			<div class="space-y-0.5">
@@ -61,7 +62,7 @@
 						</button>
 						<button
 							type="button"
-							aria-label="Remove search"
+							aria-label={$t('search_suggestions.remove_search')}
 							onclick={(e) => {
 								e.stopPropagation()
 								search_history.remove(query)
@@ -82,7 +83,7 @@
 				class="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-slate-400 dark:text-slate-500"
 			>
 				<SparklesIcon class="size-3 text-slate-400" />
-				<span>Popular topics</span>
+				<span>{$t('search_suggestions.popular_topics')}</span>
 			</div>
 			<div class="space-y-0.5">
 				{#each trending_topics.slice(0, 5) as topic (typeof topic === 'string' ? topic : topic.tag)}
@@ -93,7 +94,9 @@
 						class="group flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-left text-xs font-semibold text-slate-700 transition group-hover:text-slate-900 hover:bg-slate-100 dark:text-slate-200 dark:group-hover:text-slate-50 dark:hover:bg-slate-800"
 					>
 						<span class="truncate">#{tag}</span>
-						<span class="text-[10px] font-medium text-slate-400">trending</span>
+						<span class="text-[10px] font-medium text-slate-400"
+							>{$t('search_suggestions.trending')}</span
+						>
 					</button>
 				{/each}
 			</div>
@@ -103,7 +106,7 @@
 	{#if !has_history && !has_trending}
 		<div class="px-3 py-4 text-center">
 			<SearchIcon class="mx-auto size-5 text-slate-300" />
-			<p class="mt-1 text-xs text-slate-500">Search for people, keywords, or #topics</p>
+			<p class="mt-1 text-xs text-slate-500">{$t('search_suggestions.empty')}</p>
 		</div>
 	{/if}
 </div>

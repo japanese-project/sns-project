@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { sign_in_with_google } from '$lib/auth-client'
+	import { t } from '$lib/i18n'
 	import { Button } from '$lib/components/ui/button/index.js'
 
 	let is_loading = $state(false)
@@ -11,23 +12,34 @@
 		try {
 			await sign_in_with_google()
 		} catch (e) {
-			error_message =
-				e instanceof Error ? e.message : 'Unable to connect to Google. Please try again.'
+			error_message = describe_error(e)
 		} finally {
 			is_loading = false
 		}
+	}
+
+	// A 429 arrives as a raw "API rate limit exceeded for auth" string, which reads like a
+	// credentials problem and sends people off to check their password. It only means the
+	// per-IP budget is spent, so say what to actually do about it. Anything else passes through.
+	function describe_error(e: unknown): string {
+		const status =
+			(e as { status?: number } | null)?.status ?? (e as { statusCode?: number } | null)?.statusCode
+		if (status === 429) return $t('login.error_rate_limited')
+		return e instanceof Error ? e.message : $t('login.error_google')
 	}
 </script>
 
 <div class="mx-auto flex w-full max-w-sm flex-col gap-8">
 	<div class="flex flex-col gap-2 text-center sm:text-left">
-		<p class="text-xs font-bold tracking-widest text-primary uppercase">Welcome back</p>
+		<p class="text-xs font-bold tracking-widest text-primary uppercase">
+			{$t('login.welcome_back')}
+		</p>
 		<h1
 			class="text-[1.75rem] leading-tight font-extrabold tracking-tight text-[#15213a] sm:text-[2.25rem]"
 		>
-			Sign in to Loop
+			{$t('login.sign_in_title')}
 		</h1>
-		<p class="text-[0.95rem] text-[#727c90]">Catch up with your people and conversations.</p>
+		<p class="text-[0.95rem] text-[#727c90]">{$t('login.sign_in_sub')}</p>
 	</div>
 
 	<div class="flex flex-col gap-5">
@@ -53,7 +65,7 @@
 						d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 					></path>
 				</svg>
-				<span>Connecting...</span>
+				<span>{$t('login.connecting')}</span>
 			{:else}
 				<svg
 					class="absolute left-5 size-[1.15rem] sm:static sm:size-5"
@@ -77,7 +89,7 @@
 						d="M12 5.9c1.5 0 2.8.5 3.9 1.5l2.9-2.8A9.8 9.8 0 0 0 2.9 7.4l3.4 2.7c.8-2.4 3.1-4.2 5.7-4.2"
 					/>
 				</svg>
-				<span>Continue with Google</span>
+				<span>{$t('login.continue_google')}</span>
 			{/if}
 		</Button>
 
@@ -104,7 +116,7 @@
 		<div
 			class="mt-2 flex items-center justify-center gap-3 text-[0.7rem] font-bold tracking-wider text-[#a0a7b5] uppercase before:h-px before:flex-1 before:bg-[#eff1f5] after:h-px after:flex-1 after:bg-[#eff1f5] dark:text-slate-500 dark:before:bg-slate-700 dark:after:bg-slate-700"
 		>
-			Secure & Passwordless
+			{$t('login.secure_passwordless')}
 		</div>
 	</div>
 </div>

@@ -21,6 +21,7 @@
 	import FollowButton from '$lib/components/app/FollowButton.svelte'
 	import PostList from '$lib/components/app/PostList.svelte'
 	import { parse_content } from '$lib/content'
+	import { date, t } from '$lib/i18n'
 	import type { ProfileView } from '$lib/types'
 
 	let { data } = $props()
@@ -30,9 +31,8 @@
 	let follow_state = $state<{ following: boolean; follower_count: number } | null>(null)
 	let following = $derived(follow_state?.following ?? profile.is_following)
 	let follower_count = $derived(follow_state?.follower_count ?? profile.follower_count)
-	let joined = $derived(
-		new Date(profile.joined_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
-	)
+	// Locale-aware via Intl, so Japanese/Khmer get their own month names and ordering.
+	let joined = $derived($date(new Date(profile.joined_at), { month: 'long', year: 'numeric' }))
 
 	let show_edit_modal = $state(false)
 	let show_banner_modal = $state(false)
@@ -81,14 +81,14 @@
 			}
 			show_banner_modal = false
 		} catch (e) {
-			banner_error = e instanceof Error ? e.message : 'Failed to update banner'
+			banner_error = e instanceof Error ? e.message : $t('profile.error_banner')
 		} finally {
 			saving_banner = false
 		}
 	}
 </script>
 
-<AppShell user={data.user} title={profile.is_self ? 'Profile' : profile.user.name}>
+<AppShell user={data.user} title={profile.is_self ? $t('profile.title') : profile.user.name}>
 	<div class="mx-auto w-full max-w-2xl">
 		<!-- TikTok Style Profile Header Section -->
 		<section class="border-b border-slate-200/60 pb-2 dark:border-slate-800">
@@ -105,11 +105,11 @@
 					<button
 						type="button"
 						onclick={() => (show_banner_modal = true)}
-						aria-label="Change banner theme"
+						aria-label={$t('profile.change_cover')}
 						class="absolute right-3.5 bottom-3.5 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-xs font-semibold text-white shadow-md backdrop-blur-md transition-all hover:scale-105 hover:bg-black/80 active:scale-95 sm:px-3.5"
 					>
 						<PaletteIcon class="size-3.5" />
-						<span class="text-xs">Change cover</span>
+						<span class="text-xs">{$t('profile.change_cover')}</span>
 					</button>
 				{/if}
 			</div>
@@ -135,23 +135,23 @@
 							onclick={() => (show_edit_modal = true)}
 							class="rounded-xl border border-slate-300/80 bg-white px-4 py-2 text-xs font-bold text-slate-800 shadow-2xs transition-all duration-150 hover:bg-slate-50 active:scale-95 sm:px-5 sm:text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
 						>
-							Edit Profile
+							{$t('profile.edit_profile')}
 						</button>
 						<a
 							href={resolve('/settings')}
-							aria-label="Settings"
-							class="flex size-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-2xs transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-700"
+							aria-label={$t('nav.settings')}
+							class="flex size-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-2xs transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 active:scale-95"
 						>
 							<SettingsIcon class="size-4" />
 						</a>
 						<button
 							type="button"
 							onclick={handle_sign_out}
-							aria-label="Sign out"
-							class="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition-all duration-150 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-rose-900 dark:hover:bg-rose-950 dark:hover:text-rose-400"
+							aria-label={$t('nav.sign_out')}
+							class="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition-all duration-150 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 active:scale-95"
 						>
 							<LogOutIcon class="size-3.5" />
-							<span class="hidden sm:inline">Sign out</span>
+							<span class="hidden sm:inline">{$t('nav.sign_out')}</span>
 						</button>
 					{/if}
 				</div>
@@ -169,7 +169,7 @@
 						<span
 							class="rounded-md bg-slate-100 px-2 py-0.5 text-[0.68rem] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300"
 						>
-							Follows you
+							{$t('follow.follows_you')}
 						</span>
 					{/if}
 				</div>
@@ -182,7 +182,7 @@
 						>
 						<span>·</span>
 					{/if}
-					<span>Joined {joined}</span>
+					<span>{$t('profile.joined', { values: { date: joined } })}</span>
 				</div>
 
 				<!-- TikTok's Signature 3-Stats Row: Following, Followers, Likes -->
@@ -199,7 +199,7 @@
 						<dt
 							class="text-xs font-medium text-slate-500 group-hover:text-slate-900 group-hover:underline dark:text-slate-400 dark:group-hover:text-slate-100"
 						>
-							Following
+							{$t('profile.following')}
 						</dt>
 					</a>
 					<a
@@ -215,7 +215,7 @@
 						<dt
 							class="text-xs font-medium text-slate-500 group-hover:text-slate-900 group-hover:underline dark:text-slate-400 dark:group-hover:text-slate-100"
 						>
-							Followers
+							{$t('profile.followers')}
 						</dt>
 					</a>
 					<div class="flex items-baseline gap-1.5">
@@ -224,7 +224,7 @@
 						>
 							{profile.likes_count ?? 0}
 						</dd>
-						<dt class="text-xs font-medium text-slate-500 dark:text-slate-400">Likes</dt>
+						<dt class="text-xs font-medium text-slate-500">{$t('profile.likes')}</dt>
 					</div>
 				</dl>
 
@@ -275,7 +275,7 @@
 						onclick={() => (show_edit_modal = true)}
 						class="mt-2.5 text-xs font-medium text-slate-400 transition hover:text-slate-900 hover:underline dark:text-slate-500 dark:hover:text-slate-100"
 					>
-						+ Add topics you enjoy
+						{$t('profile.add_topics')}
 					</button>
 				{/if}
 			</div>
@@ -293,7 +293,7 @@
 						: 'text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}"
 				>
 					<Grid3x3Icon class="size-4" />
-					<span>Posts</span>
+					<span>{$t('profile.posts')}</span>
 					{#if active_tab === 'posts'}
 						<div
 							class="absolute bottom-0 h-0.5 w-full bg-slate-900 sm:w-16 dark:bg-slate-100"
@@ -312,7 +312,7 @@
 						: 'text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}"
 				>
 					<BookmarkIcon class="size-4" />
-					<span>Favorites</span>
+					<span>{$t('profile.favorites')}</span>
 					{#if active_tab === 'favorites'}
 						<div
 							class="absolute bottom-0 h-0.5 w-full bg-slate-900 sm:w-16 dark:bg-slate-100"
@@ -331,7 +331,7 @@
 						: 'text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}"
 				>
 					<HeartIcon class="size-4" />
-					<span>Liked</span>
+					<span>{$t('profile.liked')}</span>
 					{#if active_tab === 'liked'}
 						<div
 							class="absolute bottom-0 h-0.5 w-full bg-slate-900 sm:w-16 dark:bg-slate-100"
@@ -349,8 +349,8 @@
 						endpoint="/api/users/{encodeURIComponent(profile.user.handle)}/posts"
 						accepts_new_posts={profile.is_self}
 						empty_message={profile.is_self
-							? "You haven't posted yet."
-							: `${profile.user.name} has no posts you can see yet.`}
+							? $t('profile.empty_posts_self')
+							: $t('profile.empty_posts_other', { values: { name: profile.user.name } })}
 					/>
 				{/key}
 			{:else if profile.is_self}
@@ -358,13 +358,10 @@
 				{#if active_tab === 'favorites'}
 					<PostList
 						endpoint="/api/users/me/bookmarks"
-						empty_message="No favorites yet. Tap the bookmark on any post to save it here."
+						empty_message={$t('profile.empty_favorites')}
 					/>
 				{:else}
-					<PostList
-						endpoint="/api/users/me/likes"
-						empty_message="Posts you like will show up here."
-					/>
+					<PostList endpoint="/api/users/me/likes" empty_message={$t('profile.empty_liked')} />
 				{/if}
 			{:else}
 				<div
@@ -375,13 +372,15 @@
 					>
 						<LockIcon class="size-8" />
 					</div>
-					<h4 class="text-sm font-bold text-slate-800 dark:text-slate-200">
-						{active_tab === 'favorites' ? 'Favorites are private' : 'Liked posts are private'}
+					<h4 class="text-sm font-bold text-slate-800">
+						{active_tab === 'favorites'
+							? $t('profile.favorites_private')
+							: $t('profile.liked_private')}
 					</h4>
-					<p class="mt-1 max-w-xs text-xs text-slate-400 dark:text-slate-500">
-						Only {profile.user.name} can see the posts they {active_tab === 'favorites'
-							? 'saved'
-							: 'liked'}.
+					<p class="mt-1 max-w-xs text-xs text-slate-400">
+						{active_tab === 'favorites'
+							? $t('profile.only_owner_saved', { values: { name: profile.user.name } })
+							: $t('profile.only_owner_liked', { values: { name: profile.user.name } })}
 					</p>
 				</div>
 			{/if}
@@ -401,11 +400,8 @@
 					<div class="flex items-center justify-between pb-3">
 						<div class="flex items-center gap-2">
 							<PaletteIcon class="size-4 text-indigo-600" />
-							<h3
-								id="banner-modal-title"
-								class="text-base font-bold text-slate-900 dark:text-slate-100"
-							>
-								Choose Banner Cover
+							<h3 id="banner-modal-title" class="text-base font-bold text-slate-900">
+								{$t('profile.banner_title')}
 							</h3>
 						</div>
 						<button
@@ -418,8 +414,8 @@
 						</button>
 					</div>
 
-					<p class="text-xs text-slate-500 dark:text-slate-400">
-						Select a gradient style to personalize your TikTok profile header.
+					<p class="text-xs text-slate-500">
+						{$t('profile.banner_desc')}
 					</p>
 
 					{#if banner_error}
@@ -446,7 +442,7 @@
 								<div class="absolute inset-0 bg-black/15 transition group-hover:bg-black/10"></div>
 
 								<span class="relative z-10 text-xs font-bold text-white drop-shadow-xs">
-									{theme.name}
+									{$t(`banner_theme.${theme.id}`)}
 								</span>
 
 								{#if is_active}
@@ -466,7 +462,7 @@
 							onclick={() => (show_banner_modal = false)}
 							class="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
 						>
-							Close
+							{$t('common.close')}
 						</button>
 					</div>
 				</div>
