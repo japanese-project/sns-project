@@ -137,15 +137,6 @@
 						>
 							{$t('profile.edit_profile')}
 						</button>
-						<button
-							type="button"
-							onclick={() => (show_banner_modal = true)}
-							title={$t('profile.change_banner')}
-							aria-label={$t('profile.change_banner')}
-							class="flex size-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-2xs transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 active:scale-95"
-						>
-							<PaletteIcon class="size-4" />
-						</button>
 						<a
 							href={resolve('/settings')}
 							aria-label={$t('nav.settings')}
