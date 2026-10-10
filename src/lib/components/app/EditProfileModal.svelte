@@ -166,19 +166,23 @@
 
 	<!-- Slide-in sheet from right -->
 	<div
-		class="fixed inset-y-0 right-0 z-50 flex w-full max-w-sm flex-col bg-[#f8fafc] shadow-2xl"
+		class="fixed inset-y-0 right-0 z-50 flex w-full max-w-sm flex-col bg-[#f8fafc] shadow-2xl dark:bg-slate-900"
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="edit-profile-title"
 	>
 		<!-- Header bar -->
-		<div class="flex items-center justify-between border-b border-slate-200/60 px-5 py-4">
-			<h2 id="edit-profile-title" class="text-base font-bold text-slate-900">Edit Profile</h2>
+		<div
+			class="flex items-center justify-between border-b border-slate-200/60 px-5 py-4 dark:border-slate-800"
+		>
+			<h2 id="edit-profile-title" class="text-base font-bold text-slate-900 dark:text-slate-100">
+				Edit Profile
+			</h2>
 			<button
 				type="button"
 				onclick={on_close}
 				aria-label="Close"
-				class="flex size-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+				class="flex size-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
 			>
 				<XIcon class="size-4" />
 			</button>
@@ -191,7 +195,7 @@
 				<div>
 					<label
 						for="profile-name"
-						class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase"
+						class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400"
 					>
 						Display Name
 					</label>
@@ -201,7 +205,7 @@
 						bind:value={name}
 						maxlength={MAX_NAME_LENGTH}
 						required
-						class="mt-2 w-full border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 text-sm text-slate-900 transition outline-none focus:border-slate-900 focus:ring-0 focus:outline-none"
+						class="mt-2 w-full border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 text-sm text-slate-900 transition outline-none focus:border-slate-900 focus:ring-0 focus:outline-none dark:border-slate-700 dark:text-slate-100 dark:focus:border-slate-100"
 					/>
 				</div>
 
@@ -209,13 +213,13 @@
 				<div>
 					<label
 						for="profile-username"
-						class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase"
+						class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400"
 					>
 						Username
 					</label>
 					<div class="relative mt-2">
 						<span
-							class="pointer-events-none absolute inset-y-0 left-0 flex items-center pb-1.5 text-sm font-semibold text-slate-400"
+							class="pointer-events-none absolute inset-y-0 left-0 flex items-center pb-1.5 text-sm font-semibold text-slate-400 dark:text-slate-500"
 							>@</span
 						>
 						<input
@@ -224,10 +228,10 @@
 							bind:value={username}
 							maxlength={30}
 							placeholder="username"
-							class="w-full border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 pl-5 text-sm text-slate-900 transition outline-none focus:border-slate-900 focus:ring-0 focus:outline-none"
+							class="w-full border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 pl-5 text-sm text-slate-900 transition outline-none focus:border-slate-900 focus:ring-0 focus:outline-none dark:border-slate-700 dark:text-slate-100 dark:focus:border-slate-100"
 						/>
 					</div>
-					<p class="mt-1 text-[0.68rem] text-slate-400">
+					<p class="mt-1 text-[0.68rem] text-slate-400 dark:text-slate-500">
 						Lowercase letters, numbers, and underscores. Changing it breaks existing links to your
 						profile.
 					</p>
@@ -238,7 +242,7 @@
 					<div class="flex items-center justify-between">
 						<label
 							for="profile-bio"
-							class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase"
+							class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400"
 						>
 							Bio
 						</label>
@@ -256,23 +260,25 @@
 						rows="3"
 						maxlength={MAX_BIO_LENGTH}
 						placeholder="Tell people a little bit about yourself…"
-						class="mt-2 w-full resize-none border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 text-sm leading-relaxed text-slate-900 transition outline-none focus:border-slate-900 focus:ring-0 focus:outline-none"
+						class="mt-2 w-full resize-none border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 text-sm leading-relaxed text-slate-900 transition outline-none focus:border-slate-900 focus:ring-0 focus:outline-none dark:border-slate-700 dark:text-slate-100 dark:focus:border-slate-100"
 					></textarea>
 				</div>
 
 				<!-- Header Banner Theme -->
 				<div>
-					<span class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase">
+					<span
+						class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400"
+					>
 						Header Banner Theme
 					</span>
-					<p class="mt-0.5 text-[0.68rem] text-slate-400">
+					<p class="mt-0.5 text-[0.68rem] text-slate-400 dark:text-slate-500">
 						Choose a color gradient for your profile banner.
 					</p>
 					<div
 						data-testid="banner-preview"
 						class="mt-2 h-14 w-full rounded-xl {get_banner_class(
 							banner_color,
-						)} border border-slate-200/60 shadow-inner"
+						)} border border-slate-200/60 shadow-inner dark:border-slate-700"
 					></div>
 					<div class="mt-3 grid grid-cols-4 gap-2">
 						{#each BANNER_THEMES as theme (theme.id)}
@@ -296,10 +302,14 @@
 
 				<!-- Interests / Hashtag Topics -->
 				<div>
-					<p class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase">
+					<p
+						class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400"
+					>
 						Topics you enjoy
 					</p>
-					<p class="mt-0.5 text-[0.68rem] text-slate-400">These appear as #tags on your profile.</p>
+					<p class="mt-0.5 text-[0.68rem] text-slate-400 dark:text-slate-500">
+						These appear as #tags on your profile.
+					</p>
 					<div class="mt-3 flex flex-wrap gap-2">
 						{#each available_interests as topic (topic)}
 							{@const is_selected = selected_interests.includes(topic)}
@@ -307,8 +317,8 @@
 								type="button"
 								onclick={() => toggle_interest(topic)}
 								class="rounded-full px-3.5 py-1.5 text-xs font-semibold transition {is_selected
-									? 'bg-slate-900 text-white shadow-sm'
-									: 'text-slate-600 hover:bg-slate-100'}"
+									? 'bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-900'
+									: 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}"
 							>
 								{is_selected ? '✓ ' : '#'}{topic}
 							</button>
@@ -340,12 +350,12 @@
 							}}
 							placeholder="Add your own…"
 							maxlength={30}
-							class="flex-1 border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-slate-900 focus:ring-0 focus:outline-none"
+							class="flex-1 border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-slate-900 focus:ring-0 focus:outline-none dark:border-slate-700"
 						/>
 						<button
 							type="button"
 							onclick={add_custom}
-							class="rounded-full px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+							class="rounded-full px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
 						>
 							Add
 						</button>
@@ -353,7 +363,10 @@
 				</div>
 
 				{#if error_message}
-					<p class="rounded-2xl bg-rose-50 px-4 py-3 text-xs text-rose-700" role="alert">
+					<p
+						class="rounded-2xl bg-rose-50 px-4 py-3 text-xs text-rose-700 dark:bg-rose-950 dark:text-rose-300"
+						role="alert"
+					>
 						{error_message}
 					</p>
 				{/if}
@@ -361,19 +374,19 @@
 
 			<!-- Sticky footer actions -->
 			<div
-				class="flex shrink-0 items-center justify-end gap-3 border-t border-slate-200/60 px-5 py-4"
+				class="flex shrink-0 items-center justify-end gap-3 border-t border-slate-200/60 px-5 py-4 dark:border-slate-800"
 			>
 				<button
 					type="button"
 					onclick={on_close}
-					class="rounded-full px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+					class="rounded-full px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
 				>
 					Cancel
 				</button>
 				<button
 					type="submit"
 					disabled={saving || !name.trim()}
-					class="rounded-full bg-black px-6 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50"
+					class="rounded-full bg-black px-6 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
 				>
 					{saving ? 'Saving…' : 'Save'}
 				</button>

@@ -128,7 +128,24 @@ describe('Profile Page Header & Customization', () => {
 		const sign_out_btn = page.getByRole('button', { name: 'Sign out' })
 		await expect.element(sign_out_btn).toBeVisible()
 
+		// Clicking the trigger only opens the confirmation dialog — nothing signs out yet
 		await sign_out_btn.click()
+		expect(sign_out).not.toHaveBeenCalled()
+		expect(goto).not.toHaveBeenCalled()
+
+		// Cancelling the dialog dismisses it without signing out
+		const cancel_btn = page.getByRole('button', { name: 'Cancel' })
+		await expect.element(cancel_btn).toBeVisible()
+		await cancel_btn.click()
+		await expect.element(page.getByRole('dialog')).not.toBeInTheDocument()
+		expect(sign_out).not.toHaveBeenCalled()
+
+		// Confirming signs out and navigates to the login page
+		await sign_out_btn.click()
+		const dialog = page.getByRole('dialog', { name: 'Sign out?' })
+		await expect.element(dialog).toBeVisible()
+		await dialog.getByRole('button', { name: 'Sign out' }).click()
+		await expect.element(page.getByRole('dialog')).not.toBeInTheDocument()
 		expect(sign_out).toHaveBeenCalledTimes(1)
 		expect(goto).toHaveBeenCalledWith('/login')
 	})

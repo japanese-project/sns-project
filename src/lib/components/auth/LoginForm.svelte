@@ -36,7 +36,7 @@
 			type="button"
 			onclick={handle_google_login}
 			disabled={is_loading}
-			class="relative flex h-[3.45rem] w-full items-center justify-center gap-3 rounded-xl border-[#dfe3eb] bg-white text-[0.95rem] font-bold text-[#25314b] shadow-sm transition-all hover:-translate-y-px hover:border-[#cbd1df] hover:bg-slate-50 hover:shadow-md disabled:pointer-events-none disabled:opacity-70"
+			class="relative flex h-[3.45rem] w-full items-center justify-center gap-3 rounded-xl border-[#dfe3eb] bg-white text-[0.95rem] font-bold text-[#25314b] shadow-sm transition-all hover:-translate-y-px hover:border-[#cbd1df] hover:bg-slate-50 hover:shadow-md disabled:pointer-events-none disabled:opacity-70 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:border-slate-600 dark:hover:bg-slate-700"
 		>
 			{#if is_loading}
 				<svg
@@ -83,7 +83,7 @@
 
 		{#if error_message}
 			<div
-				class="flex items-start gap-2 rounded-xl border border-rose-100 bg-rose-50 px-4 py-3 text-[0.8rem] text-rose-600 shadow-sm"
+				class="flex items-start gap-2 rounded-xl border border-rose-100 bg-rose-50 px-4 py-3 text-[0.8rem] text-rose-600 shadow-sm dark:border-rose-900 dark:bg-rose-950 dark:text-rose-400"
 				role="alert"
 			>
 				<svg
@@ -102,7 +102,7 @@
 		{/if}
 
 		<div
-			class="mt-2 flex items-center justify-center gap-3 text-[0.7rem] font-bold tracking-wider text-[#a0a7b5] uppercase before:h-px before:flex-1 before:bg-[#eff1f5] after:h-px after:flex-1 after:bg-[#eff1f5]"
+			class="mt-2 flex items-center justify-center gap-3 text-[0.7rem] font-bold tracking-wider text-[#a0a7b5] uppercase before:h-px before:flex-1 before:bg-[#eff1f5] after:h-px after:flex-1 after:bg-[#eff1f5] dark:text-slate-500 dark:before:bg-slate-700 dark:after:bg-slate-700"
 		>
 			Secure & Passwordless
 		</div>
