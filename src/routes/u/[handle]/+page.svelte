@@ -115,13 +115,13 @@
 			</div>
 
 			<!-- Header Action Bar: Avatar + Actions (Responsive for Mobile & Desktop) -->
-			<!-- Notice: preserves the flex items-center justify-between container required by layout tests -->
-			<div class="relative -mt-10 flex items-center justify-between gap-4 px-3 sm:-mt-12 sm:px-4">
-				<div class="relative rounded-full shadow-md ring-4 ring-white">
+			<!-- The row sits flush under the banner: only the avatar overlaps it, actions keep clear air below it -->
+			<div class="relative flex items-end justify-between gap-4 px-3 pt-3 sm:px-4 sm:pt-4">
+				<div class="relative -mt-12 shrink-0 rounded-full shadow-md ring-4 ring-white sm:-mt-14">
 					<Avatar user={profile.user} size={80} />
 				</div>
 
-				<div class="mt-8 flex shrink-0 items-center gap-2 sm:mt-10">
+				<div class="flex shrink-0 items-center justify-between gap-2">
 					{#if !profile.is_self}
 						<FollowButton
 							handle={profile.user.handle}
@@ -136,15 +136,6 @@
 							class="rounded-xl border border-slate-300/80 bg-white px-4 py-2 text-xs font-bold text-slate-800 shadow-2xs transition-all duration-150 hover:bg-slate-50 active:scale-95 sm:px-5 sm:text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
 						>
 							Edit Profile
-						</button>
-						<button
-							type="button"
-							onclick={() => (show_banner_modal = true)}
-							title="Change Banner"
-							aria-label="Change Banner"
-							class="flex size-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-2xs transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-700"
-						>
-							<PaletteIcon class="size-4" />
 						</button>
 						<a
 							href={resolve('/settings')}
