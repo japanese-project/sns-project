@@ -12,7 +12,7 @@
 	/>
 </svelte:head>
 
-<main class="grid min-h-svh bg-white font-sans lg:grid-cols-[0.92fr_1.08fr]">
+<main class="grid min-h-svh bg-white font-sans lg:grid-cols-[0.92fr_1.08fr] dark:bg-slate-950">
 	<section
 		class="relative hidden overflow-hidden bg-[linear-gradient(145deg,rgba(19,31,58,0.96),rgba(35,48,82,0.98))] text-white lg:flex lg:flex-col lg:justify-between"
 		aria-label="About Loop"

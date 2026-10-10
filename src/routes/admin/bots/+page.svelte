@@ -182,7 +182,7 @@
 	<div class="space-y-6 pb-16">
 		<!-- Header Banner -->
 		<div
-			class="flex flex-col justify-between gap-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm md:flex-row md:items-center"
+			class="flex flex-col justify-between gap-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm md:flex-row md:items-center dark:border-slate-800 dark:bg-slate-900"
 		>
 			<div class="space-y-1">
 				<div class="flex items-center gap-2">
@@ -192,11 +192,15 @@
 						<ShieldCheckIcon class="size-3.5" />
 						Admin Control
 					</span>
-					<span class="text-xs font-medium text-slate-400">•</span>
-					<span class="text-xs font-medium text-slate-500">Autonomous Content & Persona Fleet</span>
+					<span class="text-xs font-medium text-slate-400 dark:text-slate-500">•</span>
+					<span class="text-xs font-medium text-slate-500 dark:text-slate-400"
+						>Autonomous Content & Persona Fleet</span
+					>
 				</div>
-				<h1 class="text-2xl font-black tracking-tight text-slate-900">Bot Operations Center</h1>
-				<p class="text-sm text-slate-500">
+				<h1 class="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100">
+					Bot Operations Center
+				</h1>
+				<p class="text-sm text-slate-500 dark:text-slate-400">
 					Curate breaking news, configure AI personalities, and manage autonomous schedule flows.
 				</p>
 			</div>
@@ -206,7 +210,7 @@
 					<button
 						type="button"
 						onclick={() => (show_create_modal = true)}
-						class="flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800 active:scale-95"
+						class="flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800 active:scale-95 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
 					>
 						<PlusIcon class="size-3.5" />
 						Create New Bot
@@ -233,15 +237,19 @@
 
 		{#if !data.is_admin}
 			<!-- Password Unlock Box -->
-			<div class="mx-auto max-w-md rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
+			<div
+				class="mx-auto max-w-md rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+			>
 				<div class="text-center">
 					<div
 						class="mx-auto flex size-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600"
 					>
 						<LockIcon class="size-6" />
 					</div>
-					<h2 class="mt-3 text-base font-bold text-slate-900">Protected Admin Console</h2>
-					<p class="mt-1 text-xs text-slate-500">
+					<h2 class="mt-3 text-base font-bold text-slate-900 dark:text-slate-100">
+						Protected Admin Console
+					</h2>
+					<p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
 						Please enter your administrative secret key to configure the bot fleet.
 					</p>
 				</div>
@@ -252,11 +260,11 @@
 						name="secret"
 						required
 						placeholder="Paste your secret key"
-						class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:ring-1 focus:ring-slate-900 focus:outline-none"
+						class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-100 dark:focus:ring-slate-100"
 					/>
 					<button
 						type="submit"
-						class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-xs transition hover:bg-slate-800 active:scale-[0.98]"
+						class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-xs transition hover:bg-slate-800 active:scale-[0.98] dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
 					>
 						Unlock Access
 					</button>
@@ -264,7 +272,9 @@
 			</div>
 		{:else}
 			<!-- Primary Navigation Tabs (Eliminates infinite vertical scroll) -->
-			<div class="flex items-center justify-between border-b border-slate-200/80 pb-1">
+			<div
+				class="flex items-center justify-between border-b border-slate-200/80 pb-1 dark:border-slate-800"
+			>
 				<nav class="flex items-center gap-2" aria-label="Admin Navigation Tabs">
 					<button
 						type="button"
@@ -272,7 +282,7 @@
 						class="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition {active_tab ===
 						'controls'
 							? 'bg-slate-900 text-white shadow-xs'
-							: 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900'}"
+							: 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100'}"
 					>
 						<SlidersHorizontalIcon class="size-3.5" />
 						<span>Overview & Controls</span>
@@ -284,14 +294,14 @@
 						class="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition {active_tab ===
 						'fleet'
 							? 'bg-slate-900 text-white shadow-xs'
-							: 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900'}"
+							: 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100'}"
 					>
 						<UsersIcon class="size-3.5" />
 						<span>Bot Fleet</span>
 						<span
 							class="py-0.2 rounded-full px-1.5 text-[10px] {active_tab === 'fleet'
-								? 'bg-white/20 text-white'
-								: 'bg-slate-100 text-slate-600'}"
+								? 'bg-white/20 text-white dark:bg-white/15'
+								: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}"
 						>
 							{data.personas.length}
 						</span>
@@ -303,14 +313,14 @@
 						class="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition {active_tab ===
 						'posts'
 							? 'bg-slate-900 text-white shadow-xs'
-							: 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900'}"
+							: 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100'}"
 					>
 						<MessageSquareIcon class="size-3.5" />
 						<span>Recent Posts</span>
 						<span
 							class="py-0.2 rounded-full px-1.5 text-[10px] {active_tab === 'posts'
-								? 'bg-white/20 text-white'
-								: 'bg-slate-100 text-slate-600'}"
+								? 'bg-white/20 text-white dark:bg-white/15'
+								: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}"
 						>
 							{data.recent_posts.length}
 						</span>
@@ -325,8 +335,12 @@
 				<div class="space-y-6">
 					<!-- Quick Metrics Row -->
 					<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-						<div class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs">
-							<div class="text-xs font-medium text-slate-400 uppercase">Automation</div>
+						<div
+							class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900"
+						>
+							<div class="text-xs font-medium text-slate-400 uppercase dark:text-slate-500">
+								Automation
+							</div>
 							<div class="mt-1 flex items-center gap-2">
 								{#if data.config?.enabled}
 									<span class="size-2.5 animate-pulse rounded-full bg-emerald-500"></span>
@@ -341,9 +355,13 @@
 							</div>
 						</div>
 
-						<div class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs">
-							<div class="text-xs font-medium text-slate-400 uppercase">Schedule Status</div>
-							<div class="mt-1 truncate text-sm font-bold text-slate-900">
+						<div
+							class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900"
+						>
+							<div class="text-xs font-medium text-slate-400 uppercase dark:text-slate-500">
+								Schedule Status
+							</div>
+							<div class="mt-1 truncate text-sm font-bold text-slate-900 dark:text-slate-100">
 								{data.config?.campaign_end ? 'Scheduled Limit' : 'Continuous (Indefinite)'}
 							</div>
 							<div class="mt-1 truncate text-[11px] text-slate-500">
@@ -351,9 +369,13 @@
 							</div>
 						</div>
 
-						<div class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs">
-							<div class="text-xs font-medium text-slate-400 uppercase">Fleet Size</div>
-							<div class="mt-1 text-sm font-bold text-slate-900">
+						<div
+							class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900"
+						>
+							<div class="text-xs font-medium text-slate-400 uppercase dark:text-slate-500">
+								Fleet Size
+							</div>
+							<div class="mt-1 text-sm font-bold text-slate-900 dark:text-slate-100">
 								{data.personas.length} Accounts
 							</div>
 							<div class="mt-1 text-[11px] text-slate-500">
@@ -361,9 +383,13 @@
 							</div>
 						</div>
 
-						<div class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs">
-							<div class="text-xs font-medium text-slate-400 uppercase">Today's Posts</div>
-							<div class="mt-1 text-sm font-bold text-slate-900">
+						<div
+							class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900"
+						>
+							<div class="text-xs font-medium text-slate-400 uppercase dark:text-slate-500">
+								Today's Posts
+							</div>
+							<div class="mt-1 text-sm font-bold text-slate-900 dark:text-slate-100">
 								{data.personas.reduce((sum, b) => sum + b.daily_posts, 0)} seeded
 							</div>
 							<div class="mt-1 text-[11px] text-slate-500">Max limit 3/day per bot</div>
@@ -374,11 +400,12 @@
 					<div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
 						<!-- Control 1: Master Status Switch -->
 						<div
-							class="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs"
+							class="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900"
 						>
 							<div>
 								<div class="flex items-center justify-between">
-									<span class="text-xs font-bold tracking-wider text-slate-400 uppercase"
+									<span
+										class="text-xs font-bold tracking-wider text-slate-400 uppercase dark:text-slate-500"
 										>Pipeline Status</span
 									>
 									{#if data.config?.enabled}
@@ -387,10 +414,10 @@
 										<PauseIcon class="size-4 text-amber-600" />
 									{/if}
 								</div>
-								<h3 class="mt-2 text-base font-bold text-slate-900">
+								<h3 class="mt-2 text-base font-bold text-slate-900 dark:text-slate-100">
 									{data.config?.enabled ? 'Running Normally' : 'Currently Paused'}
 								</h3>
-								<p class="mt-1 text-xs text-slate-500">
+								<p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
 									{data.config?.enabled
 										? 'The autonomous bot pipeline executes on schedule every 3 hours with breaking news from trusted feeds.'
 										: 'Automated runs are suspended. Bots will not post until resumed.'}
@@ -407,7 +434,7 @@
 									type="submit"
 									class="w-full rounded-xl px-4 py-2.5 text-xs font-semibold transition active:scale-95 {data
 										.config?.enabled
-										? 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+										? 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
 										: 'bg-emerald-600 text-white hover:bg-emerald-700'}"
 								>
 									{data.config?.enabled ? 'Pause Automated Posting' : 'Resume Automated Posting'}
@@ -417,19 +444,20 @@
 
 						<!-- Control 2: Schedule & Campaign End Timing -->
 						<div
-							class="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs"
+							class="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900"
 						>
 							<div>
 								<div class="flex items-center justify-between">
-									<span class="text-xs font-bold tracking-wider text-slate-400 uppercase"
+									<span
+										class="text-xs font-bold tracking-wider text-slate-400 uppercase dark:text-slate-500"
 										>Schedule Control</span
 									>
-									<CalendarIcon class="size-4 text-slate-400" />
+									<CalendarIcon class="size-4 text-slate-400 dark:text-slate-500" />
 								</div>
-								<h3 class="mt-2 truncate text-sm font-bold text-slate-900">
+								<h3 class="mt-2 truncate text-sm font-bold text-slate-900 dark:text-slate-100">
 									{campaign_end_display()}
 								</h3>
-								<p class="mt-1 text-xs text-slate-500">
+								<p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
 									Set a stop date, or cancel schedule to let bots post continuously.
 								</p>
 							</div>
@@ -440,21 +468,21 @@
 									<button
 										type="button"
 										onclick={() => preset_date(3)}
-										class="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
+										class="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
 									>
 										+3 Days
 									</button>
 									<button
 										type="button"
 										onclick={() => preset_date(7)}
-										class="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
+										class="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
 									>
 										+1 Week
 									</button>
 									<button
 										type="button"
 										onclick={() => preset_date(14)}
-										class="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-200"
+										class="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
 									>
 										+2 Weeks
 									</button>
@@ -466,7 +494,7 @@
 										name="end_date"
 										bind:value={custom_end_date}
 										required
-										class="w-full rounded-xl border border-slate-200 px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none"
+										class="w-full rounded-xl border border-slate-200 px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
 									/>
 									<button
 										type="submit"
@@ -491,17 +519,20 @@
 
 						<!-- Control 3: Manual News Post Trigger -->
 						<div
-							class="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs"
+							class="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900"
 						>
 							<div>
 								<div class="flex items-center justify-between">
-									<span class="text-xs font-bold tracking-wider text-slate-400 uppercase"
+									<span
+										class="text-xs font-bold tracking-wider text-slate-400 uppercase dark:text-slate-500"
 										>Immediate Trigger</span
 									>
 									<SparklesIcon class="size-4 text-indigo-500" />
 								</div>
-								<h3 class="mt-2 text-base font-bold text-slate-900">Run Single Cycle</h3>
-								<p class="mt-1 text-xs text-slate-500">
+								<h3 class="mt-2 text-base font-bold text-slate-900 dark:text-slate-100">
+									Run Single Cycle
+								</h3>
+								<p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
 									Fetches live news items, matches persona topic, and creates a realistic post
 									instantly.
 								</p>
@@ -526,7 +557,7 @@
 								<select
 									name="bot_id"
 									bind:value={selected_bot_id}
-									class="w-full rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none"
+									class="w-full rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
 								>
 									<option value="">🎲 Auto-pick least active bot</option>
 									{#each data.personas as bot (bot.id)}
@@ -560,14 +591,16 @@
 			<!-- TAB 2: BOT FLEET DIRECTORY                                  -->
 			<!-- ───────────────────────────────────────────────────────────── -->
 			{#if active_tab === 'fleet'}
-				<div class="space-y-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs">
+				<div
+					class="space-y-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900"
+				>
 					<!-- Directory Header with Controls -->
 					<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 						<div>
-							<h2 class="text-lg font-bold text-slate-900">
+							<h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">
 								Bot Fleet Directory ({filtered_personas().length} of {data.personas.length} Accounts)
 							</h2>
-							<p class="text-xs text-slate-500">
+							<p class="text-xs text-slate-500 dark:text-slate-400">
 								Manage account identities, unique writing styles, trusted RSS feeds, and personality
 								prompts.
 							</p>
@@ -577,24 +610,26 @@
 							<!-- Search Input -->
 							<div class="relative">
 								<SearchIcon
-									class="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400"
+									class="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500"
 								/>
 								<input
 									type="text"
 									bind:value={search_query}
 									placeholder="Search bots or topics..."
-									class="rounded-xl border border-slate-200 bg-slate-50/60 py-1.5 pr-3 pl-8 text-xs text-slate-800 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none"
+									class="rounded-xl border border-slate-200 bg-slate-50/60 py-1.5 pr-3 pl-8 text-xs text-slate-800 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:border-slate-100 dark:focus:bg-slate-900"
 								/>
 							</div>
 
 							<!-- View Mode Toggle (Table / Grid) -->
-							<div class="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-0.5">
+							<div
+								class="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-700 dark:bg-slate-800"
+							>
 								<button
 									type="button"
 									onclick={() => (fleet_view_mode = 'table')}
 									class="rounded-lg p-1.5 transition {fleet_view_mode === 'table'
-										? 'bg-white text-slate-900 shadow-2xs'
-										: 'text-slate-400 hover:text-slate-700'}"
+										? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-700 dark:text-slate-50'
+										: 'text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}"
 									title="Compact Table View (Scan all bots without scrolling)"
 									aria-label="Table View"
 								>
@@ -604,8 +639,8 @@
 									type="button"
 									onclick={() => (fleet_view_mode = 'grid')}
 									class="rounded-lg p-1.5 transition {fleet_view_mode === 'grid'
-										? 'bg-white text-slate-900 shadow-2xs'
-										: 'text-slate-400 hover:text-slate-700'}"
+										? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-700 dark:text-slate-50'
+										: 'text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}"
 									title="Grid Card View"
 									aria-label="Grid View"
 								>
@@ -616,7 +651,7 @@
 							<button
 								type="button"
 								onclick={() => (show_create_modal = true)}
-								class="flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-slate-800"
+								class="flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
 							>
 								<PlusIcon class="size-3.5" />
 								New Bot
@@ -625,7 +660,9 @@
 					</div>
 
 					<!-- Category Filters -->
-					<div class="flex flex-wrap items-center gap-1.5 border-b border-slate-100 pb-3 text-xs">
+					<div
+						class="flex flex-wrap items-center gap-1.5 border-b border-slate-100 pb-3 text-xs dark:border-slate-800"
+					>
 						{#each [{ id: 'all', label: 'All Bots' }, { id: 'tech', label: 'Tech & AI' }, { id: 'anime', label: 'Anime & Manga' }, { id: 'movie', label: 'Entertainment' }, { id: 'economic', label: 'Economics' }, { id: 'cafe', label: 'Coffee & Cafe' }, { id: 'custom', label: 'Custom Bots' }] as tab (tab.id)}
 							<button
 								type="button"
@@ -633,7 +670,7 @@
 								class="rounded-lg px-2.5 py-1 text-xs font-medium transition {selected_category ===
 								tab.id
 									? 'bg-slate-900 text-white'
-									: 'bg-slate-100 text-slate-600 hover:bg-slate-200'}"
+									: 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}"
 							>
 								{tab.label}
 							</button>
@@ -641,15 +678,19 @@
 					</div>
 
 					{#if filtered_personas().length === 0}
-						<div class="py-12 text-center text-xs text-slate-400">
+						<div class="py-12 text-center text-xs text-slate-400 dark:text-slate-500">
 							No bots found matching your search and filter criteria.
 						</div>
 					{:else if fleet_view_mode === 'table'}
 						<!-- High-Density Compact Table View -->
-						<div class="overflow-x-auto rounded-2xl border border-slate-200/80">
+						<div
+							class="overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-slate-800"
+						>
 							<table class="w-full text-left text-xs">
-								<thead class="bg-slate-50 font-bold text-slate-500 uppercase">
-									<tr class="border-b border-slate-200/80">
+								<thead
+									class="bg-slate-50 font-bold text-slate-500 uppercase dark:bg-slate-800 dark:text-slate-400"
+								>
+									<tr class="border-b border-slate-200/80 dark:border-slate-800">
 										<th class="py-3 pr-3 pl-4">Persona</th>
 										<th class="hidden px-3 py-3 md:table-cell">Focus Topics</th>
 										<th class="hidden px-3 py-3 sm:table-cell">Feeds</th>
@@ -657,9 +698,11 @@
 										<th class="py-3 pr-4 pl-3 text-right">Actions</th>
 									</tr>
 								</thead>
-								<tbody class="divide-y divide-slate-100 bg-white">
+								<tbody
+									class="divide-y divide-slate-100 bg-white dark:divide-slate-800 dark:bg-slate-900"
+								>
 									{#each filtered_personas() as bot (bot.id)}
-										<tr class="transition hover:bg-slate-50/70">
+										<tr class="transition hover:bg-slate-50/70 dark:hover:bg-slate-800/60">
 											<!-- Bot Profile -->
 											<td class="py-3 pr-3 pl-4">
 												<div class="flex items-center gap-2.5">
@@ -672,7 +715,9 @@
 													/>
 													<div class="min-w-0">
 														<div class="flex items-center gap-1.5">
-															<span class="truncate font-bold text-slate-900">{bot.name}</span>
+															<span class="truncate font-bold text-slate-900 dark:text-slate-100"
+																>{bot.name}</span
+															>
 															{#if bot.is_custom}
 																<span
 																	class="py-0.2 rounded bg-indigo-50 px-1 text-[9px] font-semibold text-indigo-700"
@@ -697,7 +742,7 @@
 												<div class="flex max-w-[220px] flex-wrap gap-1">
 													{#each (bot.hashtags || []).slice(0, 2) as tag (tag)}
 														<span
-															class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600"
+															class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300"
 														>
 															{tag}
 														</span>
@@ -708,7 +753,7 @@
 											<!-- Feeds -->
 											<td class="hidden px-3 py-3 sm:table-cell">
 												<span
-													class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600"
+													class="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
 												>
 													{(bot.feeds || []).length} feeds
 												</span>
@@ -716,7 +761,9 @@
 
 											<!-- Posts count -->
 											<td class="px-3 py-3">
-												<span class="font-bold text-slate-800">{bot.daily_posts}/3</span>
+												<span class="font-bold text-slate-800 dark:text-slate-100"
+													>{bot.daily_posts}/3</span
+												>
 												<span class="text-[10px] text-slate-400">({bot.total_posts} total)</span>
 											</td>
 
@@ -728,7 +775,7 @@
 														<button
 															type="submit"
 															title="Trigger post now"
-															class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 shadow-2xs hover:bg-slate-100"
+															class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 shadow-2xs hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
 														>
 															Post ⚡
 														</button>
@@ -738,7 +785,7 @@
 														type="button"
 														onclick={() => open_edit_modal(bot)}
 														title="Edit profile & prompt"
-														class="rounded-lg border border-slate-200 bg-white p-1 text-slate-600 shadow-2xs hover:bg-slate-50"
+														class="rounded-lg border border-slate-200 bg-white p-1 text-slate-600 shadow-2xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
 													>
 														<PencilIcon class="size-3.5" />
 													</button>
@@ -753,7 +800,7 @@
 																		e.preventDefault()
 																	}
 																}}
-																class="rounded-lg p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+																class="rounded-lg p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950 dark:hover:text-rose-400"
 															>
 																<TrashIcon class="size-3.5" />
 															</button>
@@ -771,7 +818,7 @@
 						<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
 							{#each filtered_personas() as bot (bot.id)}
 								<div
-									class="flex flex-col justify-between rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition hover:border-slate-300 hover:shadow-xs"
+									class="flex flex-col justify-between rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition hover:border-slate-300 hover:shadow-xs dark:border-slate-800 dark:bg-slate-800/50"
 								>
 									<div>
 										<div class="flex items-start justify-between gap-3">
@@ -785,7 +832,9 @@
 												/>
 												<div class="min-w-0">
 													<div class="flex items-center gap-1.5">
-														<span class="truncate text-xs font-bold text-slate-900">{bot.name}</span
+														<span
+															class="truncate text-xs font-bold text-slate-900 dark:text-slate-100"
+															>{bot.name}</span
 														>
 														{#if bot.is_custom}
 															<span
@@ -809,20 +858,20 @@
 												type="button"
 												onclick={() => open_edit_modal(bot)}
 												title="Edit Bot"
-												class="rounded-lg border border-slate-200 bg-white p-1.5 text-slate-600 shadow-2xs hover:bg-slate-50"
+												class="rounded-lg border border-slate-200 bg-white p-1.5 text-slate-600 shadow-2xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
 											>
 												<PencilIcon class="size-3.5" />
 											</button>
 										</div>
 
-										<p class="mt-2.5 line-clamp-2 text-xs text-slate-600">
+										<p class="mt-2.5 line-clamp-2 text-xs text-slate-600 dark:text-slate-400">
 											{bot.bio}
 										</p>
 
 										<div class="mt-2.5 flex flex-wrap gap-1">
 											{#each (bot.feeds || []).slice(0, 2) as f (f)}
 												<span
-													class="max-w-[180px] truncate rounded border border-slate-200/60 bg-white px-1.5 py-0.5 text-[10px] font-medium text-slate-500"
+													class="max-w-[180px] truncate rounded border border-slate-200/60 bg-white px-1.5 py-0.5 text-[10px] font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-800"
 												>
 													{f.replace(/https?:\/\/(www\.)?/, '').split('/')[0]}
 												</span>
@@ -834,10 +883,13 @@
 									</div>
 
 									<div
-										class="mt-4 flex items-center justify-between border-t border-slate-200/60 pt-2.5"
+										class="mt-4 flex items-center justify-between border-t border-slate-200/60 pt-2.5 dark:border-slate-800"
 									>
 										<div class="text-[10px] text-slate-500">
-											<span class="font-bold text-slate-800">{bot.daily_posts}/3</span> today • {bot.total_posts}
+											<span class="font-bold text-slate-800 dark:text-slate-100"
+												>{bot.daily_posts}/3</span
+											>
+											today • {bot.total_posts}
 											total
 										</div>
 
@@ -847,7 +899,7 @@
 												<button
 													type="submit"
 													title="Post immediately"
-													class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-2xs hover:bg-slate-100"
+													class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-2xs hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
 												>
 													Post ⚡
 												</button>
@@ -863,7 +915,7 @@
 																e.preventDefault()
 															}
 														}}
-														class="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+														class="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950 dark:hover:text-rose-400"
 													>
 														<TrashIcon class="size-3.5" />
 													</button>
@@ -882,14 +934,16 @@
 			<!-- TAB 3: RECENT POSTS & ACTIVITY                              -->
 			<!-- ───────────────────────────────────────────────────────────── -->
 			{#if active_tab === 'posts'}
-				<div class="space-y-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs">
+				<div
+					class="space-y-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900"
+				>
 					<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 						<div>
-							<h2 class="text-lg font-bold text-slate-900">
+							<h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">
 								Recent Automated Posts ({filtered_recent_posts().length} of {data.recent_posts
 									.length})
 							</h2>
-							<p class="text-xs text-slate-500">
+							<p class="text-xs text-slate-500 dark:text-slate-400">
 								Real-time monitor of live posts seeded by autonomous personas with link previews.
 							</p>
 						</div>
@@ -898,20 +952,20 @@
 							<!-- Search Input -->
 							<div class="relative">
 								<SearchIcon
-									class="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400"
+									class="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500"
 								/>
 								<input
 									type="text"
 									bind:value={post_search}
 									placeholder="Search posts..."
-									class="rounded-xl border border-slate-200 bg-slate-50/60 py-1.5 pr-3 pl-8 text-xs text-slate-800 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none"
+									class="rounded-xl border border-slate-200 bg-slate-50/60 py-1.5 pr-3 pl-8 text-xs text-slate-800 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:border-slate-100 dark:focus:bg-slate-900"
 								/>
 							</div>
 
 							<!-- Filter by bot -->
 							<select
 								bind:value={post_bot_filter}
-								class="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none"
+								class="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
 							>
 								<option value="all">All Bots</option>
 								{#each data.personas as bot (bot.id)}
@@ -922,9 +976,11 @@
 					</div>
 
 					{#if filtered_recent_posts().length === 0}
-						<div class="py-12 text-center text-xs text-slate-400">No automated posts found.</div>
+						<div class="py-12 text-center text-xs text-slate-400 dark:text-slate-500">
+							No automated posts found.
+						</div>
 					{:else}
-						<div class="divide-y divide-slate-100">
+						<div class="divide-y divide-slate-100 dark:divide-slate-800">
 							{#each filtered_recent_posts() as item (item.id)}
 								{@const first_link = extract_first_url(item.content)}
 								<div class="flex items-start justify-between gap-4 py-4">
@@ -938,14 +994,18 @@
 										/>
 										<div class="space-y-1">
 											<div class="flex items-center gap-1.5 text-xs">
-												<span class="font-bold text-slate-900">{item.user_name}</span>
+												<span class="font-bold text-slate-900 dark:text-slate-100"
+													>{item.user_name}</span
+												>
 												<span class="text-slate-400">@{item.user_username}</span>
 												<span class="text-slate-400">•</span>
 												<span class="text-slate-400">{relative_time(item.created_at)}</span>
 											</div>
 
 											{#if parse_content(item.content, { exclude_url: first_link }).length > 0}
-												<div class="text-xs leading-relaxed whitespace-pre-wrap text-slate-700">
+												<div
+													class="text-xs leading-relaxed whitespace-pre-wrap text-slate-700 dark:text-slate-300"
+												>
 													{#each parse_content( item.content, { exclude_url: first_link } ) as segment, i (i)}
 														{#if segment.type === 'tag'}
 															<a
@@ -981,7 +1041,7 @@
 										<a
 											href={resolve('/posts/[id]', { id: item.id })}
 											target="_blank"
-											class="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+											class="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
 										>
 											View
 										</a>
@@ -991,7 +1051,7 @@
 											<button
 												type="submit"
 												aria-label="Delete bot post"
-												class="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
+												class="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950 dark:hover:text-rose-400"
 											>
 												<TrashIcon class="size-3.5" />
 											</button>
@@ -1012,19 +1072,23 @@
 			class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs"
 		>
 			<div
-				class="max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl"
+				class="max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900"
 			>
-				<div class="flex items-center justify-between border-b border-slate-100 pb-3">
+				<div
+					class="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800"
+				>
 					<div>
-						<h3 class="text-base font-bold text-slate-900">Create New Bot Persona</h3>
-						<p class="text-xs text-slate-500">
+						<h3 class="text-base font-bold text-slate-900 dark:text-slate-100">
+							Create New Bot Persona
+						</h3>
+						<p class="text-xs text-slate-500 dark:text-slate-400">
 							Configure a new automated account with custom feeds and personality.
 						</p>
 					</div>
 					<button
 						type="button"
 						onclick={() => (show_create_modal = false)}
-						class="rounded-full p-1.5 text-slate-400 hover:bg-slate-100"
+						class="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
 					>
 						<XIcon class="size-4" />
 					</button>
@@ -1045,7 +1109,9 @@
 				>
 					<div class="grid grid-cols-2 gap-3">
 						<div>
-							<label for="create_name" class="block text-xs font-bold text-slate-700"
+							<label
+								for="create_name"
+								class="block text-xs font-bold text-slate-700 dark:text-slate-200"
 								>Display Name</label
 							>
 							<input
@@ -1055,11 +1121,13 @@
 								bind:value={create_name}
 								required
 								placeholder="e.g. Maya Tanaka"
-								class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+								class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
 							/>
 						</div>
 						<div>
-							<label for="create_username" class="block text-xs font-bold text-slate-700"
+							<label
+								for="create_username"
+								class="block text-xs font-bold text-slate-700 dark:text-slate-200"
 								>Username / Handle</label
 							>
 							<input
@@ -1069,13 +1137,15 @@
 								bind:value={create_username}
 								required
 								placeholder="e.g. maya_tech"
-								class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+								class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
 							/>
 						</div>
 					</div>
 
 					<div>
-						<label for="create_bio" class="block text-xs font-bold text-slate-700"
+						<label
+							for="create_bio"
+							class="block text-xs font-bold text-slate-700 dark:text-slate-200"
 							>Bio Description</label
 						>
 						<textarea
@@ -1084,12 +1154,14 @@
 							bind:value={create_bio}
 							rows={2}
 							placeholder="Short profile description of what this bot posts about..."
-							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
 						></textarea>
 					</div>
 
 					<div>
-						<label for="create_image" class="block text-xs font-bold text-slate-700"
+						<label
+							for="create_image"
+							class="block text-xs font-bold text-slate-700 dark:text-slate-200"
 							>Avatar Image URL (Optional)</label
 						>
 						<input
@@ -1098,12 +1170,14 @@
 							name="image"
 							bind:value={create_image}
 							placeholder="https://api.dicebear.com/7.x/notionists/svg?seed=maya"
-							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
 						/>
 					</div>
 
 					<div>
-						<span class="block text-xs font-bold text-slate-700">Profile Banner Theme</span>
+						<span class="block text-xs font-bold text-slate-700 dark:text-slate-200"
+							>Profile Banner Theme</span
+						>
 						<div class="mt-1.5 flex flex-wrap gap-2">
 							{#each banner_colors as color (color.id)}
 								<label class="flex cursor-pointer items-center gap-1.5 text-xs">
@@ -1119,14 +1193,16 @@
 											? 'border-indigo-600 ring-2 ring-indigo-200'
 											: 'border-white'}"
 									></span>
-									<span class="text-[11px] text-slate-600">{color.label}</span>
+									<span class="text-[11px] text-slate-600 dark:text-slate-400">{color.label}</span>
 								</label>
 							{/each}
 						</div>
 					</div>
 
 					<div>
-						<label for="create_tone_prompt" class="block text-xs font-bold text-slate-700"
+						<label
+							for="create_tone_prompt"
+							class="block text-xs font-bold text-slate-700 dark:text-slate-200"
 							>Tone & Personality Prompt</label
 						>
 						<textarea
@@ -1136,12 +1212,14 @@
 							rows={3}
 							required
 							placeholder="Describe their voice, emojis, attitude, and how they react to news..."
-							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
 						></textarea>
 					</div>
 
 					<div>
-						<label for="create_feeds" class="block text-xs font-bold text-slate-700"
+						<label
+							for="create_feeds"
+							class="block text-xs font-bold text-slate-700 dark:text-slate-200"
 							>RSS / Atom News Feeds (one per line)</label
 						>
 						<textarea
@@ -1151,7 +1229,7 @@
 							rows={3}
 							required
 							placeholder="https://dev.to/feed"
-							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
 						></textarea>
 
 						<div class="mt-2">
@@ -1161,7 +1239,7 @@
 									<button
 										type="button"
 										onclick={() => add_feed_preset(preset.url, 'create')}
-										class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-600 hover:bg-slate-100"
+										class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
 									>
 										+ {preset.name}
 									</button>
@@ -1171,7 +1249,9 @@
 					</div>
 
 					<div>
-						<label for="create_hashtags" class="block text-xs font-bold text-slate-700"
+						<label
+							for="create_hashtags"
+							class="block text-xs font-bold text-slate-700 dark:text-slate-200"
 							>Hashtags (comma separated)</label
 						>
 						<input
@@ -1180,21 +1260,23 @@
 							name="hashtags"
 							bind:value={create_hashtags}
 							placeholder="#tech, #coding, #vibecoding"
-							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
 						/>
 					</div>
 
-					<div class="flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
+					<div
+						class="flex items-center justify-end gap-2 border-t border-slate-100 pt-3 dark:border-slate-800"
+					>
 						<button
 							type="button"
 							onclick={() => (show_create_modal = false)}
-							class="rounded-xl px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100"
+							class="rounded-xl px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
 						>
 							Cancel
 						</button>
 						<button
 							type="submit"
-							class="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
+							class="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
 						>
 							Create Bot Persona
 						</button>
@@ -1210,19 +1292,23 @@
 			class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs"
 		>
 			<div
-				class="max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl"
+				class="max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900"
 			>
-				<div class="flex items-center justify-between border-b border-slate-100 pb-3">
+				<div
+					class="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800"
+				>
 					<div>
-						<h3 class="text-base font-bold text-slate-900">Edit Bot Profile & Identity</h3>
-						<p class="text-xs text-slate-500">
+						<h3 class="text-base font-bold text-slate-900 dark:text-slate-100">
+							Edit Bot Profile & Identity
+						</h3>
+						<p class="text-xs text-slate-500 dark:text-slate-400">
 							Changes immediately update the database and public profile.
 						</p>
 					</div>
 					<button
 						type="button"
 						onclick={() => (editing_bot = null)}
-						class="rounded-full p-1.5 text-slate-400 hover:bg-slate-100"
+						class="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
 					>
 						<XIcon class="size-4" />
 					</button>
@@ -1245,7 +1331,9 @@
 
 					<div class="grid grid-cols-2 gap-3">
 						<div>
-							<label for="edit_name" class="block text-xs font-bold text-slate-700"
+							<label
+								for="edit_name"
+								class="block text-xs font-bold text-slate-700 dark:text-slate-200"
 								>Display Name</label
 							>
 							<input
@@ -1254,11 +1342,13 @@
 								name="name"
 								bind:value={edit_name}
 								required
-								class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+								class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
 							/>
 						</div>
 						<div>
-							<label for="edit_username" class="block text-xs font-bold text-slate-700"
+							<label
+								for="edit_username"
+								class="block text-xs font-bold text-slate-700 dark:text-slate-200"
 								>Username / Handle</label
 							>
 							<input
@@ -1267,24 +1357,28 @@
 								name="username"
 								bind:value={edit_username}
 								required
-								class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+								class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
 							/>
 						</div>
 					</div>
 
 					<div>
-						<label for="edit_bio" class="block text-xs font-bold text-slate-700">Bio</label>
+						<label for="edit_bio" class="block text-xs font-bold text-slate-700 dark:text-slate-200"
+							>Bio</label
+						>
 						<textarea
 							id="edit_bio"
 							name="bio"
 							bind:value={edit_bio}
 							rows={2}
-							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
 						></textarea>
 					</div>
 
 					<div>
-						<label for="edit_image" class="block text-xs font-bold text-slate-700"
+						<label
+							for="edit_image"
+							class="block text-xs font-bold text-slate-700 dark:text-slate-200"
 							>Avatar Image URL</label
 						>
 						<input
@@ -1292,12 +1386,14 @@
 							type="url"
 							name="image"
 							bind:value={edit_image}
-							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
 						/>
 					</div>
 
 					<div>
-						<span class="block text-xs font-bold text-slate-700">Profile Banner Theme</span>
+						<span class="block text-xs font-bold text-slate-700 dark:text-slate-200"
+							>Profile Banner Theme</span
+						>
 						<div class="mt-1.5 flex flex-wrap gap-2">
 							{#each banner_colors as color (color.id)}
 								<label class="flex cursor-pointer items-center gap-1.5 text-xs">
@@ -1313,14 +1409,16 @@
 											? 'border-indigo-600 ring-2 ring-indigo-200'
 											: 'border-white'}"
 									></span>
-									<span class="text-[11px] text-slate-600">{color.label}</span>
+									<span class="text-[11px] text-slate-600 dark:text-slate-400">{color.label}</span>
 								</label>
 							{/each}
 						</div>
 					</div>
 
 					<div>
-						<label for="edit_tone_prompt" class="block text-xs font-bold text-slate-700"
+						<label
+							for="edit_tone_prompt"
+							class="block text-xs font-bold text-slate-700 dark:text-slate-200"
 							>Tone & Personality Prompt</label
 						>
 						<textarea
@@ -1328,12 +1426,14 @@
 							name="tone_prompt"
 							bind:value={edit_tone_prompt}
 							rows={3}
-							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
 						></textarea>
 					</div>
 
 					<div>
-						<label for="edit_feeds" class="block text-xs font-bold text-slate-700"
+						<label
+							for="edit_feeds"
+							class="block text-xs font-bold text-slate-700 dark:text-slate-200"
 							>News Feeds (one per line)</label
 						>
 						<textarea
@@ -1341,7 +1441,7 @@
 							name="feeds"
 							bind:value={edit_feeds}
 							rows={3}
-							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
 						></textarea>
 
 						<div class="mt-2">
@@ -1351,7 +1451,7 @@
 									<button
 										type="button"
 										onclick={() => add_feed_preset(preset.url, 'edit')}
-										class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-600 hover:bg-slate-100"
+										class="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
 									>
 										+ {preset.name}
 									</button>
@@ -1361,7 +1461,9 @@
 					</div>
 
 					<div>
-						<label for="edit_hashtags" class="block text-xs font-bold text-slate-700"
+						<label
+							for="edit_hashtags"
+							class="block text-xs font-bold text-slate-700 dark:text-slate-200"
 							>Hashtags (comma separated)</label
 						>
 						<input
@@ -1369,21 +1471,23 @@
 							type="text"
 							name="hashtags"
 							bind:value={edit_hashtags}
-							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
 						/>
 					</div>
 
-					<div class="flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
+					<div
+						class="flex items-center justify-end gap-2 border-t border-slate-100 pt-3 dark:border-slate-800"
+					>
 						<button
 							type="button"
 							onclick={() => (editing_bot = null)}
-							class="rounded-xl px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100"
+							class="rounded-xl px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
 						>
 							Cancel
 						</button>
 						<button
 							type="submit"
-							class="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
+							class="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
 						>
 							Save Bot Settings
 						</button>

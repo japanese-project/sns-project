@@ -102,11 +102,11 @@
 			{#each [0, 1, 2] as n (n)}
 				<div class="h-32 animate-pulse px-2 py-5">
 					<div class="flex gap-3">
-						<div class="size-11 rounded-full bg-slate-200/80"></div>
+						<div class="size-11 rounded-full bg-slate-200/80 dark:bg-slate-700/80"></div>
 						<div class="flex-1 space-y-2 py-1">
-							<div class="h-3.5 w-1/3 rounded bg-slate-200/80"></div>
-							<div class="h-4 w-4/5 rounded bg-slate-200/60"></div>
-							<div class="h-4 w-2/3 rounded bg-slate-200/60"></div>
+							<div class="h-3.5 w-1/3 rounded bg-slate-200/80 dark:bg-slate-700/80"></div>
+							<div class="h-4 w-4/5 rounded bg-slate-200/60 dark:bg-slate-700/60"></div>
+							<div class="h-4 w-2/3 rounded bg-slate-200/60 dark:bg-slate-700/60"></div>
 						</div>
 					</div>
 				</div>
@@ -124,7 +124,7 @@
 		</div>
 	{:else if posts.length === 0}
 		<div class="px-4 py-12 text-center">
-			<p class="text-sm text-slate-500">{empty_message}</p>
+			<p class="text-sm text-slate-500 dark:text-slate-400">{empty_message}</p>
 			{#if accepts_new_posts}
 				<button
 					type="button"
@@ -152,15 +152,17 @@
 					<button
 						type="button"
 						onclick={() => load(false)}
-						class="rounded-full bg-white px-5 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50"
+						class="rounded-full bg-white px-5 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-800"
 						>Try again</button
 					>
 				{:else}
-					<span class="text-xs text-slate-400">{loading_more ? 'Loading…' : ''}</span>
+					<span class="text-xs text-slate-400 dark:text-slate-500"
+						>{loading_more ? 'Loading…' : ''}</span
+					>
 				{/if}
 			</div>
 		{:else}
-			<p class="text-center text-xs text-slate-400">You're all caught up.</p>
+			<p class="text-center text-xs text-slate-400 dark:text-slate-500">You're all caught up.</p>
 		{/if}
 	{/if}
 </div>

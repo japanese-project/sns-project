@@ -90,7 +90,7 @@
 		<div class="relative mx-auto max-w-3xl">
 			<form onsubmit={submit} role="search" class="relative">
 				<SearchIcon
-					class="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-slate-400"
+					class="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500"
 				/>
 				<input
 					type="search"
@@ -99,7 +99,7 @@
 					maxlength={MAX_SEARCH_LENGTH}
 					placeholder="Search people, tags, or topics…"
 					aria-label="Search"
-					class="w-full rounded-2xl border border-slate-200/80 bg-white py-2.5 pr-9 pl-10 text-sm text-slate-900 shadow-xs transition outline-none placeholder:text-slate-400 focus:border-black focus:ring-1 focus:ring-black [&::-webkit-search-cancel-button]:appearance-none"
+					class="w-full rounded-2xl border border-slate-200/80 bg-white py-2.5 pr-9 pl-10 text-sm text-slate-900 shadow-xs transition outline-none placeholder:text-slate-400 focus:border-black focus:ring-1 focus:ring-black dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-100 dark:focus:ring-slate-100 [&::-webkit-search-cancel-button]:appearance-none"
 				/>
 				{#if input}
 					<button
@@ -111,7 +111,7 @@
 								search_for('')
 							}
 						}}
-						class="absolute top-1/2 right-3 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+						class="absolute top-1/2 right-3 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
 					>
 						<XIcon class="size-3.5" />
 					</button>
@@ -135,7 +135,10 @@
 		</div>
 
 		{#if data.error}
-			<p class="mx-auto max-w-2xl rounded-2xl bg-rose-50 p-4 text-sm text-rose-700" role="alert">
+			<p
+				class="mx-auto max-w-2xl rounded-2xl bg-rose-50 p-4 text-sm text-rose-700 dark:bg-rose-950 dark:text-rose-300"
+				role="alert"
+			>
 				{data.error}
 			</p>
 		{:else if !data.results && data.discovery}
@@ -147,7 +150,7 @@
 			<div class="custom-scrollbar flex items-center gap-2 overflow-x-auto pb-1">
 				<!-- Time Window Tabs: Today / Week / Month -->
 				<div
-					class="inline-flex shrink-0 items-center rounded-full bg-slate-100 p-0.5 text-xs font-medium"
+					class="inline-flex shrink-0 items-center rounded-full bg-slate-100 p-0.5 text-xs font-medium dark:bg-slate-800"
 					role="tablist"
 					aria-label="Trending time window"
 				>
@@ -159,15 +162,15 @@
 							onclick={() => set_period(p)}
 							class="rounded-full px-2.5 py-1 text-[11px] font-semibold transition {data.period ===
 							p
-								? 'bg-white text-slate-900 shadow-xs'
-								: 'text-slate-500 hover:text-slate-900'}"
+								? 'bg-white text-slate-900 shadow-xs dark:bg-slate-700 dark:text-slate-50'
+								: 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
 						>
 							{period_labels[p]}
 						</button>
 					{/each}
 				</div>
 
-				<div class="h-4 w-px shrink-0 bg-slate-200"></div>
+				<div class="h-4 w-px shrink-0 bg-slate-200 dark:bg-slate-700"></div>
 
 				<!-- Trending Topic Chips -->
 				{#each data.discovery.topics as item (typeof item === 'string' ? item : item.tag)}
@@ -176,13 +179,13 @@
 					<button
 						type="button"
 						onclick={() => search_for(`#${tag_name}`)}
-						class="group flex shrink-0 items-center gap-1 rounded-full border border-slate-200/80 bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+						class="group flex shrink-0 items-center gap-1 rounded-full border border-slate-200/80 bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-100"
 					>
 						<span class="text-indigo-600">#</span>
 						<span>{tag_name}</span>
 						{#if post_count && post_count > 1}
 							<span
-								class="py-0.2 rounded-full bg-slate-100 px-1.5 text-[10px] font-normal text-slate-500"
+								class="py-0.2 rounded-full bg-slate-100 px-1.5 text-[10px] font-normal text-slate-500 dark:bg-slate-700 dark:text-slate-300"
 							>
 								{post_count}
 							</span>
@@ -194,10 +197,12 @@
 			<!-- Compact Suggested Creators Carousel -->
 			{#if data.discovery.suggested_users.length > 0}
 				<div class="space-y-2">
-					<div class="flex items-center justify-between px-1 text-slate-700">
+					<div class="flex items-center justify-between px-1 text-slate-700 dark:text-slate-300">
 						<div class="flex items-center gap-1.5">
 							<SparklesIcon class="size-3.5 text-amber-500" />
-							<span class="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+							<span
+								class="text-[11px] font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400"
+							>
 								Suggested Creators
 							</span>
 						</div>
@@ -213,22 +218,26 @@
 
 			<!-- Pinterest / Instagram Style Multi-Column Grid Header & Content -->
 			<div class="space-y-3 pt-1">
-				<div class="flex items-center justify-between px-1 text-slate-700">
+				<div class="flex items-center justify-between px-1 text-slate-700 dark:text-slate-300">
 					<div class="flex items-center gap-2">
 						<CompassIcon class="size-4 text-indigo-600" />
-						<h2 class="text-xs font-bold tracking-wider text-slate-500 uppercase">
+						<h2
+							class="text-xs font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400"
+						>
 							Explore Content ({data.discovery.posts.length})
 						</h2>
 					</div>
 
 					<!-- View Mode Switch: Masonry Grid vs Single Feed -->
-					<div class="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-0.5">
+					<div
+						class="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-700 dark:bg-slate-800"
+					>
 						<button
 							type="button"
 							onclick={() => (view_mode = 'masonry')}
 							class="rounded-lg p-1.5 transition {view_mode === 'masonry'
-								? 'bg-white text-slate-900 shadow-2xs'
-								: 'text-slate-400 hover:text-slate-700'}"
+								? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-700 dark:text-slate-50'
+								: 'text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}"
 							title="Pinterest / Instagram Masonry Grid"
 							aria-label="Masonry Grid View"
 						>
@@ -238,8 +247,8 @@
 							type="button"
 							onclick={() => (view_mode = 'feed')}
 							class="rounded-lg p-1.5 transition {view_mode === 'feed'
-								? 'bg-white text-slate-900 shadow-2xs'
-								: 'text-slate-400 hover:text-slate-700'}"
+								? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-700 dark:text-slate-50'
+								: 'text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}"
 							title="Standard Single Feed"
 							aria-label="Feed View"
 						>
@@ -274,7 +283,9 @@
 			<!-- Matching People Carousel -->
 			{#if data.results.users.length > 0}
 				<div class="space-y-2">
-					<h3 class="px-1 text-xs font-bold tracking-wider text-slate-500 uppercase">
+					<h3
+						class="px-1 text-xs font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400"
+					>
 						People Matching “{data.query}” ({data.results.users.length})
 					</h3>
 					<div class="custom-scrollbar flex gap-3 overflow-x-auto pb-1">
@@ -287,19 +298,21 @@
 
 			<!-- Matching Posts in Pinterest / Instagram Multi-Column Grid -->
 			<div class="space-y-3 pt-2">
-				<div class="flex items-center justify-between px-1 text-slate-700">
-					<h2 class="text-xs font-bold tracking-wider text-slate-500 uppercase">
+				<div class="flex items-center justify-between px-1 text-slate-700 dark:text-slate-300">
+					<h2 class="text-xs font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400">
 						Posts Matching “{data.query}” ({posts.length})
 					</h2>
 
 					<!-- View Mode Switch -->
-					<div class="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-0.5">
+					<div
+						class="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-700 dark:bg-slate-800"
+					>
 						<button
 							type="button"
 							onclick={() => (view_mode = 'masonry')}
 							class="rounded-lg p-1.5 transition {view_mode === 'masonry'
-								? 'bg-white text-slate-900 shadow-2xs'
-								: 'text-slate-400 hover:text-slate-700'}"
+								? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-700 dark:text-slate-50'
+								: 'text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}"
 							title="Pinterest / Instagram Masonry Grid"
 							aria-label="Masonry Grid View"
 						>
@@ -309,8 +322,8 @@
 							type="button"
 							onclick={() => (view_mode = 'feed')}
 							class="rounded-lg p-1.5 transition {view_mode === 'feed'
-								? 'bg-white text-slate-900 shadow-2xs'
-								: 'text-slate-400 hover:text-slate-700'}"
+								? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-700 dark:text-slate-50'
+								: 'text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}"
 							title="Standard Single Feed"
 							aria-label="Feed View"
 						>
@@ -321,7 +334,7 @@
 
 				{#if posts.length === 0}
 					<div
-						class="rounded-2xl border border-slate-200/60 bg-white p-8 text-center text-sm text-slate-500"
+						class="rounded-2xl border border-slate-200/60 bg-white p-8 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400"
 					>
 						No posts match “{data.query}”.
 					</div>
@@ -348,7 +361,7 @@
 							type="button"
 							onclick={load_more}
 							disabled={loading_more}
-							class="rounded-full border border-slate-200 bg-white px-6 py-2.5 text-xs font-bold text-slate-800 shadow-xs transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+							class="rounded-full border border-slate-200 bg-white px-6 py-2.5 text-xs font-bold text-slate-800 shadow-xs transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-700"
 						>
 							{loading_more ? 'Loading more content…' : 'Load more results'}
 						</button>

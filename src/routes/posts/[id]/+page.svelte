@@ -19,7 +19,7 @@
 		<div class="mb-4">
 			<a
 				href={resolve('/')}
-				class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 transition hover:text-slate-900"
+				class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
 			>
 				← Back to feed
 			</a>
