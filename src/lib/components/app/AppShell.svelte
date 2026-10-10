@@ -25,6 +25,7 @@
 	import { t } from '$lib/i18n'
 	import Avatar from './Avatar.svelte'
 	import Composer from './Composer.svelte'
+	import ConfirmDialog from './ConfirmDialog.svelte'
 	import LanguageSelect from './LanguageSelect.svelte'
 	import OnboardingModal from './OnboardingModal.svelte'
 	import ThemeSwitcher from '../ThemeSwitcher.svelte'

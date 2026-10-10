@@ -208,6 +208,7 @@ describe('Profile Page Header & Customization', () => {
 		render(ProfilePage, {
 			data: {
 				session: null,
+				locale: 'en',
 				user: current_user,
 				profile: mock_self_profile,
 			},
@@ -236,6 +237,7 @@ describe('Profile Page Header & Customization', () => {
 		render(ProfilePage, {
 			data: {
 				session: null,
+				locale: 'en',
 				user: current_user,
 				profile: mock_self_profile,
 			},
