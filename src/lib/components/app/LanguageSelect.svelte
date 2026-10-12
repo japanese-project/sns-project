@@ -150,7 +150,7 @@
 		role="group"
 		aria-label={$t('language.label')}
 		aria-busy={switching}
-		class="inline-flex items-center rounded-full bg-slate-100 p-0.5 text-[10px] font-semibold"
+		class="inline-flex items-center rounded-full bg-slate-100 p-0.5 text-[10px] font-semibold dark:bg-slate-800"
 	>
 		{#each supported_locales as option (option.code)}
 			<button
@@ -159,8 +159,8 @@
 				aria-pressed={active === option.code}
 				onclick={() => choose(option.code)}
 				class="rounded-full px-2 py-0.5 transition {active === option.code
-					? 'bg-white text-slate-900 shadow-xs'
-					: 'text-slate-500 hover:text-slate-900'}"
+					? 'bg-white text-slate-900 shadow-xs dark:bg-slate-700 dark:text-slate-50'
+					: 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'}"
 			>
 				{option.code === 'en' ? 'EN' : option.name}
 			</button>

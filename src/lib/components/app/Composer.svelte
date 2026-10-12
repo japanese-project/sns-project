@@ -198,7 +198,7 @@
 	<form
 		onsubmit={submit}
 		aria-label={$t('composer.label')}
-		class="flex max-h-[90vh] w-full max-w-[600px] flex-col overflow-hidden rounded-t-[2rem] bg-white shadow-2xl transition-transform sm:max-h-[85vh] sm:rounded-3xl"
+		class="flex max-h-[90vh] w-full max-w-[600px] flex-col overflow-hidden rounded-t-[2rem] bg-white shadow-2xl transition-transform sm:max-h-[85vh] sm:rounded-3xl dark:bg-slate-900"
 	>
 		<!-- Header -->
 		<div
@@ -213,12 +213,14 @@
 				{$t('composer.cancel')}
 			</button>
 
-			<h2 class="text-[15px] font-bold tracking-tight text-slate-900">{$t('composer.title')}</h2>
+			<h2 class="text-[15px] font-bold tracking-tight text-slate-900 dark:text-slate-100">
+				{$t('composer.title')}
+			</h2>
 
 			<button
 				type="submit"
 				disabled={invalid || submitting}
-				class="rounded-full bg-slate-900 px-5 py-1.5 text-sm font-bold text-white shadow-sm transition enabled:hover:bg-black enabled:active:scale-95 disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-slate-700 dark:disabled:text-slate-500"
+				class="rounded-full bg-slate-900 px-5 py-1.5 text-sm font-bold text-white shadow-sm transition enabled:hover:bg-black enabled:active:scale-95 disabled:bg-slate-200 disabled:text-slate-400 dark:bg-slate-100 dark:text-slate-900 dark:enabled:hover:bg-white dark:disabled:bg-slate-700 dark:disabled:text-slate-500"
 			>
 				{submitting ? $t('composer.posting') : $t('composer.post')}
 			</button>
@@ -255,7 +257,7 @@
 						rows="4"
 						placeholder={$t('composer.placeholder')}
 						aria-label={$t('composer.post_text')}
-						class="w-full resize-none border-0 bg-transparent p-0 text-[17px] leading-relaxed text-slate-900 placeholder:text-slate-400 focus:ring-0"
+						class="w-full resize-none border-0 bg-transparent p-0 text-[17px] leading-relaxed text-slate-900 placeholder:text-slate-400 focus:ring-0 dark:text-slate-100 dark:placeholder:text-slate-500"
 					></textarea>
 
 					<!-- Image Preview -->
@@ -264,7 +266,7 @@
 							<img
 								src={image_preview}
 								alt={$t('composer.attached_media')}
-								class="max-h-[320px] max-w-full rounded-2xl border border-slate-100 object-contain shadow-xs"
+								class="max-h-[320px] max-w-full rounded-2xl border border-slate-100 object-contain shadow-xs dark:border-slate-800"
 							/>
 							<button
 								type="button"
@@ -300,7 +302,7 @@
 			<div class="flex items-center justify-between">
 				<div class="flex items-center gap-2">
 					<label
-						class="flex size-9 cursor-pointer items-center justify-center rounded-full text-indigo-500 transition hover:bg-indigo-50 hover:text-indigo-600 active:scale-95 dark:hover:bg-indigo-950"
+						class="flex size-9 cursor-pointer items-center justify-center rounded-full text-indigo-500 transition hover:bg-indigo-50 hover:text-indigo-600 active:scale-95 dark:hover:bg-indigo-950 dark:hover:text-indigo-400"
 					>
 						<ImageIcon class="size-[22px]" />
 						<span class="sr-only">{$t('composer.add_image')}</span>
@@ -334,10 +336,10 @@
 					<div
 						class="flex size-8 items-center justify-center rounded-full bg-white text-[11px] font-bold shadow-xs ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700 {remaining <
 						0
-							? 'text-rose-600 ring-rose-200'
+							? 'text-rose-600 ring-rose-200 dark:ring-rose-900'
 							: remaining <= 50
-								? 'text-amber-500 ring-amber-200'
-								: 'text-slate-400'}"
+								? 'text-amber-500 ring-amber-200 dark:ring-amber-900'
+								: 'text-slate-400 dark:text-slate-500'}"
 						aria-live="polite"
 					>
 						{remaining}

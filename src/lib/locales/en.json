@@ -13,7 +13,8 @@
 		"load_more": "Load more",
 		"remove": "Remove",
 		"add": "Add",
-		"you": "You"
+		"you": "You",
+		"confirm": "Confirm"
 	},
 	"time": {
 		"just_now": "just now",
@@ -41,6 +42,13 @@
 		"label": "Language",
 		"change": "Change language"
 	},
+	"theme": {
+		"label": "Theme: {mode}",
+		"activate_to_change": "Theme: {mode}. Activate to change.",
+		"light": "Light",
+		"dark": "Dark",
+		"system": "System"
+	},
 	"login": {
 		"title": "Sign in · Loop",
 		"description": "Sign in to Loop and reconnect with the people and conversations that matter.",
@@ -62,7 +70,14 @@
 		"privacy_policy": "Privacy Policy",
 		"error_google": "Unable to connect to Google. Please try again.",
 		"error_rate_limited": "Too many attempts. Please wait a moment and try again.",
+		"show_password": "Show password",
+		"hide_password": "Hide password",
 		"brand_home": "Loop home"
+	},
+	"sign_out": {
+		"title": "Sign out?",
+		"message": "You'll need to sign in again to access your account.",
+		"confirm": "Sign out"
 	},
 	"home": {
 		"feed_selection": "Feed selection",
@@ -294,6 +309,20 @@
 		"skip": "Skip for now",
 		"get_started": "Get Started",
 		"error": "Could not save profile setup"
+	},
+	"interests": {
+		"technology": "Technology",
+		"design": "Design",
+		"photography": "Photography",
+		"music": "Music",
+		"writing": "Writing",
+		"gaming": "Gaming",
+		"science": "Science",
+		"travel": "Travel",
+		"art": "Art",
+		"food_cooking": "Food & Cooking",
+		"books": "Books",
+		"open_source": "Open Source"
 	},
 	"settings": {
 		"title": "Settings",

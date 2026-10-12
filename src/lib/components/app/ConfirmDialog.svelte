@@ -1,9 +1,11 @@
 <script lang="ts">
+	import { t } from '$lib/i18n'
+
 	let {
 		title,
 		message,
-		confirm_label = 'Confirm',
-		cancel_label = 'Cancel',
+		confirm_label,
+		cancel_label,
 		danger = false,
 		busy = false,
 		on_confirm,
@@ -51,7 +53,7 @@
 				onclick={on_cancel}
 				class="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
 			>
-				{cancel_label}
+				{cancel_label ?? $t('common.cancel')}
 			</button>
 			<button
 				type="button"
@@ -61,7 +63,7 @@
 					? 'bg-rose-600 hover:bg-rose-700'
 					: 'bg-slate-900 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200'}"
 			>
-				{confirm_label}
+				{confirm_label ?? $t('common.confirm')}
 			</button>
 		</div>
 	</div>

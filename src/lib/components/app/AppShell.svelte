@@ -84,10 +84,10 @@
 	})
 
 	const nav_button =
-		'relative flex size-11 items-center justify-center rounded-full transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900'
+		'relative flex size-11 items-center justify-center rounded-full transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 dark:focus-visible:ring-slate-100'
 	// Same pill at 40px, so the extra language button still fits a 320px viewport.
 	const nav_button_mobile =
-		'relative flex size-10 items-center justify-center rounded-full transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 min-[360px]:size-11'
+		'relative flex size-10 items-center justify-center rounded-full transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 dark:focus-visible:ring-slate-100 min-[360px]:size-11'
 	const active = 'bg-black text-white shadow-xs'
 	const idle =
 		'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100'
@@ -121,7 +121,7 @@
 	<!-- ───────────────────────────────────────────────────────────────── -->
 	<nav
 		aria-label={$t('nav.primary')}
-		class="fixed top-1/2 left-3 z-40 hidden -translate-y-1/2 flex-col items-center gap-2 rounded-full border border-slate-200/80 bg-white/90 p-2 shadow-lg shadow-slate-900/5 backdrop-blur-md md:flex lg:left-6"
+		class="fixed top-1/2 left-3 z-40 hidden -translate-y-1/2 flex-col items-center gap-2 rounded-full border border-slate-200/80 bg-white/90 p-2 shadow-lg shadow-slate-900/5 backdrop-blur-md md:flex lg:left-6 dark:border-slate-800/80 dark:bg-slate-900/90 dark:shadow-black/30"
 	>
 		<a
 			href={resolve('/')}
@@ -204,6 +204,8 @@
 
 		<LanguageSelect variant="icon" placement="right" class="{nav_button} {idle}" />
 
+		<ThemeSwitcher />
+
 		<button
 			type="button"
 			aria-label={$t('nav.sign_out')}
@@ -213,8 +215,6 @@
 		>
 			<LogOutIcon class="size-4" />
 		</button>
-
-		<ThemeSwitcher />
 	</nav>
 
 	<!-- ───────────────────────────────────────────────────────────────── -->
@@ -222,7 +222,7 @@
 	<!-- ───────────────────────────────────────────────────────────────── -->
 	<nav
 		aria-label={$t('nav.mobile')}
-		class="fixed bottom-4 left-1/2 z-40 flex -translate-x-1/2 items-center gap-1 rounded-full border border-slate-200/90 bg-white/95 p-1.5 shadow-lg shadow-slate-900/10 backdrop-blur-md min-[360px]:gap-1.5 md:hidden"
+		class="fixed bottom-4 left-1/2 z-40 flex -translate-x-1/2 items-center gap-1 rounded-full border border-slate-200/90 bg-white/95 p-1.5 shadow-lg shadow-slate-900/10 backdrop-blur-md min-[360px]:gap-1.5 md:hidden dark:border-slate-800/90 dark:bg-slate-900/95 dark:shadow-black/30"
 	>
 		<a
 			href={resolve('/')}
@@ -370,9 +370,9 @@
 
 	{#if show_sign_out_confirm}
 		<ConfirmDialog
-			title="Sign out?"
-			message="You'll need to sign in again to access your account."
-			confirm_label="Sign out"
+			title={$t('sign_out.title')}
+			message={$t('sign_out.message')}
+			confirm_label={$t('sign_out.confirm')}
 			danger
 			busy={signing_out}
 			on_confirm={confirm_sign_out}

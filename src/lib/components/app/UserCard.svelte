@@ -21,7 +21,7 @@
 			<Avatar user={person} size={42} />
 			{#if !person.is_self && person.is_followed_by}
 				<span
-					class="py-0.2 absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-full border border-white bg-slate-900 px-1.5 text-[8px] font-bold text-white shadow-2xs"
+					class="py-0.2 absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-full border border-white bg-slate-900 px-1.5 text-[8px] font-bold text-white shadow-2xs dark:border-slate-900 dark:bg-white dark:text-slate-900"
 				>
 					{$t('follow.follows_you')}
 				</span>
@@ -30,7 +30,7 @@
 
 		<div class="mt-2 w-full min-w-0">
 			<span
-				class="block truncate text-xs font-bold text-slate-900 group-hover:text-indigo-600 dark:text-slate-100"
+				class="block truncate text-xs font-bold text-slate-900 group-hover:text-indigo-600 dark:text-slate-100 dark:group-hover:text-indigo-400"
 			>
 				{person.name}
 			</span>

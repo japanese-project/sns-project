@@ -118,7 +118,9 @@
 
 			<div class="py-2 {preview.image && !image_failed ? 'px-0.5' : ''}">
 				<!-- Hostname & Link Row -->
-				<div class="mb-1 flex items-center gap-1.5 text-xs font-semibold text-indigo-600">
+				<div
+					class="mb-1 flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400"
+				>
 					{#if preview.favicon}
 						<img
 							src={preview.favicon}
@@ -182,7 +184,9 @@
 			class="flex items-center gap-2 py-1.5 transition-opacity hover:opacity-80"
 		>
 			<GlobeIcon class="size-4 shrink-0 text-slate-400" />
-			<span class="truncate text-xs font-semibold text-indigo-600">{domain()}</span>
+			<span class="truncate text-xs font-semibold text-indigo-600 dark:text-indigo-400"
+				>{domain()}</span
+			>
 			<span class="text-slate-300">•</span>
 			<span class="truncate text-[11px] text-slate-400 dark:text-slate-500">{display_url()}</span>
 			<ExternalLinkIcon class="ml-auto size-3 text-slate-400 opacity-60" />

@@ -94,7 +94,7 @@
 						class="group flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-left text-xs font-semibold text-slate-700 transition group-hover:text-slate-900 hover:bg-slate-100 dark:text-slate-200 dark:group-hover:text-slate-50 dark:hover:bg-slate-800"
 					>
 						<span class="truncate">#{tag}</span>
-						<span class="text-[10px] font-medium text-slate-400"
+						<span class="text-[10px] font-medium text-slate-400 dark:text-slate-500"
 							>{$t('search_suggestions.trending')}</span
 						>
 					</button>
@@ -105,8 +105,10 @@
 
 	{#if !has_history && !has_trending}
 		<div class="px-3 py-4 text-center">
-			<SearchIcon class="mx-auto size-5 text-slate-300" />
-			<p class="mt-1 text-xs text-slate-500">{$t('search_suggestions.empty')}</p>
+			<SearchIcon class="mx-auto size-5 text-slate-300 dark:text-slate-600" />
+			<p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+				{$t('search_suggestions.empty')}
+			</p>
 		</div>
 	{/if}
 </div>

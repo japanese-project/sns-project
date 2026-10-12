@@ -106,7 +106,7 @@
 					maxlength={MAX_SEARCH_LENGTH}
 					placeholder={$t('explore.search_placeholder')}
 					aria-label={$t('explore.search_label')}
-					class="w-full rounded-2xl border border-slate-200/80 bg-white py-2.5 pr-9 pl-10 text-sm text-slate-900 shadow-xs transition outline-none placeholder:text-slate-400 focus:border-black focus:ring-1 focus:ring-black [&::-webkit-search-cancel-button]:appearance-none"
+					class="w-full rounded-2xl border border-slate-200/80 bg-white py-2.5 pr-9 pl-10 text-sm text-slate-900 shadow-xs transition outline-none placeholder:text-slate-400 focus:border-black focus:ring-1 focus:ring-black dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-400 dark:focus:ring-slate-400 [&::-webkit-search-cancel-button]:appearance-none"
 				/>
 				{#if input}
 					<button
@@ -188,7 +188,7 @@
 						onclick={() => search_for(`#${tag_name}`)}
 						class="group flex shrink-0 items-center gap-1 rounded-full border border-slate-200/80 bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-100"
 					>
-						<span class="text-indigo-600">#</span>
+						<span class="text-indigo-600 dark:text-indigo-400">#</span>
 						<span>{tag_name}</span>
 						{#if post_count && post_count > 1}
 							<span
@@ -207,7 +207,9 @@
 					<div class="flex items-center justify-between px-1 text-slate-700 dark:text-slate-300">
 						<div class="flex items-center gap-1.5">
 							<SparklesIcon class="size-3.5 text-amber-500" />
-							<span class="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+							<span
+								class="text-[11px] font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400"
+							>
 								{$t('explore.suggested_creators')}
 							</span>
 						</div>
@@ -225,8 +227,10 @@
 			<div class="space-y-3 pt-1">
 				<div class="flex items-center justify-between px-1 text-slate-700 dark:text-slate-300">
 					<div class="flex items-center gap-2">
-						<CompassIcon class="size-4 text-indigo-600" />
-						<h2 class="text-xs font-bold tracking-wider text-slate-500 uppercase">
+						<CompassIcon class="size-4 text-indigo-600 dark:text-indigo-400" />
+						<h2
+							class="text-xs font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400"
+						>
 							{$t('explore.explore_content', { values: { count: data.discovery.posts.length } })}
 						</h2>
 					</div>
@@ -239,8 +243,8 @@
 							type="button"
 							onclick={() => (view_mode = 'masonry')}
 							class="rounded-lg p-1.5 transition {view_mode === 'masonry'
-								? 'bg-white text-slate-900 shadow-2xs'
-								: 'text-slate-400 hover:text-slate-700'}"
+								? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-700 dark:text-slate-50'
+								: 'text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-100'}"
 							title={$t('explore.masonry_title')}
 							aria-label={$t('explore.masonry_aria')}
 						>
@@ -250,8 +254,8 @@
 							type="button"
 							onclick={() => (view_mode = 'feed')}
 							class="rounded-lg p-1.5 transition {view_mode === 'feed'
-								? 'bg-white text-slate-900 shadow-2xs'
-								: 'text-slate-400 hover:text-slate-700'}"
+								? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-700 dark:text-slate-50'
+								: 'text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-100'}"
 							title={$t('explore.feed_title')}
 							aria-label={$t('explore.feed_aria')}
 						>
@@ -286,7 +290,9 @@
 			<!-- Matching People Carousel -->
 			{#if data.results.users.length > 0}
 				<div class="space-y-2">
-					<h3 class="px-1 text-xs font-bold tracking-wider text-slate-500 uppercase">
+					<h3
+						class="px-1 text-xs font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400"
+					>
 						{$t('explore.people_matching', {
 							values: { query: data.query, count: data.results.users.length },
 						})}
@@ -301,8 +307,8 @@
 
 			<!-- Matching Posts in Pinterest / Instagram Multi-Column Grid -->
 			<div class="space-y-3 pt-2">
-				<div class="flex items-center justify-between px-1 text-slate-700">
-					<h2 class="text-xs font-bold tracking-wider text-slate-500 uppercase">
+				<div class="flex items-center justify-between px-1 text-slate-700 dark:text-slate-300">
+					<h2 class="text-xs font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400">
 						{$t('explore.posts_matching', { values: { query: data.query, count: posts.length } })}
 					</h2>
 
@@ -314,8 +320,8 @@
 							type="button"
 							onclick={() => (view_mode = 'masonry')}
 							class="rounded-lg p-1.5 transition {view_mode === 'masonry'
-								? 'bg-white text-slate-900 shadow-2xs'
-								: 'text-slate-400 hover:text-slate-700'}"
+								? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-700 dark:text-slate-50'
+								: 'text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-100'}"
 							title={$t('explore.masonry_title')}
 							aria-label={$t('explore.masonry_aria')}
 						>
@@ -325,8 +331,8 @@
 							type="button"
 							onclick={() => (view_mode = 'feed')}
 							class="rounded-lg p-1.5 transition {view_mode === 'feed'
-								? 'bg-white text-slate-900 shadow-2xs'
-								: 'text-slate-400 hover:text-slate-700'}"
+								? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-700 dark:text-slate-50'
+								: 'text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-100'}"
 							title={$t('explore.feed_title')}
 							aria-label={$t('explore.feed_aria')}
 						>
@@ -369,7 +375,7 @@
 							{loading_more ? $t('explore.loading_more') : $t('explore.load_more')}
 						</button>
 						{#if more_error}
-							<p class="mt-2 text-xs text-rose-600">{more_error}</p>
+							<p class="mt-2 text-xs text-rose-600 dark:text-rose-400">{more_error}</p>
 						{/if}
 					</div>
 				{/if}

@@ -116,7 +116,7 @@
 				<div class="min-w-0">
 					<div class="flex items-center gap-1">
 						<span
-							class="truncate text-xs font-bold text-slate-900 group-hover/author:text-indigo-600 dark:text-slate-100"
+							class="truncate text-xs font-bold text-slate-900 group-hover/author:text-indigo-600 dark:text-slate-100 dark:group-hover/author:text-indigo-400"
 						>
 							{post.author.name}
 						</span>
@@ -130,7 +130,10 @@
 				</div>
 			</a>
 
-			<time class="shrink-0 text-[10px] text-slate-400" datetime={post.created_at}>
+			<time
+				class="shrink-0 text-[10px] text-slate-400 dark:text-slate-500"
+				datetime={post.created_at}
+			>
 				<RelativeTime iso={post.created_at} />
 			</time>
 		</div>
@@ -144,7 +147,7 @@
 							<a
 								href="{resolve('/explore')}?q={encodeURIComponent(segment.text)}"
 								onclick={(e) => e.stopPropagation()}
-								class="font-semibold text-indigo-600 hover:underline"
+								class="font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
 							>
 								{segment.text}
 							</a>
@@ -154,7 +157,7 @@
 								target="_blank"
 								rel="noopener noreferrer"
 								onclick={(e) => e.stopPropagation()}
-								class="font-medium text-indigo-600 hover:underline"
+								class="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
 							>
 								{segment.text}
 							</a>
@@ -185,7 +188,7 @@
 				onclick={toggle_like}
 				class="flex items-center gap-1 transition-colors hover:text-rose-600 {liked
 					? 'font-semibold text-rose-600'
-					: 'text-slate-500'}"
+					: 'text-slate-500 dark:text-slate-400'}"
 				aria-label={liked ? $t('pin_card.unlike') : $t('pin_card.like')}
 			>
 				<HeartIcon class="size-3.5 {liked ? 'fill-rose-500 text-rose-500' : ''}" />
@@ -196,7 +199,7 @@
 			<a
 				href="{post_url}#comments"
 				onclick={(e) => e.stopPropagation()}
-				class="flex items-center gap-1 text-slate-500 transition-colors hover:text-indigo-600"
+				class="flex items-center gap-1 text-slate-500 transition-colors hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
 				aria-label={$t('pin_card.view_comments')}
 			>
 				<MessageCircleIcon class="size-3.5" />

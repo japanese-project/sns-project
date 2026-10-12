@@ -3,6 +3,7 @@
 	import { api } from '$lib/api'
 	import { MAX_BIO_LENGTH } from '$lib/limits'
 	import { t } from '$lib/i18n'
+	import { available_interests, interest_i18n_key } from '$lib/interests'
 
 	let {
 		user,
@@ -11,21 +12,6 @@
 		user: { name: string }
 		on_done: () => void
 	} = $props()
-
-	const available_interests = [
-		'Technology',
-		'Design',
-		'Photography',
-		'Music',
-		'Writing',
-		'Gaming',
-		'Science',
-		'Travel',
-		'Art',
-		'Food & Cooking',
-		'Books',
-		'Open Source',
-	]
 
 	let selected_interests = $state<string[]>([])
 	let bio = $state('')
@@ -97,14 +83,17 @@
 	>
 		<div class="text-center">
 			<span
-				class="inline-block rounded-full bg-slate-900 px-3 py-1 text-[0.7rem] font-bold tracking-wider text-white uppercase"
+				class="inline-block rounded-full bg-slate-900 px-3 py-1 text-[0.7rem] font-bold tracking-wider text-white uppercase dark:bg-white dark:text-slate-900"
 			>
 				{$t('onboarding.badge')}
 			</span>
-			<h2 id="onboarding-title" class="mt-3 text-2xl font-extrabold text-slate-900">
+			<h2
+				id="onboarding-title"
+				class="mt-3 text-2xl font-extrabold text-slate-900 dark:text-slate-100"
+			>
 				{$t('onboarding.title', { values: { name: user.name } })}
 			</h2>
-			<p class="mt-1 text-xs text-slate-500">
+			<p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
 				{$t('onboarding.subtitle')}
 			</p>
 		</div>
@@ -129,13 +118,15 @@
 					rows="2"
 					maxlength={MAX_BIO_LENGTH}
 					placeholder={$t('onboarding.bio_placeholder')}
-					class="mt-2 w-full resize-none border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 text-sm leading-relaxed text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-slate-900 focus:ring-0 focus:outline-none"
+					class="mt-2 w-full resize-none border-0 border-b-2 border-slate-200 bg-transparent pb-1.5 text-sm leading-relaxed text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-slate-900 focus:ring-0 focus:outline-none dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-100"
 				></textarea>
 			</div>
 
 			<!-- Topics / Interests -->
 			<div>
-				<p class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase">
+				<p
+					class="block text-[0.7rem] font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400"
+				>
 					{$t('onboarding.topics')}
 				</p>
 				<p class="mt-0.5 text-[0.68rem] text-slate-400">
@@ -144,6 +135,7 @@
 				<div class="mt-3 flex flex-wrap gap-2">
 					{#each available_interests as topic (topic)}
 						{@const is_selected = selected_interests.includes(topic)}
+						{@const label_key = interest_i18n_key(topic)}
 						<button
 							type="button"
 							onclick={() => toggle_interest(topic)}
@@ -151,7 +143,7 @@
 								? 'bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-900'
 								: 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}"
 						>
-							{is_selected ? '✓ ' : '#'}{topic}
+							{is_selected ? '✓ ' : '#'}{label_key ? $t(label_key) : topic}
 						</button>
 					{/each}
 					{#each custom_interests as topic (topic)}

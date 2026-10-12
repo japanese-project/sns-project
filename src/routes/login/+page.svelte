@@ -86,15 +86,15 @@
 
 		<div class="mt-auto">
 			<div class="mb-5 flex justify-center"><LanguageSelect /></div>
-			<p class="text-center text-[0.7rem] text-[#a0a7b5]">
+			<p class="text-center text-[0.7rem] text-[#a0a7b5] dark:text-slate-500">
 				{$t('login.terms_prefix')}
 				<a
-					class="font-semibold text-[#70798c] no-underline transition-colors hover:text-[#15213a] hover:underline"
+					class="font-semibold text-[#70798c] no-underline transition-colors hover:text-[#15213a] hover:underline dark:text-slate-400 dark:hover:text-slate-100"
 					href={resolve('/login#terms')}>{$t('login.terms')}</a
 				>
 				{$t('login.and')}
 				<a
-					class="font-semibold text-[#70798c] no-underline transition-colors hover:text-[#15213a] hover:underline"
+					class="font-semibold text-[#70798c] no-underline transition-colors hover:text-[#15213a] hover:underline dark:text-slate-400 dark:hover:text-slate-100"
 					href={resolve('/login#privacy')}>{$t('login.privacy_policy')}</a
 				>.
 			</p>
