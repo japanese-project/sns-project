@@ -61,11 +61,13 @@
 			? 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
 			: follows_you
 				? 'bg-indigo-600 text-white shadow-xs hover:bg-indigo-700'
-				: 'bg-black text-white hover:bg-slate-800'}"
+				: 'bg-black text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200'}"
 	>
 		{following ? following_label : follow_label}
 	</button>
 	{#if error_message}
-		<span class="mt-1 text-[10px] text-rose-600" role="alert">{error_message}</span>
+		<span class="mt-1 text-[10px] text-rose-600 dark:text-rose-400" role="alert"
+			>{error_message}</span
+		>
 	{/if}
 </span>

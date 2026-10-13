@@ -13,7 +13,8 @@
 		"load_more": "もっと見る",
 		"remove": "削除",
 		"add": "追加",
-		"you": "あなた"
+		"you": "あなた",
+		"confirm": "確認"
 	},
 	"time": {
 		"just_now": "たった今",
@@ -41,6 +42,13 @@
 		"label": "言語",
 		"change": "言語を変更"
 	},
+	"theme": {
+		"label": "テーマ：{mode}",
+		"activate_to_change": "テーマ：{mode}。操作すると変更されます。",
+		"light": "ライト",
+		"dark": "ダーク",
+		"system": "システム"
+	},
 	"login": {
 		"title": "ログイン · Loop",
 		"description": "Loopにログインして、大切な人々との会話に再びつながりましょう。",
@@ -62,7 +70,14 @@
 		"privacy_policy": "プライバシーポリシーに同意したものとみなされます",
 		"error_google": "Googleに接続できませんでした。もう一度お試しください。",
 		"error_rate_limited": "試行回数が多すぎます。しばらく待ってからもう一度お試しください。",
+		"show_password": "パスワードを表示",
+		"hide_password": "パスワードを非表示",
 		"brand_home": "Loop ホーム"
+	},
+	"sign_out": {
+		"title": "ログアウトしますか？",
+		"message": "アカウントにアクセスするには、もう一度ログインする必要があります。",
+		"confirm": "ログアウト"
 	},
 	"home": {
 		"feed_selection": "フィード選択",
@@ -294,6 +309,20 @@
 		"skip": "今はスキップ",
 		"get_started": "はじめる",
 		"error": "プロフィール設定を保存できませんでした"
+	},
+	"interests": {
+		"technology": "テクノロジー",
+		"design": "デザイン",
+		"photography": "写真",
+		"music": "音楽",
+		"writing": "ライティング",
+		"gaming": "ゲーム",
+		"science": "科学",
+		"travel": "旅行",
+		"art": "アート",
+		"food_cooking": "料理",
+		"books": "読書",
+		"open_source": "オープンソース"
 	},
 	"settings": {
 		"title": "設定",

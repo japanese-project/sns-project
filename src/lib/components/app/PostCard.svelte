@@ -469,7 +469,7 @@
 			aria-expanded={menu_open}
 			aria-controls={menu_open ? `menu-${post.id}` : undefined}
 			bind:this={menu_button_el}
-			class="flex size-9 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+			class="flex size-9 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-200"
 			onkeydown={handle_button_keydown}
 			onclick={(e) => {
 				e.stopPropagation()
@@ -503,7 +503,7 @@
 						<i class="ph-fill ph-x-circle text-base text-rose-600"></i>
 						<span class="text-rose-600">{$t('post.copy_failed')}</span>
 					{:else}
-						<i class="ph ph-copy text-base text-slate-400"></i>
+						<i class="ph ph-copy text-base text-slate-400 dark:text-slate-500"></i>
 						<span>{$t('post.copy_link')}</span>
 					{/if}
 				</button>
@@ -522,7 +522,7 @@
 						}}
 						class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50 focus:bg-white/50 dark:text-slate-200 dark:hover:bg-white/10 dark:focus:bg-white/10"
 					>
-						<i class="ph ph-pencil-simple text-base text-slate-400"></i>
+						<i class="ph ph-pencil-simple text-base text-slate-400 dark:text-slate-500"></i>
 						<span>{$t('post.edit_post')}</span>
 					</button>
 
@@ -535,7 +535,7 @@
 							close_menu(false)
 							confirming_delete = true
 						}}
-						class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-rose-600 transition hover:bg-rose-50 focus:bg-rose-50"
+						class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-rose-600 transition hover:bg-rose-50 focus:bg-rose-50 dark:hover:bg-rose-950 dark:focus:bg-rose-950"
 					>
 						<i class="ph ph-trash text-base text-rose-500"></i>
 						<span>{$t('post.delete_post')}</span>
@@ -563,7 +563,9 @@
 					<Avatar user={post.author} size={36} />
 				</span>
 				<span class="flex min-w-0 flex-col leading-tight">
-					<span class="flex items-center gap-1.5 text-[15px] font-bold text-slate-900">
+					<span
+						class="flex items-center gap-1.5 text-[15px] font-bold text-slate-900 dark:text-slate-100"
+					>
 						<span class="truncate">{post.is_owner ? $t('common.you') : post.author.name}</span>
 						<span
 							class="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-emerald-600"
@@ -572,7 +574,7 @@
 							{$t('post.reposted')}
 						</span>
 					</span>
-					<span class="mt-0.5 text-[13px] text-slate-500"
+					<span class="mt-0.5 text-[13px] text-slate-500 dark:text-slate-400"
 						><RelativeTime iso={post.created_at} /></span
 					>
 				</span>
@@ -585,14 +587,14 @@
 					rows="2"
 					placeholder={$t('post.add_caption')}
 					aria-label={$t('post.caption_label')}
-					class="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-[15px] leading-relaxed outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+					class="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-[15px] leading-relaxed outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 				></textarea>
 				{#if edit_error}<p class="text-xs text-rose-600" role="alert">{edit_error}</p>{/if}
 				<div class="flex items-center justify-between text-xs">
 					<span
 						class="tabular-nums {edit_draft.length > MAX_POST_LENGTH
 							? 'font-bold text-rose-600'
-							: 'text-slate-400'}"
+							: 'text-slate-400 dark:text-slate-500'}"
 					>
 						{$t('post.characters_left', { values: { count: MAX_POST_LENGTH - edit_draft.length } })}
 					</span>
@@ -600,13 +602,13 @@
 						<button
 							type="button"
 							onclick={() => (editing_caption = false)}
-							class="px-3 py-1.5 font-medium text-slate-500 hover:text-slate-800"
+							class="px-3 py-1.5 font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100"
 							>{$t('common.cancel')}</button
 						>
 						<button
 							type="submit"
 							disabled={edit_saving || edit_draft.length > MAX_POST_LENGTH}
-							class="rounded-full bg-slate-900 px-4 py-1.5 font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+							class="rounded-full bg-slate-900 px-4 py-1.5 font-medium text-white hover:bg-slate-800 disabled:opacity-50 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
 							>{edit_saving ? $t('common.saving') : $t('post.save_caption')}</button
 						>
 					</span>
@@ -621,14 +623,14 @@
 					{#if segment.type === 'tag'}
 						<a
 							href="{resolve('/explore')}?q={encodeURIComponent(segment.text)}"
-							class="font-medium text-blue-600 hover:underline">{segment.text}</a
+							class="font-medium text-blue-600 hover:underline dark:text-blue-400">{segment.text}</a
 						>
 					{:else if segment.type === 'link'}
 						<a
 							href={segment.href}
 							target="_blank"
 							rel="noopener noreferrer"
-							class="font-medium [overflow-wrap:anywhere] break-all text-blue-600 hover:underline"
+							class="font-medium [overflow-wrap:anywhere] break-all text-blue-600 hover:underline dark:text-blue-400"
 							>{segment.text}</a
 						>
 					{:else}
@@ -686,13 +688,13 @@
 					rows="2"
 					placeholder={$t('post.add_caption')}
 					aria-label={$t('post.caption_label')}
-					class="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-[15px] leading-relaxed outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+					class="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-[15px] leading-relaxed outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 				></textarea>
 				<div class="flex items-center justify-between text-xs">
 					<span
 						class="tabular-nums {caption_draft.length > MAX_POST_LENGTH
 							? 'font-bold text-rose-600'
-							: 'text-slate-400'}"
+							: 'text-slate-400 dark:text-slate-500'}"
 					>
 						{$t('post.characters_left', {
 							values: { count: MAX_POST_LENGTH - caption_draft.length },
@@ -702,13 +704,13 @@
 						<button
 							type="button"
 							onclick={() => (captioning = false)}
-							class="px-3 py-1.5 font-medium text-slate-500 hover:text-slate-800"
+							class="px-3 py-1.5 font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100"
 							>{$t('common.cancel')}</button
 						>
 						<button
 							type="submit"
 							disabled={repost_pending || caption_draft.length > MAX_POST_LENGTH}
-							class="rounded-full bg-slate-900 px-4 py-1.5 font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+							class="rounded-full bg-slate-900 px-4 py-1.5 font-medium text-white hover:bg-slate-800 disabled:opacity-50 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
 						>
 							{reposted ? $t('post.save_caption') : $t('post.repost')}
 						</button>
@@ -721,7 +723,9 @@
 			<div class="w-full">
 				<form onsubmit={save_edit} class="space-y-3">
 					<div class="flex items-center justify-between text-xs">
-						<span class="flex items-center gap-1.5 font-semibold text-slate-400">
+						<span
+							class="flex items-center gap-1.5 font-semibold text-slate-400 dark:text-slate-500"
+						>
 							<PencilIcon class="size-3.5 text-indigo-500" />
 							{$t('post.editing')}
 						</span>
@@ -755,14 +759,14 @@
 						bind:value={draft}
 						rows="3"
 						aria-label={$t('post.edit_text')}
-						class="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-[15px] leading-relaxed [overflow-wrap:anywhere] break-words text-slate-900 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+						class="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-[15px] leading-relaxed [overflow-wrap:anywhere] break-words text-slate-900 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
 					></textarea>
 
 					<div class="flex items-center justify-between text-xs">
 						<span
 							class="tabular-nums {draft.length > MAX_POST_LENGTH
 								? 'font-bold text-rose-600'
-								: 'text-slate-400'}"
+								: 'text-slate-400 dark:text-slate-500'}"
 						>
 							{$t('post.characters_left', { values: { count: MAX_POST_LENGTH - draft.length } })}
 						</span>
@@ -770,7 +774,7 @@
 							<button
 								type="button"
 								onclick={() => (editing = false)}
-								class="px-3 py-1.5 font-medium text-slate-500 transition hover:text-slate-800"
+								class="px-3 py-1.5 font-medium text-slate-500 transition hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100"
 								>{$t('common.cancel')}</button
 							>
 							<button
@@ -778,7 +782,7 @@
 								disabled={saving ||
 									(draft.trim().length === 0 && !active_post.image_url) ||
 									draft.length > MAX_POST_LENGTH}
-								class="rounded-full bg-slate-900 px-4 py-1.5 font-medium text-white transition hover:bg-slate-800 disabled:opacity-50"
+								class="rounded-full bg-slate-900 px-4 py-1.5 font-medium text-white transition hover:bg-slate-800 disabled:opacity-50 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
 							>
 								{saving ? $t('common.saving') : $t('post.save_changes')}
 							</button>
@@ -810,7 +814,7 @@
 							<span class="text-[15px] font-bold text-slate-900 dark:text-slate-100"
 								>{post.author.name}</span
 							>
-							<span class="mt-0.5 text-[13px] text-slate-500">
+							<span class="mt-0.5 text-[13px] text-slate-500 dark:text-slate-400">
 								@{post.author.username || post.author.handle || post.author.id} • <RelativeTime
 									iso={active_post.created_at}
 								/>
@@ -829,7 +833,7 @@
 							{#if segment.type === 'tag'}
 								<a
 									href="{resolve('/explore')}?q={encodeURIComponent(segment.text)}"
-									class="font-medium text-blue-600 hover:underline"
+									class="font-medium text-blue-600 hover:underline dark:text-blue-400"
 									onclick={(e) => e.stopPropagation()}>{segment.text}</a
 								>
 							{:else if segment.type === 'link'}
@@ -837,7 +841,7 @@
 									href={segment.href}
 									target="_blank"
 									rel="noopener noreferrer"
-									class="font-medium [overflow-wrap:anywhere] break-all text-blue-600 hover:underline"
+									class="font-medium [overflow-wrap:anywhere] break-all text-blue-600 hover:underline dark:text-blue-400"
 									onclick={(e) => e.stopPropagation()}>{segment.text}</a
 								>
 							{:else}
@@ -860,7 +864,7 @@
 						{#if image_load_failed}
 							<div
 								data-testid="broken-image-fallback"
-								class="flex min-h-[200px] w-full flex-col items-center justify-center gap-2 p-6 text-slate-400"
+								class="flex min-h-[200px] w-full flex-col items-center justify-center gap-2 p-6 text-slate-400 dark:text-slate-500"
 							>
 								<i class="ph ph-image-broken text-3xl"></i>
 								<span class="text-xs font-medium">{$t('post.media_unavailable')}</span>
@@ -922,7 +926,7 @@
 						<i
 							class="like-anim text-xl transition-colors {liked
 								? 'ph-fill ph-heart scale-110 text-system-pink'
-								: 'ph ph-heart text-slate-400 group-hover/btn:text-system-pink'}"
+								: 'ph ph-heart text-slate-400 group-hover/btn:text-system-pink dark:text-slate-500'}"
 						></i>
 						<span
 							class="like-count text-sm font-medium text-slate-600 tabular-nums dark:text-slate-400"
@@ -930,14 +934,14 @@
 						>
 					</button>
 					<button
-						class="group/btn flex items-center gap-2 transition-colors hover:text-black"
+						class="group/btn flex items-center gap-2 transition-colors hover:text-black dark:hover:text-white"
 						onclick={(e) => {
 							e.stopPropagation()
 							comments_override = !show_comments
 						}}
 					>
 						<i
-							class="ph ph-chat-circle text-xl text-slate-400 transition-colors group-hover/btn:text-black"
+							class="ph ph-chat-circle text-xl text-slate-400 transition-colors group-hover/btn:text-black dark:text-slate-500 dark:group-hover/btn:text-white"
 						></i>
 						<span class="text-sm font-medium text-slate-600 dark:text-slate-400"
 							>{comment_count}</span
@@ -962,7 +966,7 @@
 							<i
 								class="ph-bold ph-repeat text-xl transition-colors {reposted
 									? 'text-emerald-500'
-									: 'text-slate-400 group-hover/btn:text-emerald-600'}"
+									: 'text-slate-400 group-hover/btn:text-emerald-600 dark:text-slate-500'}"
 							></i>
 							<span
 								class="text-sm font-medium text-slate-600 tabular-nums dark:text-slate-400"
@@ -985,7 +989,7 @@
 										}}
 										class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50 dark:text-slate-200 dark:hover:bg-white/10"
 									>
-										<i class="ph ph-pencil-simple text-base text-slate-400"></i>
+										<i class="ph ph-pencil-simple text-base text-slate-400 dark:text-slate-500"></i>
 										<span>{$t('post.edit_caption')}</span>
 									</button>
 									<button
@@ -995,7 +999,7 @@
 											e.stopPropagation()
 											undo_repost()
 										}}
-										class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-rose-600 transition hover:bg-rose-50"
+										class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-rose-600 transition hover:bg-rose-50 dark:hover:bg-rose-950"
 									>
 										<i class="ph ph-arrow-u-up-left text-base text-rose-500"></i>
 										<span>{$t('post.undo_repost')}</span>
@@ -1010,7 +1014,7 @@
 										}}
 										class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50 dark:text-slate-200 dark:hover:bg-white/10"
 									>
-										<i class="ph ph-repeat text-base text-slate-400"></i>
+										<i class="ph ph-repeat text-base text-slate-400 dark:text-slate-500"></i>
 										<span>{$t('post.repost')}</span>
 									</button>
 									<button
@@ -1022,7 +1026,7 @@
 										}}
 										class="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-white/50 dark:text-slate-200 dark:hover:bg-white/10"
 									>
-										<i class="ph ph-note-pencil text-base text-slate-400"></i>
+										<i class="ph ph-note-pencil text-base text-slate-400 dark:text-slate-500"></i>
 										<span>{$t('post.repost_with_caption')}</span>
 									</button>
 								{/if}
@@ -1043,7 +1047,7 @@
 						<i
 							class="text-xl transition-colors {bookmarked
 								? 'ph-fill ph-bookmark-simple text-amber-500'
-								: 'ph ph-bookmark-simple text-slate-400 group-hover/btn:text-amber-500'}"
+								: 'ph ph-bookmark-simple text-slate-400 group-hover/btn:text-amber-500 dark:text-slate-500'}"
 						></i>
 					</button>
 				</div>
@@ -1052,7 +1056,7 @@
 
 		{#if confirming_delete}
 			<div
-				class="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-rose-50 p-3 text-sm text-rose-800"
+				class="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-rose-50 p-3 text-sm text-rose-800 dark:bg-rose-950 dark:text-rose-300"
 				role="alertdialog"
 			>
 				<span>{$t('post.delete_confirm')}</span>
@@ -1063,7 +1067,8 @@
 							e.stopPropagation()
 							confirming_delete = false
 						}}
-						class="rounded-full px-3 py-1 hover:bg-rose-100">{$t('common.cancel')}</button
+						class="rounded-full px-3 py-1 hover:bg-rose-100 dark:hover:bg-rose-900"
+						>{$t('common.cancel')}</button
 					>
 					<button
 						type="button"

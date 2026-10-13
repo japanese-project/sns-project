@@ -194,14 +194,15 @@
 					{#if is_nested && target_author?.username}
 						<a
 							href={resolve('/u/[handle]', { handle: target_author.handle })}
-							class="font-medium text-indigo-600 hover:underline">@{target_author.username}</a
+							class="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+							>@{target_author.username}</a
 						>&nbsp;
 					{/if}
 					{#each parse_content(comment.content) as segment, i (i)}
 						{#if segment.type === 'tag'}
 							<a
 								href="{resolve('/explore')}?q={encodeURIComponent(segment.text)}"
-								class="font-medium text-indigo-600 hover:underline"
+								class="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
 								onclick={(e) => e.stopPropagation()}
 							>
 								{segment.text}
@@ -211,7 +212,7 @@
 								href={segment.href}
 								target="_blank"
 								rel="noopener noreferrer"
-								class="font-medium [overflow-wrap:anywhere] break-all text-indigo-600 hover:underline"
+								class="font-medium [overflow-wrap:anywhere] break-all text-indigo-600 hover:underline dark:text-indigo-400"
 								onclick={(e) => e.stopPropagation()}
 							>
 								{segment.text}
@@ -269,7 +270,10 @@
 	</li>
 {/snippet}
 
-<section class="mt-4 border-t border-slate-200 pt-4" aria-label={$t('comments.label')}>
+<section
+	class="mt-4 border-t border-slate-200 pt-4 dark:border-slate-800"
+	aria-label={$t('comments.label')}
+>
 	{#if loading}
 		<p class="text-sm text-slate-400">{$t('comments.loading')}</p>
 	{:else if load_error}
@@ -290,7 +294,7 @@
 	<form onsubmit={submit} class="mt-4 space-y-2">
 		{#if reply_to && reply_target_author}
 			<p
-				class="flex items-center justify-between rounded-full border border-indigo-100 bg-indigo-50/80 px-3.5 py-1 text-xs text-indigo-700"
+				class="flex items-center justify-between rounded-full border border-indigo-100 bg-indigo-50/80 px-3.5 py-1 text-xs text-indigo-700 dark:border-indigo-900 dark:bg-indigo-950/80 dark:text-indigo-300"
 			>
 				<span>
 					{$t('comments.replying_to')} <span class="font-bold">{reply_target_author.name}</span>

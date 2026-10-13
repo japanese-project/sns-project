@@ -99,7 +99,7 @@
 	<div class="mx-auto w-full max-w-2xl">
 		{#if unread > 0}
 			<div class="mb-4 flex items-center justify-between px-1">
-				<span class="text-xs font-bold tracking-wider text-slate-500 uppercase">
+				<span class="text-xs font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400">
 					{$t('notifications.unread', { values: { count: unread } })}
 				</span>
 				<button
@@ -114,7 +114,7 @@
 
 		{#if loading}
 			<div
-				class="divide-y divide-slate-100"
+				class="divide-y divide-slate-100 dark:divide-slate-800"
 				aria-busy="true"
 				aria-label={$t('notifications.loading')}
 			>
@@ -132,24 +132,26 @@
 			</div>
 		{:else if error_message && items.length === 0}
 			<div class="px-4 py-12 text-center" role="alert">
-				<p class="text-sm font-medium text-rose-600">{error_message}</p>
+				<p class="text-sm font-medium text-rose-600 dark:text-rose-400">{error_message}</p>
 				<button
 					type="button"
 					onclick={() => load(true)}
-					class="mt-4 rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
+					class="mt-4 rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
 				>
 					{$t('common.try_again')}
 				</button>
 			</div>
 		{:else if items.length === 0}
 			<div class="px-4 py-12 text-center">
-				<BellIcon class="mx-auto mb-3 size-8 text-slate-300" />
-				<p class="text-sm text-slate-500">
+				<BellIcon class="mx-auto mb-3 size-8 text-slate-300 dark:text-slate-600" />
+				<p class="text-sm text-slate-500 dark:text-slate-400">
 					{$t('notifications.empty')}
 				</p>
 			</div>
 		{:else}
-			{#if error_message}<p class="mb-3 text-sm text-rose-600" role="alert">{error_message}</p>{/if}
+			{#if error_message}<p class="mb-3 text-sm text-rose-600 dark:text-rose-400" role="alert">
+					{error_message}
+				</p>{/if}
 			<ul
 				class="divide-y divide-slate-100 border-b border-slate-200/60 dark:divide-slate-800 dark:border-slate-800"
 			>
@@ -163,14 +165,14 @@
 									: resolve('/')}
 							onclick={() => mark_one(note)}
 							class="flex items-center gap-3.5 p-4 transition hover:bg-slate-50 dark:hover:bg-slate-800/60 {!note.read
-								? 'bg-indigo-50/20'
+								? 'bg-indigo-50/20 dark:bg-indigo-950/30'
 								: ''}"
 							data-unread={!note.read}
 						>
 							<span class="relative shrink-0">
 								<Avatar user={note.actor} size={40} />
 								<span
-									class="absolute -right-1 -bottom-1 flex size-5 items-center justify-center rounded-full ring-2 ring-white {note.type ===
+									class="absolute -right-1 -bottom-1 flex size-5 items-center justify-center rounded-full ring-2 ring-white dark:ring-slate-900 {note.type ===
 									'like'
 										? 'bg-rose-500 text-white'
 										: note.type === 'repost'
@@ -196,7 +198,7 @@
 										class="mt-1 block truncate border-l-2 border-slate-200 pl-2 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400"
 										>“{note.snippet}”</span
 									>{/if}
-								<span class="mt-1 block text-xs text-slate-400"
+								<span class="mt-1 block text-xs text-slate-400 dark:text-slate-500"
 									><RelativeTime iso={note.created_at} /></span
 								>
 							</span>
@@ -214,7 +216,7 @@
 						type="button"
 						onclick={() => load(false)}
 						disabled={loading_more}
-						class="rounded-full border border-slate-200 bg-white px-5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 disabled:opacity-60"
+						class="rounded-full border border-slate-200 bg-white px-5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
 						>{loading_more ? $t('common.loading') : $t('common.load_more')}</button
 					>
 				</div>

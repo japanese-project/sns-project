@@ -44,7 +44,7 @@
 		>
 			← {owner.name}
 		</a>
-		<span class="text-xs font-bold tracking-wider text-slate-400 uppercase">
+		<span class="text-xs font-bold tracking-wider text-slate-400 uppercase dark:text-slate-500">
 			{kind === 'followers' ? $t('user_list.followers') : $t('user_list.following')}
 		</span>
 	</div>
@@ -65,18 +65,18 @@
 		</div>
 	{:else if error_message && people.length === 0}
 		<div class="px-4 py-12 text-center" role="alert">
-			<p class="text-sm font-medium text-rose-600">{error_message}</p>
+			<p class="text-sm font-medium text-rose-600 dark:text-rose-400">{error_message}</p>
 			<button
 				type="button"
 				onclick={() => load(true)}
-				class="mt-4 rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
+				class="mt-4 rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
 			>
 				{$t('common.try_again')}
 			</button>
 		</div>
 	{:else if people.length === 0}
 		<div class="px-4 py-12 text-center">
-			<p class="text-sm text-slate-500">
+			<p class="text-sm text-slate-500 dark:text-slate-400">
 				{kind === 'followers' ? $t('user_list.no_followers') : $t('user_list.no_following')}
 			</p>
 		</div>
@@ -87,7 +87,7 @@
 			{/each}
 		</ul>
 		{#if error_message}
-			<p class="mt-3 text-center text-sm text-rose-600" role="alert">
+			<p class="mt-3 text-center text-sm text-rose-600 dark:text-rose-400" role="alert">
 				{error_message}
 			</p>
 		{/if}

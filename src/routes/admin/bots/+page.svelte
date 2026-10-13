@@ -189,16 +189,20 @@
 			<div class="space-y-1">
 				<div class="flex items-center gap-2">
 					<span
-						class="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700"
+						class="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
 					>
 						<ShieldCheckIcon class="size-3.5" />
 						{$t('admin.admin_control')}
 					</span>
-					<span class="text-xs font-medium text-slate-400">•</span>
-					<span class="text-xs font-medium text-slate-500">{$t('admin.tagline')}</span>
+					<span class="text-xs font-medium text-slate-400 dark:text-slate-500">•</span>
+					<span class="text-xs font-medium text-slate-500 dark:text-slate-400"
+						>{$t('admin.tagline')}</span
+					>
 				</div>
-				<h1 class="text-2xl font-black tracking-tight text-slate-900">{$t('admin.heading')}</h1>
-				<p class="text-sm text-slate-500">{$t('admin.description')}</p>
+				<h1 class="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100">
+					{$t('admin.heading')}
+				</h1>
+				<p class="text-sm text-slate-500 dark:text-slate-400">{$t('admin.description')}</p>
 			</div>
 
 			{#if data.is_admin}
@@ -217,7 +221,7 @@
 
 		{#if form?.error}
 			<div
-				class="flex items-center justify-between rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs font-semibold text-rose-800 shadow-xs"
+				class="flex items-center justify-between rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs font-semibold text-rose-800 shadow-xs dark:border-rose-900 dark:bg-rose-950 dark:text-rose-300"
 			>
 				<span>⚠️ {form.error}</span>
 			</div>
@@ -225,7 +229,7 @@
 
 		{#if form?.message}
 			<div
-				class="flex items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 shadow-xs"
+				class="flex items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 shadow-xs dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300"
 			>
 				<span>✅ {form.message}</span>
 			</div>
@@ -238,12 +242,14 @@
 			>
 				<div class="text-center">
 					<div
-						class="mx-auto flex size-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600"
+						class="mx-auto flex size-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400"
 					>
 						<LockIcon class="size-6" />
 					</div>
-					<h2 class="mt-3 text-base font-bold text-slate-900">{$t('admin.locked_title')}</h2>
-					<p class="mt-1 text-xs text-slate-500">{$t('admin.locked_desc')}</p>
+					<h2 class="mt-3 text-base font-bold text-slate-900 dark:text-slate-100">
+						{$t('admin.locked_title')}
+					</h2>
+					<p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{$t('admin.locked_desc')}</p>
 				</div>
 
 				<form method="POST" action="?/unlock" use:enhance class="mt-5 space-y-3">
@@ -252,7 +258,7 @@
 						name="secret"
 						required
 						placeholder={$t('admin.secret_placeholder')}
-						class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:ring-1 focus:ring-slate-900 focus:outline-none"
+						class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-400 dark:focus:ring-slate-400"
 					/>
 					<button
 						type="submit"
@@ -264,14 +270,16 @@
 			</div>
 		{:else}
 			<!-- Primary Navigation Tabs (Eliminates infinite vertical scroll) -->
-			<div class="flex items-center justify-between border-b border-slate-200/80 pb-1">
+			<div
+				class="flex items-center justify-between border-b border-slate-200/80 pb-1 dark:border-slate-800"
+			>
 				<nav class="flex items-center gap-2" aria-label={$t('admin.nav_label')}>
 					<button
 						type="button"
 						onclick={() => (active_tab = 'controls')}
 						class="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition {active_tab ===
 						'controls'
-							? 'bg-slate-900 text-white shadow-xs'
+							? 'bg-slate-900 text-white shadow-xs dark:bg-white dark:text-slate-900'
 							: 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100'}"
 					>
 						<SlidersHorizontalIcon class="size-3.5" />
@@ -283,14 +291,14 @@
 						onclick={() => (active_tab = 'fleet')}
 						class="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition {active_tab ===
 						'fleet'
-							? 'bg-slate-900 text-white shadow-xs'
+							? 'bg-slate-900 text-white shadow-xs dark:bg-white dark:text-slate-900'
 							: 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100'}"
 					>
 						<UsersIcon class="size-3.5" />
 						<span>{$t('admin.tab_fleet')}</span>
 						<span
 							class="py-0.2 rounded-full px-1.5 text-[10px] {active_tab === 'fleet'
-								? 'bg-white/20 text-white dark:bg-white/15'
+								? 'bg-slate-900/10 text-slate-900 dark:bg-slate-900/20 dark:text-white'
 								: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}"
 						>
 							{data.personas.length}
@@ -302,14 +310,14 @@
 						onclick={() => (active_tab = 'posts')}
 						class="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition {active_tab ===
 						'posts'
-							? 'bg-slate-900 text-white shadow-xs'
+							? 'bg-slate-900 text-white shadow-xs dark:bg-white dark:text-slate-900'
 							: 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100'}"
 					>
 						<MessageSquareIcon class="size-3.5" />
 						<span>{$t('admin.tab_posts')}</span>
 						<span
 							class="py-0.2 rounded-full px-1.5 text-[10px] {active_tab === 'posts'
-								? 'bg-white/20 text-white dark:bg-white/15'
+								? 'bg-slate-900/10 text-slate-900 dark:bg-slate-900/20 dark:text-white'
 								: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}"
 						>
 							{data.recent_posts.length}
@@ -325,63 +333,76 @@
 				<div class="space-y-6">
 					<!-- Quick Metrics Row -->
 					<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-						<div class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs">
-							<div class="text-xs font-medium text-slate-400 uppercase">
+						<div
+							class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900"
+						>
+							<div class="text-xs font-medium text-slate-400 uppercase dark:text-slate-500">
 								{$t('admin.metric_automation')}
 							</div>
 							<div class="mt-1 flex items-center gap-2">
 								{#if data.config?.enabled}
 									<span class="size-2.5 animate-pulse rounded-full bg-emerald-500"></span>
-									<span class="text-sm font-bold text-emerald-700">{$t('admin.metric_active')}</span
+									<span class="text-sm font-bold text-emerald-700 dark:text-emerald-400"
+										>{$t('admin.metric_active')}</span
 									>
 								{:else}
 									<span class="size-2.5 rounded-full bg-amber-500"></span>
-									<span class="text-sm font-bold text-amber-700">{$t('admin.metric_paused')}</span>
+									<span class="text-sm font-bold text-amber-700 dark:text-amber-400"
+										>{$t('admin.metric_paused')}</span
+									>
 								{/if}
 							</div>
-							<div class="mt-1 text-[11px] text-slate-500">
+							<div class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
 								{$t('admin.interval', { values: { hours: data.config?.interval_hours ?? 3 } })}
 							</div>
 						</div>
 
-						<div class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs">
-							<div class="text-xs font-medium text-slate-400 uppercase">
+						<div
+							class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900"
+						>
+							<div class="text-xs font-medium text-slate-400 uppercase dark:text-slate-500">
 								{$t('admin.metric_schedule')}
 							</div>
-							<div class="mt-1 truncate text-sm font-bold text-slate-900">
+							<div class="mt-1 truncate text-sm font-bold text-slate-900 dark:text-slate-100">
 								{data.config?.campaign_end
 									? $t('admin.schedule_limited')
 									: $t('admin.schedule_continuous')}
 							</div>
-							<div class="mt-1 truncate text-[11px] text-slate-500">
+							<div class="mt-1 truncate text-[11px] text-slate-500 dark:text-slate-400">
 								{campaign_end_display()}
 							</div>
 						</div>
 
-						<div class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs">
-							<div class="text-xs font-medium text-slate-400 uppercase">
+						<div
+							class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900"
+						>
+							<div class="text-xs font-medium text-slate-400 uppercase dark:text-slate-500">
 								{$t('admin.metric_fleet_size')}
 							</div>
-							<div class="mt-1 text-sm font-bold text-slate-900">
+							<div class="mt-1 text-sm font-bold text-slate-900 dark:text-slate-100">
 								{$t('admin.accounts', { values: { count: data.personas.length } })}
 							</div>
-							<div class="mt-1 text-[11px] text-slate-500">
+							<div class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
 								{$t('admin.custom_configured', {
 									values: { count: data.personas.filter((b) => b.is_custom).length },
 								})}
 							</div>
 						</div>
 
-						<div class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs">
-							<div class="text-xs font-medium text-slate-400 uppercase">
+						<div
+							class="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900"
+						>
+							<div class="text-xs font-medium text-slate-400 uppercase dark:text-slate-500">
 								{$t('admin.metric_today_posts')}
 							</div>
-							<div class="mt-1 text-sm font-bold text-slate-900">
+							<div class="mt-1 text-sm font-bold text-slate-900 dark:text-slate-100">
 								{$t('admin.seeded', {
 									values: { count: data.personas.reduce((sum, b) => sum + b.daily_posts, 0) },
 								})}
 							</div>
-							<div class="mt-1 text-[11px] text-slate-500">{$t('admin.max_limit')}</div>
+							<div class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+								{$t('admin.max_limit')}
+							</div>
 						</div>
 					</div>
 
@@ -393,7 +414,8 @@
 						>
 							<div>
 								<div class="flex items-center justify-between">
-									<span class="text-xs font-bold tracking-wider text-slate-400 uppercase"
+									<span
+										class="text-xs font-bold tracking-wider text-slate-400 uppercase dark:text-slate-500"
 										>{$t('admin.pipeline_status')}</span
 									>
 									{#if data.config?.enabled}
@@ -402,10 +424,10 @@
 										<PauseIcon class="size-4 text-amber-600" />
 									{/if}
 								</div>
-								<h3 class="mt-2 text-base font-bold text-slate-900">
+								<h3 class="mt-2 text-base font-bold text-slate-900 dark:text-slate-100">
 									{data.config?.enabled ? $t('admin.running') : $t('admin.paused')}
 								</h3>
-								<p class="mt-1 text-xs text-slate-500">
+								<p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
 									{data.config?.enabled ? $t('admin.running_desc') : $t('admin.paused_desc')}
 								</p>
 							</div>
@@ -436,7 +458,8 @@
 						>
 							<div>
 								<div class="flex items-center justify-between">
-									<span class="text-xs font-bold tracking-wider text-slate-400 uppercase"
+									<span
+										class="text-xs font-bold tracking-wider text-slate-400 uppercase dark:text-slate-500"
 										>{$t('admin.schedule_control')}</span
 									>
 									<CalendarIcon class="size-4 text-slate-400 dark:text-slate-500" />
@@ -444,7 +467,9 @@
 								<h3 class="mt-2 truncate text-sm font-bold text-slate-900 dark:text-slate-100">
 									{campaign_end_display()}
 								</h3>
-								<p class="mt-1 text-xs text-slate-500">{$t('admin.schedule_desc')}</p>
+								<p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+									{$t('admin.schedule_desc')}
+								</p>
 							</div>
 
 							<!-- Presets & Cancel Action -->
@@ -483,7 +508,7 @@
 									/>
 									<button
 										type="submit"
-										class="rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-slate-800"
+										class="rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
 									>
 										{$t('admin.set')}
 									</button>
@@ -493,7 +518,7 @@
 									<form method="POST" action="?/cancel_campaign" use:enhance>
 										<button
 											type="submit"
-											class="w-full text-center text-[11px] font-semibold text-rose-600 hover:underline"
+											class="w-full text-center text-[11px] font-semibold text-rose-600 hover:underline dark:text-rose-400"
 										>
 											{$t('admin.clear_schedule')}
 										</button>
@@ -508,13 +533,18 @@
 						>
 							<div>
 								<div class="flex items-center justify-between">
-									<span class="text-xs font-bold tracking-wider text-slate-400 uppercase"
+									<span
+										class="text-xs font-bold tracking-wider text-slate-400 uppercase dark:text-slate-500"
 										>{$t('admin.immediate_trigger')}</span
 									>
 									<SparklesIcon class="size-4 text-indigo-500" />
 								</div>
-								<h3 class="mt-2 text-base font-bold text-slate-900">{$t('admin.run_cycle')}</h3>
-								<p class="mt-1 text-xs text-slate-500">{$t('admin.run_cycle_desc')}</p>
+								<h3 class="mt-2 text-base font-bold text-slate-900 dark:text-slate-100">
+									{$t('admin.run_cycle')}
+								</h3>
+								<p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+									{$t('admin.run_cycle_desc')}
+								</p>
 							</div>
 
 							<form
@@ -556,7 +586,7 @@
 
 							{#if trigger_message}
 								<div
-									class="mt-2 rounded-lg bg-emerald-50 p-2.5 text-[11px] font-medium text-emerald-800"
+									class="mt-2 rounded-lg bg-emerald-50 p-2.5 text-[11px] font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
 								>
 									{trigger_message}
 								</div>
@@ -576,12 +606,12 @@
 					<!-- Directory Header with Controls -->
 					<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 						<div>
-							<h2 class="text-lg font-bold text-slate-900">
+							<h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">
 								{$t('admin.directory_title', {
 									values: { shown: filtered_personas().length, total: data.personas.length },
 								})}
 							</h2>
-							<p class="text-xs text-slate-500">{$t('admin.directory_desc')}</p>
+							<p class="text-xs text-slate-500 dark:text-slate-400">{$t('admin.directory_desc')}</p>
 						</div>
 
 						<div class="flex flex-wrap items-center gap-2">
@@ -594,7 +624,7 @@
 									type="text"
 									bind:value={search_query}
 									placeholder={$t('admin.search_bots')}
-									class="rounded-xl border border-slate-200 bg-slate-50/60 py-1.5 pr-3 pl-8 text-xs text-slate-800 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none"
+									class="rounded-xl border border-slate-200 bg-slate-50/60 py-1.5 pr-3 pl-8 text-xs text-slate-800 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-400 dark:focus:border-slate-500 dark:focus:bg-slate-900"
 								/>
 							</div>
 
@@ -606,8 +636,8 @@
 									type="button"
 									onclick={() => (fleet_view_mode = 'table')}
 									class="rounded-lg p-1.5 transition {fleet_view_mode === 'table'
-										? 'bg-white text-slate-900 shadow-2xs'
-										: 'text-slate-400 hover:text-slate-700'}"
+										? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-700 dark:text-slate-50'
+										: 'text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-100'}"
 									title={$t('admin.table_title')}
 									aria-label={$t('admin.table_aria')}
 								>
@@ -617,8 +647,8 @@
 									type="button"
 									onclick={() => (fleet_view_mode = 'grid')}
 									class="rounded-lg p-1.5 transition {fleet_view_mode === 'grid'
-										? 'bg-white text-slate-900 shadow-2xs'
-										: 'text-slate-400 hover:text-slate-700'}"
+										? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-700 dark:text-slate-50'
+										: 'text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-100'}"
 									title={$t('admin.grid_title')}
 									aria-label={$t('admin.grid_aria')}
 								>
@@ -638,14 +668,16 @@
 					</div>
 
 					<!-- Category Filters -->
-					<div class="flex flex-wrap items-center gap-1.5 border-b border-slate-100 pb-3 text-xs">
+					<div
+						class="flex flex-wrap items-center gap-1.5 border-b border-slate-100 pb-3 text-xs dark:border-slate-800"
+					>
 						{#each [{ id: 'all', label_key: 'admin.filter_all' }, { id: 'tech', label_key: 'admin.filter_tech' }, { id: 'anime', label_key: 'admin.filter_anime' }, { id: 'movie', label_key: 'admin.filter_movie' }, { id: 'economic', label_key: 'admin.filter_economic' }, { id: 'cafe', label_key: 'admin.filter_cafe' }, { id: 'custom', label_key: 'admin.filter_custom' }] as tab (tab.id)}
 							<button
 								type="button"
 								onclick={() => (selected_category = tab.id)}
 								class="rounded-lg px-2.5 py-1 text-xs font-medium transition {selected_category ===
 								tab.id
-									? 'bg-slate-900 text-white'
+									? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
 									: 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}"
 							>
 								{$t(tab.label_key)}
@@ -654,7 +686,7 @@
 					</div>
 
 					{#if filtered_personas().length === 0}
-						<div class="py-12 text-center text-xs text-slate-400">
+						<div class="py-12 text-center text-xs text-slate-400 dark:text-slate-500">
 							{$t('admin.no_bots')}
 						</div>
 					{:else if fleet_view_mode === 'table'}
@@ -663,8 +695,10 @@
 							class="overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-slate-800"
 						>
 							<table class="w-full text-left text-xs">
-								<thead class="bg-slate-50 font-bold text-slate-500 uppercase">
-									<tr class="border-b border-slate-200/80">
+								<thead
+									class="bg-slate-50 font-bold text-slate-500 uppercase dark:bg-slate-800 dark:text-slate-400"
+								>
+									<tr class="border-b border-slate-200/80 dark:border-slate-700">
 										<th class="py-3 pr-3 pl-4">{$t('admin.col_persona')}</th>
 										<th class="hidden px-3 py-3 md:table-cell">{$t('admin.col_topics')}</th>
 										<th class="hidden px-3 py-3 sm:table-cell">{$t('admin.col_feeds')}</th>
@@ -694,7 +728,7 @@
 															>
 															{#if bot.is_custom}
 																<span
-																	class="py-0.2 rounded bg-indigo-50 px-1 text-[9px] font-semibold text-indigo-700"
+																	class="py-0.2 rounded bg-indigo-50 px-1 text-[9px] font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
 																	>{$t('admin.custom_badge')}</span
 																>
 															{/if}
@@ -702,7 +736,7 @@
 														<a
 															href={resolve('/u/[handle]', { handle: bot.username })}
 															target="_blank"
-															class="inline-flex items-center gap-0.5 truncate text-[11px] text-slate-500 hover:text-indigo-600"
+															class="inline-flex items-center gap-0.5 truncate text-[11px] text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
 														>
 															@{bot.username}
 															<ExternalLinkIcon class="size-2.5 opacity-60" />
@@ -735,8 +769,10 @@
 
 											<!-- Posts count -->
 											<td class="px-3 py-3">
-												<span class="font-bold text-slate-800">{bot.daily_posts}/3</span>
-												<span class="text-[10px] text-slate-400"
+												<span class="font-bold text-slate-800 dark:text-slate-200"
+													>{bot.daily_posts}/3</span
+												>
+												<span class="text-[10px] text-slate-400 dark:text-slate-500"
 													>{$t('admin.total_count', { values: { count: bot.total_posts } })}</span
 												>
 											</td>
@@ -749,7 +785,7 @@
 														<button
 															type="submit"
 															title={$t('admin.trigger_now')}
-															class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 shadow-2xs hover:bg-slate-100"
+															class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 shadow-2xs hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
 														>
 															{$t('admin.post_now')}
 														</button>
@@ -759,7 +795,7 @@
 														type="button"
 														onclick={() => open_edit_modal(bot)}
 														title={$t('admin.edit_prompt')}
-														class="rounded-lg border border-slate-200 bg-white p-1 text-slate-600 shadow-2xs hover:bg-slate-50"
+														class="rounded-lg border border-slate-200 bg-white p-1 text-slate-600 shadow-2xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
 													>
 														<PencilIcon class="size-3.5" />
 													</button>
@@ -818,7 +854,7 @@
 														>
 														{#if bot.is_custom}
 															<span
-																class="py-0.2 rounded bg-indigo-50 px-1.5 text-[10px] font-semibold text-indigo-700"
+																class="py-0.2 rounded bg-indigo-50 px-1.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
 																>{$t('admin.custom_badge')}</span
 															>
 														{/if}
@@ -826,7 +862,7 @@
 													<a
 														href={resolve('/u/[handle]', { handle: bot.username })}
 														target="_blank"
-														class="inline-flex items-center gap-0.5 truncate text-[11px] text-slate-500 hover:text-indigo-600"
+														class="inline-flex items-center gap-0.5 truncate text-[11px] text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
 													>
 														@{bot.username}
 														<ExternalLinkIcon class="size-2.5 opacity-60" />
@@ -838,7 +874,7 @@
 												type="button"
 												onclick={() => open_edit_modal(bot)}
 												title={$t('admin.edit_bot')}
-												class="rounded-lg border border-slate-200 bg-white p-1.5 text-slate-600 shadow-2xs hover:bg-slate-50"
+												class="rounded-lg border border-slate-200 bg-white p-1.5 text-slate-600 shadow-2xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
 											>
 												<PencilIcon class="size-3.5" />
 											</button>
@@ -851,13 +887,13 @@
 										<div class="mt-2.5 flex flex-wrap gap-1">
 											{#each (bot.feeds || []).slice(0, 2) as f (f)}
 												<span
-													class="max-w-[180px] truncate rounded border border-slate-200/60 bg-white px-1.5 py-0.5 text-[10px] font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-800"
+													class="max-w-[180px] truncate rounded border border-slate-200/60 bg-white px-1.5 py-0.5 text-[10px] font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
 												>
 													{f.replace(/https?:\/\/(www\.)?/, '').split('/')[0]}
 												</span>
 											{/each}
 											{#if (bot.feeds || []).length > 2}
-												<span class="text-[10px] text-slate-400"
+												<span class="text-[10px] text-slate-400 dark:text-slate-500"
 													>{$t('admin.more_feeds', {
 														values: { count: bot.feeds.length - 2 },
 													})}</span
@@ -869,7 +905,7 @@
 									<div
 										class="mt-4 flex items-center justify-between border-t border-slate-200/60 pt-2.5 dark:border-slate-800"
 									>
-										<div class="text-[10px] text-slate-500">
+										<div class="text-[10px] text-slate-500 dark:text-slate-400">
 											{$t('admin.today_total', {
 												values: { today: bot.daily_posts, total: bot.total_posts },
 											})}
@@ -881,7 +917,7 @@
 												<button
 													type="submit"
 													title={$t('admin.post_immediately')}
-													class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-2xs hover:bg-slate-100"
+													class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-2xs hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
 												>
 													{$t('admin.post_now')}
 												</button>
@@ -927,7 +963,7 @@
 				>
 					<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 						<div>
-							<h2 class="text-lg font-bold text-slate-900">
+							<h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">
 								{$t('admin.recent_title', {
 									values: {
 										shown: filtered_recent_posts().length,
@@ -935,7 +971,7 @@
 									},
 								})}
 							</h2>
-							<p class="text-xs text-slate-500">{$t('admin.recent_desc')}</p>
+							<p class="text-xs text-slate-500 dark:text-slate-400">{$t('admin.recent_desc')}</p>
 						</div>
 
 						<div class="flex flex-wrap items-center gap-2">
@@ -948,7 +984,7 @@
 									type="text"
 									bind:value={post_search}
 									placeholder={$t('admin.search_posts')}
-									class="rounded-xl border border-slate-200 bg-slate-50/60 py-1.5 pr-3 pl-8 text-xs text-slate-800 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none"
+									class="rounded-xl border border-slate-200 bg-slate-50/60 py-1.5 pr-3 pl-8 text-xs text-slate-800 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-400 dark:focus:border-slate-500 dark:focus:bg-slate-900"
 								/>
 							</div>
 
@@ -966,7 +1002,9 @@
 					</div>
 
 					{#if filtered_recent_posts().length === 0}
-						<div class="py-12 text-center text-xs text-slate-400">{$t('admin.no_posts')}</div>
+						<div class="py-12 text-center text-xs text-slate-400 dark:text-slate-500">
+							{$t('admin.no_posts')}
+						</div>
 					{:else}
 						<div class="divide-y divide-slate-100 dark:divide-slate-800">
 							{#each filtered_recent_posts() as item (item.id)}
@@ -1039,7 +1077,7 @@
 											<button
 												type="submit"
 												aria-label={$t('admin.delete_bot_post')}
-												class="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
+												class="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:text-slate-500 dark:hover:bg-rose-950 dark:hover:text-rose-400"
 											>
 												<TrashIcon class="size-3.5" />
 											</button>
@@ -1066,8 +1104,10 @@
 					class="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800"
 				>
 					<div>
-						<h3 class="text-base font-bold text-slate-900">{$t('admin.create_title')}</h3>
-						<p class="text-xs text-slate-500">{$t('admin.create_desc')}</p>
+						<h3 class="text-base font-bold text-slate-900 dark:text-slate-100">
+							{$t('admin.create_title')}
+						</h3>
+						<p class="text-xs text-slate-500 dark:text-slate-400">{$t('admin.create_desc')}</p>
 					</div>
 					<button
 						type="button"
@@ -1093,7 +1133,9 @@
 				>
 					<div class="grid grid-cols-2 gap-3">
 						<div>
-							<label for="create_name" class="block text-xs font-bold text-slate-700"
+							<label
+								for="create_name"
+								class="block text-xs font-bold text-slate-700 dark:text-slate-300"
 								>{$t('edit_profile.display_name')}</label
 							>
 							<input
@@ -1103,11 +1145,13 @@
 								bind:value={create_name}
 								required
 								placeholder={$t('admin.name_placeholder')}
-								class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+								class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:ring-slate-200"
 							/>
 						</div>
 						<div>
-							<label for="create_username" class="block text-xs font-bold text-slate-700"
+							<label
+								for="create_username"
+								class="block text-xs font-bold text-slate-700 dark:text-slate-300"
 								>{$t('edit_profile.username')}</label
 							>
 							<input
@@ -1117,13 +1161,15 @@
 								bind:value={create_username}
 								required
 								placeholder={$t('admin.username_placeholder')}
-								class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+								class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:ring-slate-200"
 							/>
 						</div>
 					</div>
 
 					<div>
-						<label for="create_bio" class="block text-xs font-bold text-slate-700"
+						<label
+							for="create_bio"
+							class="block text-xs font-bold text-slate-700 dark:text-slate-300"
 							>{$t('admin.bio_label')}</label
 						>
 						<textarea
@@ -1132,12 +1178,14 @@
 							bind:value={create_bio}
 							rows={2}
 							placeholder={$t('admin.bio_placeholder')}
-							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:ring-slate-200"
 						></textarea>
 					</div>
 
 					<div>
-						<label for="create_image" class="block text-xs font-bold text-slate-700"
+						<label
+							for="create_image"
+							class="block text-xs font-bold text-slate-700 dark:text-slate-300"
 							>{$t('admin.image_label')}</label
 						>
 						<input
@@ -1146,12 +1194,14 @@
 							name="image"
 							bind:value={create_image}
 							placeholder="https://api.dicebear.com/7.x/notionists/svg?seed=maya"
-							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:ring-slate-200"
 						/>
 					</div>
 
 					<div>
-						<span class="block text-xs font-bold text-slate-700">{$t('admin.banner_label')}</span>
+						<span class="block text-xs font-bold text-slate-700 dark:text-slate-300"
+							>{$t('admin.banner_label')}</span
+						>
 						<div class="mt-1.5 flex flex-wrap gap-2">
 							{#each banner_colors as color (color.id)}
 								<label class="flex cursor-pointer items-center gap-1.5 text-xs">
@@ -1164,17 +1214,21 @@
 									/>
 									<span
 										class="size-5 rounded-full {color.bg} border-2 {create_banner_color === color.id
-											? 'border-indigo-600 ring-2 ring-indigo-200'
-											: 'border-white'}"
+											? 'border-indigo-600 ring-2 ring-indigo-200 dark:ring-indigo-500/60'
+											: 'border-white dark:border-slate-600'}"
 									></span>
-									<span class="text-[11px] text-slate-600">{$t(`admin.color_${color.id}`)}</span>
+									<span class="text-[11px] text-slate-600 dark:text-slate-400"
+										>{$t(`admin.color_${color.id}`)}</span
+									>
 								</label>
 							{/each}
 						</div>
 					</div>
 
 					<div>
-						<label for="create_tone_prompt" class="block text-xs font-bold text-slate-700"
+						<label
+							for="create_tone_prompt"
+							class="block text-xs font-bold text-slate-700 dark:text-slate-300"
 							>{$t('admin.tone_label')}</label
 						>
 						<textarea
@@ -1184,12 +1238,14 @@
 							rows={3}
 							required
 							placeholder={$t('admin.tone_placeholder')}
-							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:ring-slate-200"
 						></textarea>
 					</div>
 
 					<div>
-						<label for="create_feeds" class="block text-xs font-bold text-slate-700"
+						<label
+							for="create_feeds"
+							class="block text-xs font-bold text-slate-700 dark:text-slate-300"
 							>{$t('admin.feeds_label')}</label
 						>
 						<textarea
@@ -1203,7 +1259,7 @@
 						></textarea>
 
 						<div class="mt-2">
-							<span class="text-[11px] font-semibold text-slate-500"
+							<span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400"
 								>{$t('admin.presets_create')}</span
 							>
 							<div class="mt-1 flex flex-wrap gap-1">
@@ -1221,7 +1277,9 @@
 					</div>
 
 					<div>
-						<label for="create_hashtags" class="block text-xs font-bold text-slate-700"
+						<label
+							for="create_hashtags"
+							class="block text-xs font-bold text-slate-700 dark:text-slate-300"
 							>{$t('admin.hashtags_label')}</label
 						>
 						<input
@@ -1230,7 +1288,7 @@
 							name="hashtags"
 							bind:value={create_hashtags}
 							placeholder={$t('admin.hashtags_placeholder')}
-							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:ring-slate-200"
 						/>
 					</div>
 
@@ -1268,8 +1326,10 @@
 					class="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800"
 				>
 					<div>
-						<h3 class="text-base font-bold text-slate-900">{$t('admin.edit_title')}</h3>
-						<p class="text-xs text-slate-500">{$t('admin.edit_desc')}</p>
+						<h3 class="text-base font-bold text-slate-900 dark:text-slate-100">
+							{$t('admin.edit_title')}
+						</h3>
+						<p class="text-xs text-slate-500 dark:text-slate-400">{$t('admin.edit_desc')}</p>
 					</div>
 					<button
 						type="button"
@@ -1297,7 +1357,9 @@
 
 					<div class="grid grid-cols-2 gap-3">
 						<div>
-							<label for="edit_name" class="block text-xs font-bold text-slate-700"
+							<label
+								for="edit_name"
+								class="block text-xs font-bold text-slate-700 dark:text-slate-300"
 								>{$t('edit_profile.display_name')}</label
 							>
 							<input
@@ -1306,11 +1368,13 @@
 								name="name"
 								bind:value={edit_name}
 								required
-								class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+								class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:ring-slate-200"
 							/>
 						</div>
 						<div>
-							<label for="edit_username" class="block text-xs font-bold text-slate-700"
+							<label
+								for="edit_username"
+								class="block text-xs font-bold text-slate-700 dark:text-slate-300"
 								>{$t('edit_profile.username')}</label
 							>
 							<input
@@ -1319,13 +1383,13 @@
 								name="username"
 								bind:value={edit_username}
 								required
-								class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+								class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:ring-slate-200"
 							/>
 						</div>
 					</div>
 
 					<div>
-						<label for="edit_bio" class="block text-xs font-bold text-slate-700"
+						<label for="edit_bio" class="block text-xs font-bold text-slate-700 dark:text-slate-300"
 							>{$t('edit_profile.bio')}</label
 						>
 						<textarea
@@ -1333,12 +1397,14 @@
 							name="bio"
 							bind:value={edit_bio}
 							rows={2}
-							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:ring-slate-200"
 						></textarea>
 					</div>
 
 					<div>
-						<label for="edit_image" class="block text-xs font-bold text-slate-700"
+						<label
+							for="edit_image"
+							class="block text-xs font-bold text-slate-700 dark:text-slate-300"
 							>{$t('admin.image_label')}</label
 						>
 						<input
@@ -1346,12 +1412,14 @@
 							type="url"
 							name="image"
 							bind:value={edit_image}
-							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:ring-slate-200"
 						/>
 					</div>
 
 					<div>
-						<span class="block text-xs font-bold text-slate-700">{$t('admin.banner_label')}</span>
+						<span class="block text-xs font-bold text-slate-700 dark:text-slate-300"
+							>{$t('admin.banner_label')}</span
+						>
 						<div class="mt-1.5 flex flex-wrap gap-2">
 							{#each banner_colors as color (color.id)}
 								<label class="flex cursor-pointer items-center gap-1.5 text-xs">
@@ -1364,17 +1432,21 @@
 									/>
 									<span
 										class="size-5 rounded-full {color.bg} border-2 {edit_banner_color === color.id
-											? 'border-indigo-600 ring-2 ring-indigo-200'
-											: 'border-white'}"
+											? 'border-indigo-600 ring-2 ring-indigo-200 dark:ring-indigo-500/60'
+											: 'border-white dark:border-slate-600'}"
 									></span>
-									<span class="text-[11px] text-slate-600">{$t(`admin.color_${color.id}`)}</span>
+									<span class="text-[11px] text-slate-600 dark:text-slate-400"
+										>{$t(`admin.color_${color.id}`)}</span
+									>
 								</label>
 							{/each}
 						</div>
 					</div>
 
 					<div>
-						<label for="edit_tone_prompt" class="block text-xs font-bold text-slate-700"
+						<label
+							for="edit_tone_prompt"
+							class="block text-xs font-bold text-slate-700 dark:text-slate-300"
 							>{$t('admin.tone_label')}</label
 						>
 						<textarea
@@ -1382,12 +1454,14 @@
 							name="tone_prompt"
 							bind:value={edit_tone_prompt}
 							rows={3}
-							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:ring-slate-200"
 						></textarea>
 					</div>
 
 					<div>
-						<label for="edit_feeds" class="block text-xs font-bold text-slate-700"
+						<label
+							for="edit_feeds"
+							class="block text-xs font-bold text-slate-700 dark:text-slate-300"
 							>{$t('admin.feeds_label')}</label
 						>
 						<textarea
@@ -1399,7 +1473,7 @@
 						></textarea>
 
 						<div class="mt-2">
-							<span class="text-[11px] font-semibold text-slate-500"
+							<span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400"
 								>{$t('admin.presets_edit')}</span
 							>
 							<div class="mt-1 flex flex-wrap gap-1">
@@ -1417,7 +1491,9 @@
 					</div>
 
 					<div>
-						<label for="edit_hashtags" class="block text-xs font-bold text-slate-700"
+						<label
+							for="edit_hashtags"
+							class="block text-xs font-bold text-slate-700 dark:text-slate-300"
 							>{$t('admin.hashtags_label')}</label
 						>
 						<input
@@ -1425,7 +1501,7 @@
 							type="text"
 							name="hashtags"
 							bind:value={edit_hashtags}
-							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+							class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:ring-slate-200"
 						/>
 					</div>
 

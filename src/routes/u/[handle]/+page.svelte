@@ -22,6 +22,7 @@
 	import PostList from '$lib/components/app/PostList.svelte'
 	import { parse_content } from '$lib/content'
 	import { date, t } from '$lib/i18n'
+	import { interest_i18n_key } from '$lib/interests'
 	import type { ProfileView } from '$lib/types'
 
 	let { data } = $props()
@@ -140,7 +141,7 @@
 						<a
 							href={resolve('/settings')}
 							aria-label={$t('nav.settings')}
-							class="flex size-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-2xs transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 active:scale-95"
+							class="flex size-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-2xs transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 active:scale-95 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-700"
 						>
 							<SettingsIcon class="size-4" />
 						</a>
@@ -148,7 +149,7 @@
 							type="button"
 							onclick={handle_sign_out}
 							aria-label={$t('nav.sign_out')}
-							class="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition-all duration-150 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 active:scale-95"
+							class="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition-all duration-150 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 active:scale-95 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-rose-900 dark:hover:bg-rose-950 dark:hover:text-rose-400"
 						>
 							<LogOutIcon class="size-3.5" />
 							<span class="hidden sm:inline">{$t('nav.sign_out')}</span>
@@ -237,7 +238,7 @@
 							{#if segment.type === 'tag'}
 								<a
 									href="{resolve('/explore')}?q={encodeURIComponent(segment.text)}"
-									class="font-medium text-indigo-600 hover:text-indigo-700 hover:underline"
+									class="font-medium text-indigo-600 hover:text-indigo-700 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300"
 								>
 									{segment.text}
 								</a>
@@ -246,7 +247,7 @@
 									href={segment.href}
 									target="_blank"
 									rel="noopener noreferrer"
-									class="font-medium [overflow-wrap:anywhere] break-all text-indigo-600 hover:text-indigo-700 hover:underline"
+									class="font-medium [overflow-wrap:anywhere] break-all text-indigo-600 hover:text-indigo-700 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300"
 								>
 									{segment.text}
 								</a>
@@ -261,11 +262,12 @@
 				{#if profile.interests && profile.interests.length > 0}
 					<div class="mt-3 flex flex-wrap gap-1.5">
 						{#each profile.interests as interest (interest)}
+							{@const label_key = interest_i18n_key(interest)}
 							<a
 								href="{resolve('/explore')}?q={encodeURIComponent('#' + interest)}"
 								class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-200 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100"
 							>
-								#{interest}
+								#{label_key ? $t(label_key) : interest}
 							</a>
 						{/each}
 					</div>
@@ -372,7 +374,7 @@
 					>
 						<LockIcon class="size-8" />
 					</div>
-					<h4 class="text-sm font-bold text-slate-800">
+					<h4 class="text-sm font-bold text-slate-800 dark:text-slate-200">
 						{active_tab === 'favorites'
 							? $t('profile.favorites_private')
 							: $t('profile.liked_private')}
@@ -399,8 +401,11 @@
 				>
 					<div class="flex items-center justify-between pb-3">
 						<div class="flex items-center gap-2">
-							<PaletteIcon class="size-4 text-indigo-600" />
-							<h3 id="banner-modal-title" class="text-base font-bold text-slate-900">
+							<PaletteIcon class="size-4 text-indigo-600 dark:text-indigo-400" />
+							<h3
+								id="banner-modal-title"
+								class="text-base font-bold text-slate-900 dark:text-slate-100"
+							>
 								{$t('profile.banner_title')}
 							</h3>
 						</div>
@@ -408,7 +413,7 @@
 							type="button"
 							onclick={() => (show_banner_modal = false)}
 							class="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-							aria-label="Close"
+							aria-label={$t('common.close')}
 						>
 							<XIcon class="size-4" />
 						</button>
@@ -472,9 +477,9 @@
 		<!-- Sign out confirmation -->
 		{#if show_sign_out_confirm}
 			<ConfirmDialog
-				title="Sign out?"
-				message="You'll need to sign in again to access your account."
-				confirm_label="Sign out"
+				title={$t('sign_out.title')}
+				message={$t('sign_out.message')}
+				confirm_label={$t('sign_out.confirm')}
 				danger
 				busy={signing_out}
 				on_confirm={confirm_sign_out}

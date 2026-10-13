@@ -3,6 +3,7 @@
 	import SunIcon from '@lucide/svelte/icons/sun'
 	import MoonIcon from '@lucide/svelte/icons/moon'
 	import MonitorIcon from '@lucide/svelte/icons/monitor'
+	import { t } from '$lib/i18n'
 
 	const modes = ['light', 'dark', 'system'] as const
 	let current = $derived(userPrefersMode.current)
@@ -20,8 +21,8 @@
 <button
 	type="button"
 	onclick={cycle}
-	title="Theme: {current}"
-	aria-label="Theme: {current}. Activate to change."
+	title={$t('theme.label', { values: { mode: $t(`theme.${current}`) } })}
+	aria-label={$t('theme.activate_to_change', { values: { mode: $t(`theme.${current}`) } })}
 	class="flex size-11 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:outline-none active:scale-95 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100 dark:focus-visible:ring-slate-100"
 >
 	{#if current === 'light'}

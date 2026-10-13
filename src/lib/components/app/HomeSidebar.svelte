@@ -69,7 +69,7 @@
 				bind:value={search_input}
 				onfocus={() => (is_focused = true)}
 				placeholder={$t('sidebar.search_placeholder')}
-				class="w-full rounded-full border border-slate-200/80 bg-white/90 py-2.5 pr-4 pl-10 text-xs text-slate-900 shadow-xs transition placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:ring-1 focus:ring-slate-900 focus:outline-none [&::-webkit-search-cancel-button]:appearance-none"
+				class="w-full rounded-full border border-slate-200/80 bg-white/90 py-2.5 pr-4 pl-10 text-xs text-slate-900 shadow-xs transition placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:ring-1 focus:ring-slate-900 focus:outline-none dark:border-slate-800/80 dark:bg-slate-900/90 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-100 dark:focus:bg-slate-800 dark:focus:ring-slate-100 [&::-webkit-search-cancel-button]:appearance-none"
 			/>
 		</form>
 
@@ -100,7 +100,10 @@
 			<div class="flex flex-wrap items-center justify-between gap-1.5 pb-2.5">
 				<div class="flex items-center gap-1.5">
 					<FlameIcon class="size-4 text-orange-500" />
-					<h2 id="trending-heading" class="text-sm font-bold tracking-tight text-slate-900">
+					<h2
+						id="trending-heading"
+						class="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100"
+					>
 						{$t('sidebar.trending_now')}
 					</h2>
 				</div>
@@ -152,7 +155,7 @@
 					: ''}"
 			>
 				{#if displayed_topics.length === 0}
-					<p class="py-3 text-center text-xs text-slate-400">
+					<p class="py-3 text-center text-xs text-slate-400 dark:text-slate-500">
 						{active_period === 'today'
 							? $t('sidebar.no_trending_today')
 							: active_period === 'week'
@@ -174,7 +177,7 @@
 									#{tag_name}
 								</p>
 								{#if post_count}
-									<p class="mt-0.5 text-[11px] text-slate-400">
+									<p class="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">
 										{$t('sidebar.post_count', { values: { count: post_count } })}
 									</p>
 								{/if}
@@ -190,7 +193,7 @@
 			<div class="mt-2 border-t border-slate-100 pt-2.5 dark:border-slate-800">
 				<a
 					href={`${resolve('/explore')}?period=${active_period}`}
-					class="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 transition hover:text-indigo-700"
+					class="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 transition hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
 				>
 					<CompassIcon class="size-3.5" />
 					<span>{$t('sidebar.explore_all')}</span>
@@ -205,7 +208,10 @@
 		aria-labelledby="who-to-follow-heading"
 	>
 		<div class="flex items-center justify-between pb-2">
-			<h2 id="who-to-follow-heading" class="text-sm font-bold tracking-tight text-slate-900">
+			<h2
+				id="who-to-follow-heading"
+				class="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100"
+			>
 				{$t('sidebar.who_to_follow')}
 			</h2>
 			<SparklesIcon class="size-4 text-amber-500" />
@@ -243,11 +249,11 @@
 				{/each}
 			</ul>
 		{:else}
-			<div class="py-3 text-center text-xs text-slate-400">
+			<div class="py-3 text-center text-xs text-slate-400 dark:text-slate-500">
 				<p>{$t('sidebar.no_suggestions')}</p>
 				<a
 					href={resolve('/explore')}
-					class="mt-1 inline-block font-semibold text-indigo-600 hover:underline"
+					class="mt-1 inline-block font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
 				>
 					{$t('sidebar.discover_on_explore')}
 				</a>
@@ -257,7 +263,7 @@
 		<div class="mt-2 border-t border-slate-100 pt-2.5 dark:border-slate-800">
 			<a
 				href={resolve('/explore')}
-				class="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 transition hover:text-indigo-700"
+				class="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 transition hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
 			>
 				<span>{$t('sidebar.show_more')}</span>
 			</a>

@@ -6,6 +6,7 @@
 	import { Button } from '$lib/components/ui/button/index.js'
 	import { Input } from '$lib/components/ui/input/index.js'
 	import { Label } from '$lib/components/ui/label/index.js'
+	import { t } from '$lib/i18n'
 	import type { HTMLInputAttributes } from 'svelte/elements'
 
 	let {
@@ -63,7 +64,7 @@
 				class="absolute right-2 text-[#59647a] hover:bg-transparent hover:text-primary"
 				type="button"
 				onclick={() => (show_password = !show_password)}
-				aria-label={show_password ? 'Hide password' : 'Show password'}
+				aria-label={$t(show_password ? 'login.hide_password' : 'login.show_password')}
 			>
 				{#if show_password}
 					<EyeOffIcon class="size-4" />

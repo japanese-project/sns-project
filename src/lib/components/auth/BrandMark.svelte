@@ -8,7 +8,9 @@
 <a
 	href={resolve('/')}
 	aria-label={$t('login.brand_home')}
-	class="inline-flex items-center gap-3 no-underline {light ? 'text-white' : 'text-[#17233c]'}"
+	class="inline-flex items-center gap-3 no-underline {light
+		? 'text-white'
+		: 'text-[#17233c] dark:text-slate-100'}"
 >
 	<span
 		class="relative grid size-[2.15rem] -rotate-6 place-items-center rounded-xl bg-[#ff6b4a] shadow-[0_8px_20px_rgba(255,107,74,0.28)]"
